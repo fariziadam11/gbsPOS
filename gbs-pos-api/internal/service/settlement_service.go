@@ -45,18 +45,18 @@ func (s *SettlementService) GetUnsettledSummary(storeType, terminalID string) (*
 }
 
 func (s *SettlementService) Settle(settlementID string, timestamp int64, storeType, terminalID string) (*model.Settlement, error) {
-	orders, err := s.orderRepo.FindUnsettledOrders(storeType, terminalID)
-	if err != nil {
-		return nil, err
-	}
-	if len(orders) == 0 {
-		return nil, fmt.Errorf("NO_UNSETTLED_ORDERS")
-	}
-
 	var result *model.Settlement
-	err = s.orderRepo.Transaction(func(tx *gorm.DB) error {
+	err := s.orderRepo.Transaction(func(tx *gorm.DB) error {
 		txOrderRepo := s.orderRepo.WithTx(tx)
 		txSettlementRepo := s.settlementRepo.WithTx(tx)
+
+		orders, err := txOrderRepo.FindUnsettledOrders(storeType, terminalID)
+		if err != nil {
+			return err
+		}
+		if len(orders) == 0 {
+			return fmt.Errorf("NO_UNSETTLED_ORDERS")
+		}
 
 		var cardTotal, qrisTotal, cashTotal float64
 		orderIDs := make([]string, 0, len(orders))

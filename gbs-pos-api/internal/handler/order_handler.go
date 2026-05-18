@@ -1,12 +1,14 @@
 package handler
 
 import (
+	"errors"
 	"net/http"
 	"strconv"
 	"gbs-pos-api/internal/model"
 	"gbs-pos-api/internal/service"
 	"gbs-pos-api/pkg/response"
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 type OrderHandler struct {
@@ -45,7 +47,11 @@ func (h *OrderHandler) Get(c *gin.Context) {
 	id := c.Param("id")
 	order, err := h.orderService.Get(id)
 	if err != nil {
-		c.JSON(http.StatusNotFound, response.Error("ORDER_NOT_FOUND", "Order with ID "+id+" not found"))
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			c.JSON(http.StatusNotFound, response.Error("ORDER_NOT_FOUND", "Order with ID "+id+" not found"))
+			return
+		}
+		c.JSON(http.StatusInternalServerError, response.Error("INTERNAL_SERVER_ERROR", err.Error()))
 		return
 	}
 	c.JSON(http.StatusOK, response.Success(order))
@@ -172,6 +178,11 @@ func (h *OrderHandler) BulkSync(c *gin.Context) {
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusUnprocessableEntity, response.ValidationError("Invalid request body", nil))
 		return
+	}
+	for i := range req.Orders {
+		if req.Orders[i].TerminalID == "" {
+			req.Orders[i].TerminalID = req.TerminalID
+		}
 	}
 	result, err := h.orderService.BulkCreate(req.Orders)
 	if err != nil {

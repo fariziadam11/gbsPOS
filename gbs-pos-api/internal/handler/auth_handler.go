@@ -28,7 +28,11 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	}
 	result, err := h.authService.Login(req.Username, req.Password)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, response.Error("INVALID_CREDENTIALS", "Username or password is incorrect"))
+		if err.Error() == "INVALID_CREDENTIALS" {
+			c.JSON(http.StatusUnauthorized, response.Error("INVALID_CREDENTIALS", "Username or password is incorrect"))
+			return
+		}
+		c.JSON(http.StatusInternalServerError, response.Error("INTERNAL_SERVER_ERROR", "Login service unavailable"))
 		return
 	}
 	c.JSON(http.StatusOK, response.Success(gin.H{

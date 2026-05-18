@@ -1,13 +1,14 @@
 package handler
 
 import (
+	"errors"
 	"net/http"
 	"strconv"
-	"time"
 	"gbs-pos-api/internal/model"
 	"gbs-pos-api/internal/service"
 	"gbs-pos-api/pkg/response"
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 type ProductHandler struct {
@@ -27,7 +28,6 @@ func (h *ProductHandler) List(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, response.Error("INTERNAL_SERVER_ERROR", err.Error()))
 		return
 	}
-	c.Header("X-Last-Sync", strconv.FormatInt(time.Now().UnixMilli(), 10))
 	c.JSON(http.StatusOK, response.Success(products))
 }
 
@@ -58,7 +58,11 @@ func (h *ProductHandler) Update(c *gin.Context) {
 	}
 	product, err := h.productService.Update(uint(id), &updates)
 	if err != nil {
-		c.JSON(http.StatusNotFound, response.Error("PRODUCT_NOT_FOUND", "Product with ID "+idStr+" not found"))
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			c.JSON(http.StatusNotFound, response.Error("PRODUCT_NOT_FOUND", "Product with ID "+idStr+" not found"))
+			return
+		}
+		c.JSON(http.StatusInternalServerError, response.Error("INTERNAL_SERVER_ERROR", err.Error()))
 		return
 	}
 	c.JSON(http.StatusOK, response.Success(product))
@@ -72,7 +76,11 @@ func (h *ProductHandler) Delete(c *gin.Context) {
 		return
 	}
 	if err := h.productService.Delete(uint(id)); err != nil {
-		c.JSON(http.StatusNotFound, response.Error("PRODUCT_NOT_FOUND", "Product with ID "+idStr+" not found"))
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			c.JSON(http.StatusNotFound, response.Error("PRODUCT_NOT_FOUND", "Product with ID "+idStr+" not found"))
+			return
+		}
+		c.JSON(http.StatusInternalServerError, response.Error("INTERNAL_SERVER_ERROR", err.Error()))
 		return
 	}
 	c.Status(http.StatusNoContent)

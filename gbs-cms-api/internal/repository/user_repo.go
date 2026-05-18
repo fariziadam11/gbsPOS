@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"errors"
 	"gbs-cms-api/internal/model"
 	"gorm.io/gorm"
 )
@@ -16,6 +17,9 @@ func NewUserRepository(db *gorm.DB) *UserRepository {
 func (r *UserRepository) FindByUsername(username string) (*model.User, error) {
 	var user model.User
 	if err := r.db.Where("username = ?", username).First(&user).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, gorm.ErrRecordNotFound
+		}
 		return nil, err
 	}
 	return &user, nil

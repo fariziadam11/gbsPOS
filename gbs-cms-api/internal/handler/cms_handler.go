@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -11,6 +12,7 @@ import (
 	"gbs-cms-api/internal/service"
 	"gbs-cms-api/pkg/response"
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 type CMSHandler struct {
@@ -53,8 +55,16 @@ func (h *CMSHandler) UploadAd(c *gin.Context) {
 	endDate := service.ParseDatePointer(c.PostForm("endDate"))
 	startTime := service.ParseTimePointer(c.PostForm("startTime"))
 	endTime := service.ParseTimePointer(c.PostForm("endTime"))
-	createdBy, _ := c.Get("userID")
-	createdByUint, _ := createdBy.(float64)
+	createdBy, ok := c.Get("userID")
+	if !ok {
+		c.JSON(http.StatusUnauthorized, response.Error("UNAUTHORIZED", "Invalid token claims"))
+		return
+	}
+	createdByUint, ok := createdBy.(float64)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, response.Error("UNAUTHORIZED", "Invalid token claims"))
+		return
+	}
 	ad, err := h.cmsService.CreateAd(name, header.Filename, header.Header.Get("Content-Type"), header.Size, storeTypes, playlistOrder, startDate, endDate, startTime, endTime, uint(createdByUint))
 	if err != nil {
 		if err.Error() == "INVALID_SCHEDULE" {
@@ -65,6 +75,7 @@ func (h *CMSHandler) UploadAd(c *gin.Context) {
 		return
 	}
 	if err := h.cmsService.SaveUpload(file, ad.StoragePath); err != nil {
+		_ = h.cmsService.DeleteAd(ad.ID)
 		c.JSON(http.StatusInternalServerError, response.Error("UPLOAD_FAILED", err.Error()))
 		return
 	}
@@ -96,7 +107,11 @@ func (h *CMSHandler) GetAd(c *gin.Context) {
 	}
 	ad, err := h.cmsService.GetAd(uint(id))
 	if err != nil {
-		c.JSON(http.StatusNotFound, response.Error("AD_NOT_FOUND", "Ad with ID "+c.Param("id")+" not found"))
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			c.JSON(http.StatusNotFound, response.Error("AD_NOT_FOUND", "Ad with ID "+c.Param("id")+" not found"))
+			return
+		}
+		c.JSON(http.StatusInternalServerError, response.Error("INTERNAL_SERVER_ERROR", err.Error()))
 		return
 	}
 	c.JSON(http.StatusOK, response.Success(ad))
@@ -119,7 +134,11 @@ func (h *CMSHandler) UpdateAd(c *gin.Context) {
 			c.JSON(http.StatusUnprocessableEntity, response.Error("INVALID_SCHEDULE", "Start date must be before or equal to end date"))
 			return
 		}
-		c.JSON(http.StatusNotFound, response.Error("AD_NOT_FOUND", "Ad with ID "+c.Param("id")+" not found"))
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			c.JSON(http.StatusNotFound, response.Error("AD_NOT_FOUND", "Ad with ID "+c.Param("id")+" not found"))
+			return
+		}
+		c.JSON(http.StatusInternalServerError, response.Error("INTERNAL_SERVER_ERROR", err.Error()))
 		return
 	}
 	c.JSON(http.StatusOK, response.Success(ad))
@@ -132,7 +151,11 @@ func (h *CMSHandler) DeleteAd(c *gin.Context) {
 		return
 	}
 	if err := h.cmsService.DeleteAd(uint(id)); err != nil {
-		c.JSON(http.StatusNotFound, response.Error("AD_NOT_FOUND", "Ad with ID "+c.Param("id")+" not found"))
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			c.JSON(http.StatusNotFound, response.Error("AD_NOT_FOUND", "Ad with ID "+c.Param("id")+" not found"))
+			return
+		}
+		c.JSON(http.StatusInternalServerError, response.Error("INTERNAL_SERVER_ERROR", err.Error()))
 		return
 	}
 	c.Status(http.StatusNoContent)
@@ -146,7 +169,11 @@ func (h *CMSHandler) ToggleAd(c *gin.Context) {
 	}
 	ad, err := h.cmsService.ToggleAd(uint(id))
 	if err != nil {
-		c.JSON(http.StatusNotFound, response.Error("AD_NOT_FOUND", "Ad with ID "+c.Param("id")+" not found"))
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			c.JSON(http.StatusNotFound, response.Error("AD_NOT_FOUND", "Ad with ID "+c.Param("id")+" not found"))
+			return
+		}
+		c.JSON(http.StatusInternalServerError, response.Error("INTERNAL_SERVER_ERROR", err.Error()))
 		return
 	}
 	c.JSON(http.StatusOK, response.Success(gin.H{
@@ -216,7 +243,7 @@ func (h *CMSHandler) DownloadAd(c *gin.Context) {
 	c.Header("Content-Length", strconv.FormatInt(info.Size(), 10))
 	c.Header("Accept-Ranges", "bytes")
 	c.Header("Cache-Control", "public, max-age=86400")
-	c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", filepath.Base(ad.StoragePath)))
+	c.Header("Content-Disposition", fmt.Sprintf("inline; filename=\"%s\"", filepath.Base(ad.StoragePath)))
 	c.File(ad.StoragePath)
 }
 

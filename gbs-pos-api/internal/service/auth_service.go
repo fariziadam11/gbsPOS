@@ -1,6 +1,7 @@
 package service
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"strconv"
@@ -9,6 +10,7 @@ import (
 	"gbs-pos-api/internal/repository"
 	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
+	"gorm.io/gorm"
 )
 
 type AuthService struct {
@@ -27,7 +29,10 @@ type LoginResult struct {
 func (s *AuthService) Login(username, password string) (*LoginResult, error) {
 	user, err := s.userRepo.FindByUsername(username)
 	if err != nil {
-		return nil, fmt.Errorf("INVALID_CREDENTIALS")
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, fmt.Errorf("INVALID_CREDENTIALS")
+		}
+		return nil, fmt.Errorf("DB_ERROR: %w", err)
 	}
 	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password)); err != nil {
 		return nil, fmt.Errorf("INVALID_CREDENTIALS")

@@ -39,9 +39,12 @@ func (s *CMSService) ListAds(page, limit int) (*AdListResult, error) {
 	if err != nil {
 		return nil, err
 	}
-	totalPages := int(total) / limit
-	if int(total)%limit > 0 {
-		totalPages++
+	totalPages := 0
+	if total > 0 {
+		totalPages = int(total) / limit
+		if int(total)%limit > 0 {
+			totalPages++
+		}
 	}
 	return &AdListResult{
 		Ads: ads,
@@ -66,7 +69,7 @@ func validateSchedule(startDate, endDate *time.Time) error {
 }
 
 func (s *CMSService) CreateAd(name, filename, mimeType string, fileSize int64, storeTypes []string, playlistOrder int, startDate, endDate, startTime, endTime *time.Time, createdBy uint) (*model.Ad, error) {
-	baseName := strings.TrimSuffix(filename, filepath.Ext(filename))
+	baseName := strings.TrimSuffix(filepath.Base(filename), filepath.Ext(filename))
 	newFilename := fmt.Sprintf("%s_%d%s", baseName, time.Now().UnixMilli(), filepath.Ext(filename))
 	storagePath := filepath.Join(s.uploadDir, newFilename)
 	if err := validateSchedule(startDate, endDate); err != nil {
@@ -145,10 +148,13 @@ func (s *CMSService) DeleteAd(id uint) error {
 	if err != nil {
 		return err
 	}
-	if err := os.Remove(ad.StoragePath); err != nil && !os.IsNotExist(err) {
-		// log but continue
+	if err := s.adRepo.Delete(id); err != nil {
+		return err
 	}
-	return s.adRepo.Delete(id)
+	if err := os.Remove(ad.StoragePath); err != nil && !os.IsNotExist(err) {
+		return err
+	}
+	return nil
 }
 
 func (s *CMSService) ToggleAd(id uint) (*model.Ad, error) {
