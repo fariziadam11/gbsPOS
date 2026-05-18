@@ -1,10 +1,12 @@
 package service
 
 import (
+	"errors"
 	"fmt"
 	"time"
 	"gbs-pos-api/internal/model"
 	"gbs-pos-api/internal/repository"
+	"gorm.io/gorm"
 )
 
 type OrderService struct {
@@ -25,7 +27,11 @@ func (s *OrderService) Get(id string) (*model.Order, error) {
 
 func (s *OrderService) Create(order *model.Order) (*model.Order, bool, error) {
 	existing, err := s.repo.FindByID(order.ID)
-	if err == nil && existing != nil {
+	if err != nil {
+		if !errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, false, err
+		}
+	} else if existing != nil {
 		fullOrder, err := s.repo.FindByIDWithItems(order.ID)
 		if err != nil {
 			return nil, false, err

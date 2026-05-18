@@ -226,7 +226,13 @@ func ParseDatePointer(d string) *time.Time {
 	return &parsed
 }
 
-func ParseInt(s string) int {
-	i, _ := strconv.Atoi(s)
-	return i
+func ParseInt(s string) (int, error) {
+	if s == "" {
+		return 0, nil
+	}
+	i, err := strconv.Atoi(s)
+	if err != nil {
+		return 0, fmt.Errorf("VALIDATION_ERROR: invalid integer value: %s", s)
+	}
+	return i, nil
 }

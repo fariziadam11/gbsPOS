@@ -4,6 +4,7 @@ import (
 	"errors"
 	"net/http"
 	"strconv"
+	"time"
 	"gbs-pos-api/internal/model"
 	"gbs-pos-api/internal/service"
 	"gbs-pos-api/pkg/response"
@@ -28,6 +29,7 @@ func (h *ProductHandler) List(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, response.Error("INTERNAL_SERVER_ERROR", err.Error()))
 		return
 	}
+	c.Header("X-Last-Sync", strconv.FormatInt(time.Now().UnixMilli(), 10))
 	c.JSON(http.StatusOK, response.Success(products))
 }
 

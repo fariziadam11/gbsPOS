@@ -3,6 +3,7 @@ package repository
 import (
 	"gbs-pos-api/internal/model"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type PaymentSummary struct {
@@ -114,7 +115,7 @@ func (r *OrderRepository) FindUnsettledSummary(storeType, terminalID string) (co
 	return count, total, summary, nil
 }
 
-func (r *OrderRepository) FindUnsettledOrders(storeType, terminalID string) ([]model.Order, error) {
+func (r *OrderRepository) FindUnsettledOrders(storeType, terminalID string, forUpdate bool) ([]model.Order, error) {
 	var orders []model.Order
 	query := r.db.Where("is_settled = ? AND is_voided = ?", false, false)
 	if storeType != "" {
@@ -122,6 +123,9 @@ func (r *OrderRepository) FindUnsettledOrders(storeType, terminalID string) ([]m
 	}
 	if terminalID != "" {
 		query = query.Where("terminal_id = ?", terminalID)
+	}
+	if forUpdate {
+		query = query.Clauses(clause.Locking{Strength: "UPDATE"})
 	}
 	if err := query.Find(&orders).Error; err != nil {
 		return nil, err

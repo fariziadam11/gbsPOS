@@ -50,7 +50,11 @@ func (h *CMSHandler) UploadAd(c *gin.Context) {
 	if len(storeTypes) == 0 {
 		storeTypes = []string{"RETAIL"}
 	}
-	playlistOrder := service.ParseInt(c.PostForm("playlistOrder"))
+	playlistOrder, err := service.ParseInt(c.PostForm("playlistOrder"))
+	if err != nil {
+		c.JSON(http.StatusUnprocessableEntity, response.ValidationError(err.Error(), nil))
+		return
+	}
 	startDate := service.ParseDatePointer(c.PostForm("startDate"))
 	endDate := service.ParseDatePointer(c.PostForm("endDate"))
 	startTime := service.ParseTimePointer(c.PostForm("startTime"))

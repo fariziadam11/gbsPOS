@@ -50,7 +50,7 @@ func (s *SettlementService) Settle(settlementID string, timestamp int64, storeTy
 		txOrderRepo := s.orderRepo.WithTx(tx)
 		txSettlementRepo := s.settlementRepo.WithTx(tx)
 
-		orders, err := txOrderRepo.FindUnsettledOrders(storeType, terminalID)
+		orders, err := txOrderRepo.FindUnsettledOrders(storeType, terminalID, true)
 		if err != nil {
 			return err
 		}

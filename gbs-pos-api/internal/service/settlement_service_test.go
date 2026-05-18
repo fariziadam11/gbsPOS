@@ -54,7 +54,7 @@ func TestSettlementService_Settle(t *testing.T) {
 	assert.Equal(t, "SUCCESS", settlement.Status)
 
 	// Verify orders are marked settled
-	orders, _ := orderRepo.FindUnsettledOrders("RETAIL", "")
+	orders, _ := orderRepo.FindUnsettledOrders("RETAIL", "", false)
 	assert.Len(t, orders, 0)
 }
 

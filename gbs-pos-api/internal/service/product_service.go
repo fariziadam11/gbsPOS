@@ -30,11 +30,19 @@ func (s *ProductService) Update(id uint, updates *model.Product) (*model.Product
 	if err != nil {
 		return nil, err
 	}
-	product.Name = updates.Name
-	product.Price = updates.Price
-	product.Category = updates.Category
+	if updates.Name != "" {
+		product.Name = updates.Name
+	}
+	if updates.Price >= 0 {
+		product.Price = updates.Price
+	}
+	if updates.Category != "" {
+		product.Category = updates.Category
+	}
 	product.ImageURL = updates.ImageURL
-	product.StoreType = updates.StoreType
+	if updates.StoreType != "" {
+		product.StoreType = updates.StoreType
+	}
 	if err := s.repo.Update(product); err != nil {
 		return nil, err
 	}

@@ -120,6 +120,10 @@ func (h *OrderHandler) Create(c *gin.Context) {
 		PosMessageID:  req.PosMessageID,
 		BankName:      req.BankName,
 	}
+	if err := service.ValidateOrder(newOrder); err != nil {
+		c.JSON(http.StatusUnprocessableEntity, response.ValidationError(err.Error(), nil))
+		return
+	}
 	result, idempotent, err := h.orderService.Create(newOrder)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, response.Error("INTERNAL_SERVER_ERROR", err.Error()))
