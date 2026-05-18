@@ -7,7 +7,7 @@ import (
 	"time"
 	"gbs-pos-api/internal/model"
 	"gbs-pos-api/internal/service"
-	"gbs-pos-api/pkg/response"
+	"gbs-common/pkg/response"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )

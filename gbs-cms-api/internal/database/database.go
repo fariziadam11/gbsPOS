@@ -6,6 +6,9 @@ import (
 	"os"
 	"time"
 
+	"github.com/golang-migrate/migrate/v4"
+	_ "github.com/golang-migrate/migrate/v4/database/postgres"
+	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -49,6 +52,23 @@ func Connect(databaseURL string, logLevel string) (*gorm.DB, error) {
 	sqlDB.SetConnMaxLifetime(time.Hour)
 
 	return db, nil
+}
+
+func RunMigrations(databaseURL string, migrationsPath string) error {
+	if migrationsPath == "" {
+		return fmt.Errorf("migrations path not set")
+	}
+	m, err := migrate.New(
+		"file://"+migrationsPath,
+		databaseURL,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to create migration instance: %w", err)
+	}
+	if err := m.Up(); err != nil && err != migrate.ErrNoChange {
+		return fmt.Errorf("failed to run migrations: %w", err)
+	}
+	return nil
 }
 
 func Migrate(db *gorm.DB, models ...interface{}) error {

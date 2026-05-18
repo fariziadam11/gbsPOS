@@ -5,11 +5,10 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"testing"
 
 	"gbs-pos-api/internal/database"
-	"gbs-pos-api/internal/middleware"
+	"gbs-common/middleware"
 	"gbs-pos-api/internal/model"
 	"gbs-pos-api/internal/repository"
 	"gbs-pos-api/internal/service"
@@ -25,8 +24,8 @@ func setupHandlerTest(t *testing.T) (*gin.Engine, *service.AuthService, *service
 	db, err := database.NewTestDB()
 	require.NoError(t, err)
 
-	os.Setenv("JWT_SECRET", "test-secret-key-minimum-32-characters")
-	os.Setenv("JWT_EXPIRY_HOURS", "24")
+	jwtSecret := "test-secret-key-minimum-32-characters"
+	jwtExpiry := 24
 
 	// Seed users
 	hash, _ := bcrypt.GenerateFromPassword([]byte("admin123"), bcrypt.DefaultCost)
@@ -39,7 +38,7 @@ func setupHandlerTest(t *testing.T) (*gin.Engine, *service.AuthService, *service
 	settlementRepo := repository.NewSettlementRepository(db)
 	productRepo := repository.NewProductRepository(db)
 
-	authSvc := service.NewAuthService(userRepo)
+	authSvc := service.NewAuthService(userRepo, jwtSecret, jwtExpiry)
 	orderSvc := service.NewOrderService(orderRepo)
 	settlementSvc := service.NewSettlementService(orderRepo, settlementRepo)
 	productSvc := service.NewProductService(productRepo)
@@ -53,7 +52,7 @@ func setupHandlerTest(t *testing.T) (*gin.Engine, *service.AuthService, *service
 	v1 := r.Group("/v1")
 	{
 		v1.POST("/login", authH.Login)
-		auth := v1.Group("", middleware.AuthMiddleware())
+		auth := v1.Group("", middleware.NewAuthMiddleware(jwtSecret))
 		{
 			auth.GET("/products", productH.List)
 			auth.POST("/products", middleware.RequireRole("ADMIN"), productH.Create)

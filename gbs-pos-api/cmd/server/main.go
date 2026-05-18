@@ -4,16 +4,14 @@ import (
 	"context"
 	"log"
 	"net/http"
-	"os"
 	"os/signal"
-	"strconv"
 	"syscall"
 	"time"
 
 	"gbs-pos-api/internal/config"
 	"gbs-pos-api/internal/database"
 	"gbs-pos-api/internal/handler"
-	"gbs-pos-api/internal/middleware"
+	"gbs-common/middleware"
 	"gbs-pos-api/internal/model"
 	"gbs-pos-api/internal/repository"
 	"gbs-pos-api/internal/service"
@@ -29,9 +27,6 @@ func main() {
 		log.Fatal("failed to load config: ", err)
 	}
 
-	os.Setenv("JWT_SECRET", cfg.JWTSecret)
-	os.Setenv("JWT_EXPIRY_HOURS", strconv.Itoa(cfg.JWTExpiryHours))
-
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 	level, _ := zerolog.ParseLevel(cfg.LogLevel)
 	zerolog.SetGlobalLevel(level)
@@ -41,14 +36,20 @@ func main() {
 		log.Fatal("failed to connect database: ", err)
 	}
 
-	if err := database.Migrate(db,
-		&model.User{},
-		&model.Product{},
-		&model.Order{},
-		&model.OrderItem{},
-		&model.Settlement{},
-	); err != nil {
-		log.Fatal("failed to migrate database: ", err)
+	if cfg.MigrationsPath != "" {
+		if err := database.RunMigrations(cfg.DatabaseURL, cfg.MigrationsPath); err != nil {
+			log.Fatal("failed to run migrations: ", err)
+		}
+	} else {
+		if err := database.Migrate(db,
+			&model.User{},
+			&model.Product{},
+			&model.Order{},
+			&model.OrderItem{},
+			&model.Settlement{},
+		); err != nil {
+			log.Fatal("failed to migrate database: ", err)
+		}
 	}
 
 	seedData(db)
@@ -58,7 +59,7 @@ func main() {
 	orderRepo := repository.NewOrderRepository(db)
 	settlementRepo := repository.NewSettlementRepository(db)
 
-	authService := service.NewAuthService(userRepo)
+	authService := service.NewAuthService(userRepo, cfg.JWTSecret, cfg.JWTExpiryHours)
 	productService := service.NewProductService(productRepo)
 	orderService := service.NewOrderService(orderRepo)
 	settlementService := service.NewSettlementService(orderRepo, settlementRepo)
@@ -73,6 +74,7 @@ func main() {
 	}
 
 	r := gin.New()
+	r.MaxMultipartMemory = 32 << 20 // 32 MB
 	r.Use(middleware.LoggerMiddleware())
 	r.Use(gin.Recovery())
 	r.Use(middleware.CORSMiddleware())
@@ -81,7 +83,7 @@ func main() {
 	{
 		v1.POST("/login", authHandler.Login)
 
-		auth := v1.Group("", middleware.AuthMiddleware())
+		auth := v1.Group("", middleware.NewAuthMiddleware(cfg.JWTSecret))
 		{
 			auth.GET("/products", productHandler.List)
 			auth.POST("/products", middleware.RequireRole("ADMIN"), productHandler.Create)

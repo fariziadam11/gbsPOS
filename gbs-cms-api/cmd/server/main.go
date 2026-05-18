@@ -4,16 +4,14 @@ import (
 	"context"
 	"log"
 	"net/http"
-	"os"
 	"os/signal"
-	"strconv"
 	"syscall"
 	"time"
 
 	"gbs-cms-api/internal/config"
 	"gbs-cms-api/internal/database"
 	"gbs-cms-api/internal/handler"
-	"gbs-cms-api/internal/middleware"
+	"gbs-common/middleware"
 	"gbs-cms-api/internal/model"
 	"gbs-cms-api/internal/repository"
 	"gbs-cms-api/internal/service"
@@ -29,9 +27,6 @@ func main() {
 		log.Fatal("failed to load config: ", err)
 	}
 
-	os.Setenv("JWT_SECRET", cfg.JWTSecret)
-	os.Setenv("JWT_EXPIRY_HOURS", strconv.Itoa(cfg.JWTExpiryHours))
-
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 	level, _ := zerolog.ParseLevel(cfg.LogLevel)
 	zerolog.SetGlobalLevel(level)
@@ -41,12 +36,18 @@ func main() {
 		log.Fatal("failed to connect database: ", err)
 	}
 
-	if err := database.Migrate(db,
-		&model.User{},
-		&model.Ad{},
-		&model.AdPlayLog{},
-	); err != nil {
-		log.Fatal("failed to migrate database: ", err)
+	if cfg.MigrationsPath != "" {
+		if err := database.RunMigrations(cfg.DatabaseURL, cfg.MigrationsPath); err != nil {
+			log.Fatal("failed to run migrations: ", err)
+		}
+	} else {
+		if err := database.Migrate(db,
+			&model.User{},
+			&model.Ad{},
+			&model.AdPlayLog{},
+		); err != nil {
+			log.Fatal("failed to migrate database: ", err)
+		}
 	}
 
 	seedData(db)
@@ -55,7 +56,7 @@ func main() {
 	playLogRepo := repository.NewAdPlayLogRepository(db)
 	userRepo := repository.NewUserRepository(db)
 
-	authService := service.NewAuthService(userRepo)
+	authService := service.NewAuthService(userRepo, cfg.JWTSecret, cfg.JWTExpiryHours)
 	cmsService := service.NewCMSService(adRepo, playLogRepo, cfg.UploadDir)
 
 	authHandler := handler.NewAuthHandler(authService)
@@ -66,6 +67,7 @@ func main() {
 	}
 
 	r := gin.New()
+	r.MaxMultipartMemory = 32 << 20 // 32 MB
 	r.Use(middleware.LoggerMiddleware())
 	r.Use(gin.Recovery())
 	r.Use(middleware.CORSMiddleware())
@@ -74,7 +76,7 @@ func main() {
 	{
 		v1.POST("/login", authHandler.Login)
 
-		auth := v1.Group("", middleware.AuthMiddleware())
+		auth := v1.Group("", middleware.NewAuthMiddleware(cfg.JWTSecret))
 		{
 			auth.POST("/ads/upload", middleware.RequireRole("ADMIN"), cmsHandler.UploadAd)
 			auth.GET("/ads", middleware.RequireRole("ADMIN"), cmsHandler.ListAds)

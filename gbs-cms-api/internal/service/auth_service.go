@@ -3,8 +3,6 @@ package service
 import (
 	"errors"
 	"fmt"
-	"os"
-	"strconv"
 	"time"
 	"gbs-cms-api/internal/model"
 	"gbs-cms-api/internal/repository"
@@ -14,11 +12,16 @@ import (
 )
 
 type AuthService struct {
-	userRepo *repository.UserRepository
+	userRepo       *repository.UserRepository
+	jwtSecret      []byte
+	jwtExpiryHours int
 }
 
-func NewAuthService(userRepo *repository.UserRepository) *AuthService {
-	return &AuthService{userRepo: userRepo}
+func NewAuthService(userRepo *repository.UserRepository, jwtSecret string, jwtExpiryHours int) *AuthService {
+	if jwtExpiryHours == 0 {
+		jwtExpiryHours = 24
+	}
+	return &AuthService{userRepo: userRepo, jwtSecret: []byte(jwtSecret), jwtExpiryHours: jwtExpiryHours}
 }
 
 type LoginResult struct {
@@ -37,18 +40,14 @@ func (s *AuthService) Login(username, password string) (*LoginResult, error) {
 	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password)); err != nil {
 		return nil, fmt.Errorf("INVALID_CREDENTIALS")
 	}
-	expiryHours, _ := strconv.Atoi(os.Getenv("JWT_EXPIRY_HOURS"))
-	if expiryHours == 0 {
-		expiryHours = 24
-	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"sub":      user.ID,
 		"username": user.Username,
 		"role":     user.Role,
 		"iat":      time.Now().Unix(),
-		"exp":      time.Now().Add(time.Duration(expiryHours) * time.Hour).Unix(),
+		"exp":      time.Now().Add(time.Duration(s.jwtExpiryHours) * time.Hour).Unix(),
 	})
-	tokenString, err := token.SignedString([]byte(os.Getenv("JWT_SECRET")))
+	tokenString, err := token.SignedString(s.jwtSecret)
 	if err != nil {
 		return nil, err
 	}

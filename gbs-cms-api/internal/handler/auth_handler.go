@@ -3,7 +3,7 @@ package handler
 import (
 	"net/http"
 	"gbs-cms-api/internal/service"
-	"gbs-cms-api/pkg/response"
+	"gbs-common/pkg/response"
 	"github.com/gin-gonic/gin"
 )
 
