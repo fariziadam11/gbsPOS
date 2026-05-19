@@ -1,6 +1,6 @@
 module gbs-pos-api
 
-go 1.25.0
+go 1.26.1
 
 replace gbs-common => ../gbs-common
 

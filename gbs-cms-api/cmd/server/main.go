@@ -42,7 +42,6 @@ func main() {
 		}
 	} else {
 		if err := database.Migrate(db,
-			&model.User{},
 			&model.Ad{},
 			&model.AdPlayLog{},
 		); err != nil {

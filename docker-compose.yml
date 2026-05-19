@@ -1,16 +1,14 @@
-version: '3.8'
-
 services:
   pos-api:
     build:
-      context: ./gbs-pos-api
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./gbs-pos-api/Dockerfile
     ports:
       - "8080:8080"
     environment:
-      - DATABASE_URL=postgres://gbspos:gbspos_secret@postgres:5432/gbs_pos?sslmode=disable
+      - DATABASE_URL=postgres://postgres:123@postgres:5432/gbs_pos?sslmode=disable
       - MIGRATIONS_PATH=/root/migrations
-      - JWT_SECRET=your-super-secret-jwt-key-minimum-32-characters
+      - JWT_SECRET=872417e0370c7bb5705b380b2a4efe03af542dff46f682cc5b6a6e3366200fcb
       - PORT=8080
       - ENV=production
       - LOG_LEVEL=info
@@ -23,14 +21,13 @@ services:
 
   cms-api:
     build:
-      context: ./gbs-cms-api
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./gbs-cms-api/Dockerfile
     ports:
       - "8081:8081"
     environment:
-      - DATABASE_URL=postgres://gbspos:gbspos_secret@postgres:5432/gbs_pos?sslmode=disable
-      - MIGRATIONS_PATH=/root/migrations
-      - JWT_SECRET=your-super-secret-jwt-key-minimum-32-characters
+      - DATABASE_URL=postgres://postgres:123@postgres:5432/gbs_pos?sslmode=disable
+      - JWT_SECRET=872417e0370c7bb5705b380b2a4efe03af542dff46f682cc5b6a6e3366200fcb
       - PORT=8081
       - ENV=production
       - LOG_LEVEL=info
@@ -46,14 +43,14 @@ services:
     image: postgres:15-alpine
     environment:
       - POSTGRES_DB=gbs_pos
-      - POSTGRES_USER=gbspos
-      - POSTGRES_PASSWORD=gbspos_secret
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=123
     volumes:
       - pgdata:/var/lib/postgresql/data
     ports:
-      - "5432:5432"
+      - "5433:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U gbspos"]
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 5s
       timeout: 5s
       retries: 5
