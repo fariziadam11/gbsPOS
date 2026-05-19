@@ -12,6 +12,7 @@ RUN apk --no-cache add ca-certificates tzdata
 
 WORKDIR /root/
 COPY --from=builder /gbs-cms-api .
+COPY --from=builder /app/migrations ./migrations
 
 EXPOSE 8081
 CMD ["./gbs-cms-api"]

@@ -9,6 +9,7 @@ services:
       - "8080:8080"
     environment:
       - DATABASE_URL=postgres://gbspos:gbspos_secret@postgres:5432/gbs_pos?sslmode=disable
+      - MIGRATIONS_PATH=/root/migrations
       - JWT_SECRET=your-super-secret-jwt-key-minimum-32-characters
       - PORT=8080
       - ENV=production
@@ -28,6 +29,7 @@ services:
       - "8081:8081"
     environment:
       - DATABASE_URL=postgres://gbspos:gbspos_secret@postgres:5432/gbs_pos?sslmode=disable
+      - MIGRATIONS_PATH=/root/migrations
       - JWT_SECRET=your-super-secret-jwt-key-minimum-32-characters
       - PORT=8081
       - ENV=production
