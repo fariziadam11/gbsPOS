@@ -3,6 +3,7 @@ package repository
 import (
 	"errors"
 	"gbs-pos-api/internal/model"
+
 	"gorm.io/gorm"
 )
 

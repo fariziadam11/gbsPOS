@@ -3,25 +3,34 @@ package service
 import (
 	"errors"
 	"fmt"
-	"time"
 	"gbs-pos-api/internal/model"
 	"gbs-pos-api/internal/repository"
+	"time"
+
 	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
 
 type AuthService struct {
-	userRepo      *repository.UserRepository
-	jwtSecret     []byte
+	userRepo       *repository.UserRepository
+	jwtSecret      []byte
 	jwtExpiryHours int
 }
 
-func NewAuthService(userRepo *repository.UserRepository, jwtSecret string, jwtExpiryHours int) *AuthService {
+func NewAuthService(
+	userRepo *repository.UserRepository,
+	jwtSecret string,
+	jwtExpiryHours int,
+) *AuthService {
 	if jwtExpiryHours == 0 {
 		jwtExpiryHours = 24
 	}
-	return &AuthService{userRepo: userRepo, jwtSecret: []byte(jwtSecret), jwtExpiryHours: jwtExpiryHours}
+	return &AuthService{
+		userRepo:       userRepo,
+		jwtSecret:      []byte(jwtSecret),
+		jwtExpiryHours: jwtExpiryHours,
+	}
 }
 
 type LoginResult struct {

@@ -2,6 +2,7 @@ package repository
 
 import (
 	"gbs-pos-api/internal/model"
+
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
@@ -27,7 +28,12 @@ func (r *OrderRepository) Transaction(fn func(tx *gorm.DB) error) error {
 	return r.db.Transaction(fn)
 }
 
-func (r *OrderRepository) FindAll(storeType string, startDate, endDate int64, isVoided, isSettled *bool, paymentMethod, terminalID string) ([]model.Order, error) {
+func (r *OrderRepository) FindAll(
+	storeType string,
+	startDate, endDate int64,
+	isVoided, isSettled *bool,
+	paymentMethod, terminalID string,
+) ([]model.Order, error) {
 	var orders []model.Order
 	query := r.db.Order("timestamp DESC")
 	if storeType != "" {
@@ -81,7 +87,9 @@ func (r *OrderRepository) UpdateVoid(order *model.Order) error {
 	return r.db.Save(order).Error
 }
 
-func (r *OrderRepository) FindUnsettledSummary(storeType, terminalID string) (count int, total float64, summary map[string]PaymentSummary, err error) {
+func (r *OrderRepository) FindUnsettledSummary(
+	storeType, terminalID string,
+) (count int, total float64, summary map[string]PaymentSummary, err error) {
 	type result struct {
 		PaymentMethod string
 		Count         int
@@ -115,7 +123,10 @@ func (r *OrderRepository) FindUnsettledSummary(storeType, terminalID string) (co
 	return count, total, summary, nil
 }
 
-func (r *OrderRepository) FindUnsettledOrders(storeType, terminalID string, forUpdate bool) ([]model.Order, error) {
+func (r *OrderRepository) FindUnsettledOrders(
+	storeType, terminalID string,
+	forUpdate bool,
+) ([]model.Order, error) {
 	var orders []model.Order
 	query := r.db.Where("is_settled = ? AND is_voided = ?", false, false)
 	if storeType != "" {

@@ -2,14 +2,14 @@ package service
 
 import (
 	"fmt"
+	"gbs-cms-api/internal/model"
+	"gbs-cms-api/internal/repository"
 	"io"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
-	"gbs-cms-api/internal/model"
-	"gbs-cms-api/internal/repository"
 )
 
 type CMSService struct {
@@ -18,7 +18,11 @@ type CMSService struct {
 	uploadDir   string
 }
 
-func NewCMSService(adRepo *repository.AdRepository, playLogRepo *repository.AdPlayLogRepository, uploadDir string) *CMSService {
+func NewCMSService(
+	adRepo *repository.AdRepository,
+	playLogRepo *repository.AdPlayLogRepository,
+	uploadDir string,
+) *CMSService {
 	return &CMSService{adRepo: adRepo, playLogRepo: playLogRepo, uploadDir: uploadDir}
 }
 
@@ -68,7 +72,14 @@ func validateSchedule(startDate, endDate *time.Time) error {
 	return nil
 }
 
-func (s *CMSService) CreateAd(name, filename, mimeType string, fileSize int64, storeTypes []string, playlistOrder int, startDate, endDate, startTime, endTime *time.Time, createdBy uint) (*model.Ad, error) {
+func (s *CMSService) CreateAd(
+	name, filename, mimeType string,
+	fileSize int64,
+	storeTypes []string,
+	playlistOrder int,
+	startDate, endDate, startTime, endTime *time.Time,
+	createdBy uint,
+) (*model.Ad, error) {
 	baseName := strings.TrimSuffix(filepath.Base(filename), filepath.Ext(filename))
 	newFilename := fmt.Sprintf("%s_%d%s", baseName, time.Now().UnixMilli(), filepath.Ext(filename))
 	storagePath := filepath.Join(s.uploadDir, newFilename)

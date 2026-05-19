@@ -7,6 +7,7 @@ import (
 	"gbs-pos-api/internal/database"
 	"gbs-pos-api/internal/model"
 	"gbs-pos-api/internal/repository"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"
@@ -128,8 +129,24 @@ func TestOrderService_BulkCreate(t *testing.T) {
 	svc, _ := setupOrderTest(t)
 
 	orders := []model.Order{
-		{ID: "ORDER-001", Subtotal: 10000, Tax: 1000, Total: 11000, PaymentMethod: "CASH", Timestamp: time.Now().UnixMilli(), StoreType: "RETAIL"},
-		{ID: "ORDER-002", Subtotal: 20000, Tax: 2000, Total: 22000, PaymentMethod: "CARD", Timestamp: time.Now().UnixMilli(), StoreType: "RETAIL"},
+		{
+			ID:            "ORDER-001",
+			Subtotal:      10000,
+			Tax:           1000,
+			Total:         11000,
+			PaymentMethod: "CASH",
+			Timestamp:     time.Now().UnixMilli(),
+			StoreType:     "RETAIL",
+		},
+		{
+			ID:            "ORDER-002",
+			Subtotal:      20000,
+			Tax:           2000,
+			Total:         22000,
+			PaymentMethod: "CARD",
+			Timestamp:     time.Now().UnixMilli(),
+			StoreType:     "RETAIL",
+		},
 	}
 
 	result, err := svc.BulkCreate(orders)
@@ -145,8 +162,24 @@ func TestOrderService_BulkCreate_Idempotent(t *testing.T) {
 	createTestOrder(db, "ORDER-001", "CASH", false, false)
 
 	orders := []model.Order{
-		{ID: "ORDER-001", Subtotal: 10000, Tax: 1000, Total: 11000, PaymentMethod: "CASH", Timestamp: time.Now().UnixMilli(), StoreType: "RETAIL"},
-		{ID: "ORDER-002", Subtotal: 20000, Tax: 2000, Total: 22000, PaymentMethod: "CARD", Timestamp: time.Now().UnixMilli(), StoreType: "RETAIL"},
+		{
+			ID:            "ORDER-001",
+			Subtotal:      10000,
+			Tax:           1000,
+			Total:         11000,
+			PaymentMethod: "CASH",
+			Timestamp:     time.Now().UnixMilli(),
+			StoreType:     "RETAIL",
+		},
+		{
+			ID:            "ORDER-002",
+			Subtotal:      20000,
+			Tax:           2000,
+			Total:         22000,
+			PaymentMethod: "CARD",
+			Timestamp:     time.Now().UnixMilli(),
+			StoreType:     "RETAIL",
+		},
 	}
 
 	result, err := svc.BulkCreate(orders)

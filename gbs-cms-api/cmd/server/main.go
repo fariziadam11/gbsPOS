@@ -11,10 +11,10 @@ import (
 	"gbs-cms-api/internal/config"
 	"gbs-cms-api/internal/database"
 	"gbs-cms-api/internal/handler"
-	"gbs-common/middleware"
 	"gbs-cms-api/internal/model"
 	"gbs-cms-api/internal/repository"
 	"gbs-cms-api/internal/service"
+	"gbs-common/middleware"
 
 	"github.com/gin-gonic/gin"
 	"github.com/rs/zerolog"
@@ -127,8 +127,18 @@ func seedData(db *gorm.DB) {
 	}
 	log.Println("CMS seeding data...")
 	users := []model.User{
-		{Username: "admin", PasswordHash: "$2a$10$uIjrPVsZtsoK01VHa6VC8e0t3O62BpTnF/YomtOLAN0BF087eAah2", Name: "Admin User", Role: "ADMIN"},
-		{Username: "cashier", PasswordHash: "$2a$10$7OgCWELW2gl7lL/dAmzFkeJVf540NN4ZboNCJYawE6to/b.Z5s/G2", Name: "Cashier User", Role: "CASHIER"},
+		{
+			Username:     "admin",
+			PasswordHash: "$2a$10$uIjrPVsZtsoK01VHa6VC8e0t3O62BpTnF/YomtOLAN0BF087eAah2",
+			Name:         "Admin User",
+			Role:         "ADMIN",
+		},
+		{
+			Username:     "cashier",
+			PasswordHash: "$2a$10$7OgCWELW2gl7lL/dAmzFkeJVf540NN4ZboNCJYawE6to/b.Z5s/G2",
+			Name:         "Cashier User",
+			Role:         "CASHIER",
+		},
 	}
 	for _, u := range users {
 		db.Create(&u)
