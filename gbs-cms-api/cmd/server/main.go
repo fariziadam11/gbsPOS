@@ -42,14 +42,14 @@ func main() {
 		}
 	} else {
 		if err := database.Migrate(db,
-			&model.Ad{},
-			&model.AdPlayLog{},
+			// &model.Ad{},
+			// &model.AdPlayLog{},
 		); err != nil {
 			log.Fatal("failed to migrate database: ", err)
 		}
 	}
 
-	seedData(db)
+	// seedData(db)
 
 	adRepo := repository.NewAdRepository(db)
 	playLogRepo := repository.NewAdPlayLogRepository(db)
