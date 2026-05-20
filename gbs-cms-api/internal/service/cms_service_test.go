@@ -155,7 +155,8 @@ func TestCMSService_GetActivePlaylist(t *testing.T) {
 		IsActive:    false,
 		CreatedBy:   1,
 	}
-	db.Select("is_active").Create(inactive)
+	require.NoError(t, db.Create(inactive).Error)
+	require.NoError(t, db.Model(inactive).UpdateColumn("is_active", false).Error)
 
 	playlist, err := svc.GetActivePlaylist("RETAIL")
 	require.NoError(t, err)
