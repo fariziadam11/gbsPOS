@@ -2,6 +2,7 @@ package service
 
 import (
 	"fmt"
+	"gbs-pos-api/internal/dto"
 	"gbs-pos-api/internal/model"
 	"gbs-pos-api/internal/repository"
 	"time"
@@ -21,29 +22,18 @@ func NewSettlementService(
 	return &SettlementService{orderRepo: orderRepo, settlementRepo: settlementRepo}
 }
 
-type UnsettledSummary struct {
-	Count          int                             `json:"count"`
-	Total          float64                         `json:"total"`
-	PaymentSummary map[string]PaymentMethodSummary `json:"paymentSummary"`
-}
-
-type PaymentMethodSummary struct {
-	Count int     `json:"count"`
-	Total float64 `json:"total"`
-}
-
 func (s *SettlementService) GetUnsettledSummary(
 	storeType, terminalID string,
-) (*UnsettledSummary, error) {
+) (*dto.UnsettledSummary, error) {
 	count, total, summary, err := s.orderRepo.FindUnsettledSummary(storeType, terminalID)
 	if err != nil {
 		return nil, err
 	}
-	paymentSummary := make(map[string]PaymentMethodSummary)
+	paymentSummary := make(map[string]dto.PaymentMethodSummary)
 	for k, v := range summary {
-		paymentSummary[k] = PaymentMethodSummary{Count: v.Count, Total: v.Total}
+		paymentSummary[k] = dto.PaymentMethodSummary{Count: v.Count, Total: v.Total}
 	}
-	return &UnsettledSummary{
+	return &dto.UnsettledSummary{
 		Count:          count,
 		Total:          total,
 		PaymentSummary: paymentSummary,

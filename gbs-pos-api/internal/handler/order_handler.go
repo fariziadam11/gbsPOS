@@ -3,6 +3,7 @@ package handler
 import (
 	"errors"
 	"gbs-common/pkg/response"
+	"gbs-pos-api/internal/dto"
 	"gbs-pos-api/internal/model"
 	"gbs-pos-api/internal/service"
 	"net/http"
@@ -73,33 +74,8 @@ func (h *OrderHandler) Get(c *gin.Context) {
 }
 
 func (h *OrderHandler) Create(c *gin.Context) {
-	var req struct {
-		ID    string `json:"id" binding:"required"`
-		Items []struct {
-			ProductID    int     `json:"productId" binding:"required"`
-			ProductName  string  `json:"productName" binding:"required"`
-			ProductPrice float64 `json:"productPrice" binding:"required"`
-			Qty          int     `json:"qty" binding:"required"`
-			Subtotal     float64 `json:"subtotal" binding:"required"`
-		} `json:"items" binding:"required"`
-		Subtotal      float64  `json:"subtotal" binding:"required"`
-		Tax           float64  `json:"tax" binding:"required"`
-		Total         float64  `json:"total" binding:"required"`
-		PaymentMethod string   `json:"paymentMethod" binding:"required"`
-		CashReceived  *float64 `json:"cashReceived"`
-		ChangeAmount  *float64 `json:"changeAmount"`
-		Timestamp     int64    `json:"timestamp" binding:"required"`
-		StoreType     string   `json:"storeType"`
-		TerminalID    string   `json:"terminalId"`
-		TransactionID string   `json:"transactionId"`
-		ApprovalCode  string   `json:"approvalCode"`
-		EntryMode     string   `json:"entryMode"`
-		MaskedAccount string   `json:"maskedAccount"`
-		AcqMid        string   `json:"acqMid"`
-		AcqTid        string   `json:"acqTid"`
-		PosMessageID  string   `json:"posMessageId"`
-		BankName      string   `json:"bankName"`
-	}
+	var req dto.CreateOrderRequest
+	
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(
 			http.StatusUnprocessableEntity,
@@ -156,9 +132,8 @@ func (h *OrderHandler) Create(c *gin.Context) {
 
 func (h *OrderHandler) Void(c *gin.Context) {
 	id := c.Param("id")
-	var req struct {
-		Reason string `json:"reason"`
-	}
+	var req dto.VoidOrderRequest
+
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(
 			http.StatusUnprocessableEntity,
@@ -208,10 +183,8 @@ func (h *OrderHandler) UnsettledSummary(c *gin.Context) {
 }
 
 func (h *OrderHandler) BulkSync(c *gin.Context) {
-	var req struct {
-		TerminalID string        `json:"terminalId"`
-		Orders     []model.Order `json:"orders" binding:"required"`
-	}
+	var req dto.BulkSyncOrderRequest
+	
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(
 			http.StatusUnprocessableEntity,
@@ -233,12 +206,8 @@ func (h *OrderHandler) BulkSync(c *gin.Context) {
 }
 
 func (h *OrderHandler) Settle(c *gin.Context) {
-	var req struct {
-		SettlementID string `json:"settlementId" binding:"required"`
-		Timestamp    int64  `json:"timestamp" binding:"required"`
-		StoreType    string `json:"storeType"`
-		TerminalID   string `json:"terminalId"`
-	}
+	var req dto.SettleOrderRequest
+
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(
 			http.StatusUnprocessableEntity,

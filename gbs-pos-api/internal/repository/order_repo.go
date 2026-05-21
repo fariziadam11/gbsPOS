@@ -1,16 +1,12 @@
 package repository
 
 import (
+	"gbs-pos-api/internal/dto"
 	"gbs-pos-api/internal/model"
 
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
-
-type PaymentSummary struct {
-	Count int
-	Total float64
-}
 
 type OrderRepository struct {
 	db *gorm.DB
@@ -89,13 +85,9 @@ func (r *OrderRepository) UpdateVoid(order *model.Order) error {
 
 func (r *OrderRepository) FindUnsettledSummary(
 	storeType, terminalID string,
-) (count int, total float64, summary map[string]PaymentSummary, err error) {
-	type result struct {
-		PaymentMethod string
-		Count         int
-		Total         float64
-	}
-	var results []result
+) (count int, total float64, summary map[string]dto.PaymentSummary, err error) {
+	var results []dto.PaymentMethodQueryResult
+
 	query := r.db.Model(&model.Order{}).
 		Select("payment_method, COUNT(*) as count, SUM(total) as total").
 		Where("is_settled = ? AND is_voided = ?", false, false)
@@ -109,15 +101,15 @@ func (r *OrderRepository) FindUnsettledSummary(
 		return 0, 0, nil, err
 	}
 
-	summary = make(map[string]PaymentSummary)
+	summary = make(map[string]dto.PaymentSummary)
 	for _, res := range results {
 		count += res.Count
 		total += res.Total
-		summary[res.PaymentMethod] = PaymentSummary{Count: res.Count, Total: res.Total}
+		summary[res.PaymentMethod] = dto.PaymentSummary{Count: res.Count, Total: res.Total}
 	}
 	for _, pm := range []string{"CASH", "CARD", "QRIS"} {
 		if _, ok := summary[pm]; !ok {
-			summary[pm] = PaymentSummary{Count: 0, Total: 0}
+			summary[pm] = dto.PaymentSummary{Count: 0, Total: 0}
 		}
 	}
 	return count, total, summary, nil
@@ -128,6 +120,7 @@ func (r *OrderRepository) FindUnsettledOrders(
 	forUpdate bool,
 ) ([]model.Order, error) {
 	var orders []model.Order
+
 	query := r.db.Where("is_settled = ? AND is_voided = ?", false, false)
 	if storeType != "" {
 		query = query.Where("store_type = ?", storeType)

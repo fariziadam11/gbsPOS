@@ -2,6 +2,7 @@ package handler
 
 import (
 	"gbs-common/pkg/response"
+	"gbs-pos-api/internal/dto"
 	"gbs-pos-api/internal/service"
 	"net/http"
 
@@ -16,13 +17,13 @@ func NewAuthHandler(authService *service.AuthService) *AuthHandler {
 	return &AuthHandler{authService: authService}
 }
 
-type LoginRequest struct {
-	Username string `json:"username" binding:"required"`
-	Password string `json:"password" binding:"required"`
-}
+// type LoginRequest struct {
+// 	Username string `json:"username" binding:"required"`
+// 	Password string `json:"password" binding:"required"`
+// }
 
 func (h *AuthHandler) Login(c *gin.Context) {
-	var req LoginRequest
+	var req dto.LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(
 			http.StatusUnprocessableEntity,
