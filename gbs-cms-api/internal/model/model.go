@@ -22,7 +22,7 @@ type Ad struct {
 	DurationSeconds *int       `                                          json:"durationSeconds"`
 	StoreTypes      []string   `gorm:"type:text;serializer:json;not null" json:"storeTypes"`
 	PlaylistOrder   int        `gorm:"not null;default:0"                 json:"playlistOrder"`
-	IsActive        bool       `gorm:"not null;default:true"              json:"isActive"`
+	IsActive        bool       `gorm:"not null;"                          json:"isActive"`
 	StartDate       *time.Time `gorm:"type:date"                          json:"startDate"`
 	EndDate         *time.Time `gorm:"type:date"                          json:"endDate"`
 	StartTime       *time.Time `gorm:"type:time"                          json:"startTime"`
