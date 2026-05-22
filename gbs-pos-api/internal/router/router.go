@@ -8,7 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func Setup(
+func Setup_(
 	cfg *config.Config,
 	authHandler *handler.AuthHandler,
 	productHandler *handler.ProductHandler,
@@ -45,6 +45,43 @@ func Setup(
 			auth.GET("/settlements/:id", settlementHandler.Get)
 		}
 	}
+
+	return r
+}
+
+
+type Handlers struct {
+	Auth       *handler.AuthHandler
+	Product    *handler.ProductHandler
+	Order      *handler.OrderHandler
+	Settlement *handler.SettlementHandler
+}
+
+func Setup(
+	cfg *config.Config,
+	h Handlers,
+) *gin.Engine {
+
+	r := gin.New()
+
+	r.MaxMultipartMemory = 32 << 20
+
+	r.Use(middleware.LoggerMiddleware())
+	r.Use(gin.Recovery())
+	r.Use(middleware.CORSMiddleware())
+
+	v1 := r.Group("/v1")
+
+	setupAuthRoutes(v1, h.Auth)
+
+	auth := v1.Group(
+		"",
+		middleware.NewAuthMiddleware(cfg.JWTSecret),
+	)
+
+	setupProductRoutes(auth, h.Product)
+	setupOrderRoutes(auth, h.Order)
+	setupSettlementRoutes(auth, h.Settlement)
 
 	return r
 }

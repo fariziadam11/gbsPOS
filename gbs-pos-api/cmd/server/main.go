@@ -74,10 +74,12 @@ func main() {
 
 	r := router.Setup(
 		cfg,
-		authHandler,
-		productHandler,
-		orderHandler,
-		settlementHandler,
+		router.Handlers{
+			Auth:       authHandler,
+			Product:    productHandler,
+			Order:      orderHandler,
+			Settlement: settlementHandler,
+		},
 	)
 
 	srv := &http.Server{
