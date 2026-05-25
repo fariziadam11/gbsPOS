@@ -96,3 +96,12 @@ Contents:
 - `Dockerfile` in each API module copies `./migrations` into the image; SQL migrations should live there.
 - The `Ad.StoreTypes` field uses `gorm:"serializer:json"` (stored as JSON text), not PostgreSQL arrays. Query with `store_types LIKE '%RETAIL%'`.
 - `MaxMultipartMemory = 32 << 20` is set on the Gin router. The CMS upload handler separately enforces a 50MB file limit.
+
+## Deployment
+
+- See `DEPLOYMENT.md` for the full production deployment guide (VPS + Docker Compose + Cloudflare Tunnel + GitHub Actions).
+- Both APIs expose `/health` for Docker health checks (no auth required).
+- Production uses `docker-compose.prod.yml` with secrets via `.env`, restart policies, and health checks.
+- Images are built and pushed to GitHub Container Registry (`ghcr.io`) via GitHub Actions on every push to `main`.
+- The `.env` file is auto-loaded by `godotenv` at startup; never commit `.env` to Git.
+- CMS API does **not** have its own migrations directory; POS API migrations create all tables (`users`, `products`, `orders`, `settlements`, `ads`, `ad_play_logs`).
