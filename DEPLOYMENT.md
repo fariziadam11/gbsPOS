@@ -156,21 +156,81 @@ chmod 600 /opt/gbs/.env
 
 ---
 
-## Step 4: Deploy the Stack
+## Step 4: Build Images Locally (Strongly Recommended)
 
-### Option A: First-Time Deploy (Manual — Build Locally)
+Since the VPS may not have enough resources to build Go binaries, build on your **local machine** and push to GitHub Container Registry (GHCR).
 
-On the VPS:
+### 4.1 Create a GitHub Personal Access Token (PAT)
+
+1. Go to GitHub → **Settings** → **Developer settings** → **Personal access tokens** → **Tokens (classic)**
+2. Click **Generate new token (classic)**
+3. Select scopes: `read:packages`, `write:packages`, `delete:packages`
+4. Copy the token (you'll only see it once)
+
+### 4.2 Build and Push from Your Local Machine
+
+On your **development machine** (Windows/macOS/Linux with Docker Desktop):
+
+```bash
+# 1. Go to the repo root
+cd /path/to/your/pos-cms
+
+# 2. Log in to GHCR (use your GitHub username and the PAT as password)
+docker login ghcr.io -u YOUR_GITHUB_USERNAME
+
+# 3. Build POS API image (repo root as context)
+docker build -t ghcr.io/YOUR_GITHUB_USERNAME/gbs-pos-api:latest \
+  -f gbs-pos-api/Dockerfile .
+
+# 4. Build CMS API image
+docker build -t ghcr.io/YOUR_GITHUB_USERNAME/gbs-cms-api:latest \
+  -f gbs-cms-api/Dockerfile .
+
+# 5. Push both images
+docker push ghcr.io/YOUR_GITHUB_USERNAME/gbs-pos-api:latest
+docker push ghcr.io/YOUR_GITHUB_USERNAME/gbs-cms-api:latest
+```
+
+**Note:** Replace `YOUR_GITHUB_USERNAME` with your actual GitHub username.
+
+### 4.3 Make the Package Public (or Grant Access)
+
+By default, GHCR packages are private. To let the VPS pull them without authentication:
+
+1. Go to your GitHub profile → **Packages** → Find `gbs-pos-api`
+2. Click **Package settings** → Under "Danger Zone" → **Change visibility** → **Public**
+3. Do the same for `gbs-cms-api`
+
+Alternatively, keep them private and log in on the VPS (see Troubleshooting).
+
+---
+
+## Step 5: Deploy on the VPS (Pull Only, No Build)
+
+Now the VPS only needs to **pull** and **run** — no compilation needed.
+
+### 5.1 Update .env with your GitHub username
+
+On the VPS, edit `/opt/gbs/.env`:
+
+```bash
+# Add this line
+cat >> /opt/gbs/.env << 'EOF'
+GHCR_OWNER=YOUR_GITHUB_USERNAME
+EOF
+```
+
+### 5.2 Deploy
 
 ```bash
 cd /opt/gbs
 
-# Clone your repo (or use SCP to copy docker-compose.prod.yml)
-git clone https://github.com/YOUR_USERNAME/YOUR_REPO.git .
+# IMPORTANT: copy or symlink the compose file into /opt/gbs
+cp /opt/gbs/gbs-pos-cms-api/docker-compose.prod.yml /opt/gbs/docker-compose.prod.yml
 
-# IMPORTANT: create .env at /opt/gbs/.env (see Step 3 above)
-# Run from repo root so --env-file resolves correctly
-docker compose -f docker-compose.prod.yml --env-file .env up -d --build
+# Pull pre-built images and start
+docker compose -f docker-compose.prod.yml --env-file .env pull
+docker compose -f docker-compose.prod.yml --env-file .env up -d
 
 # Verify
 docker compose -f docker-compose.prod.yml ps
@@ -178,35 +238,19 @@ docker logs -f gbs-pos-api
 docker logs -f gbs-cms-api
 ```
 
-**Note:** First deploy builds images locally because GHCR images don't exist yet. After CI/CD runs (Step 5), future deploys will pull pre-built images.
-
-### Option B: Automated Deploy (GitHub Actions)
-
-After setting up CI/CD (Step 5), update `docker-compose.prod.yml` to use pre-built images:
-
-```yaml
-  pos-api:
-    image: ghcr.io/YOUR_USERNAME/gbs-pos-api:latest
-    # build: ./gbs-pos-api   # comment out or remove
-
-  cms-api:
-    image: ghcr.io/YOUR_USERNAME/gbs-cms-api:latest
-    # build: ./gbs-cms-api   # comment out or remove
-```
-
-Then every push to `main` will auto-deploy.
-
 ---
 
-## Step 5: Set Up GitHub Actions CI/CD
+## Step 6: Set Up GitHub Actions CI/CD (Optional)
 
-### 5.1 Enable GitHub Container Registry
+If you prefer automated builds over local builds, enable GitHub Actions:
+
+### 6.1 Enable GitHub Container Registry
 
 In your repo settings:
 - Go to **Settings** -> **Packages and pages** -> **Package settings**
 - Ensure "Inherit access from source repository" is enabled
 
-### 5.2 Add Repository Secrets
+### 6.2 Add Repository Secrets
 
 Go to **Settings** -> **Secrets and variables** -> **Actions** -> **New repository secret**:
 
@@ -216,7 +260,7 @@ Go to **Settings** -> **Secrets and variables** -> **Actions** -> **New reposito
 | `VPS_USER` | SSH username (e.g., `ubuntu`) |
 | `VPS_SSH_KEY` | Contents of your **private** SSH key (`~/.ssh/id_rsa`) |
 
-### 5.3 CI/CD Workflow
+### 6.3 CI/CD Workflow
 
 The workflow file `.github/workflows/deploy.yml` is already in this repo. It will:
 
@@ -225,7 +269,7 @@ The workflow file `.github/workflows/deploy.yml` is already in this repo. It wil
 3. **Push** — push to `ghcr.io/YOUR_USERNAME/gbs-pos-api:latest` and `ghcr.io/YOUR_USERNAME/gbs-cms-api:latest`
 4. **Deploy** — SSH into the VPS, pull new images, and restart
 
-### 5.4 Trigger a Deploy
+### 6.4 Trigger a Deploy
 
 ```bash
 git push origin main
@@ -235,7 +279,7 @@ Then monitor the run at: `https://github.com/YOUR_USERNAME/YOUR_REPO/actions`
 
 ---
 
-## Step 6: Verify the Deployment
+## Step 7: Verify the Deployment
 
 ### Health Checks
 
@@ -273,7 +317,7 @@ docker exec -it gbs-postgres psql -U gbs_prod -d gbs_pos -c "\dt"
 
 ---
 
-## Step 7: Backup Strategy
+## Step 8: Backup Strategy
 
 Create `/opt/gbs/backup.sh`:
 
@@ -316,7 +360,7 @@ rclone sync /backups/gbs remote:my-backup-bucket/gbs
 
 ---
 
-## Step 8: Monitoring (Optional but Recommended)
+## Step 9: Monitoring (Optional but Recommended)
 
 ### Netdata (Free, Zero-Config)
 
@@ -399,6 +443,7 @@ docker exec gbs-pos-api /app/gbs-pos-api migrate up
 | Video preview not loading | CMS download endpoint 401 | Fixed in `VideoPlayer.vue` — fetches blob via Axios with auth |
 | `migration failed` | Schema conflict | Run `docker exec gbs-postgres psql -U gbs_prod -d gbs_pos` and inspect |
 | Cloudflare 502 error | Tunnel not running | `sudo systemctl status cloudflared` |
+| `ghcr.io denied` on pull | Package is private | Make GHCR packages public (Step 4.3) or `docker login ghcr.io` on VPS |
 
 ---
 

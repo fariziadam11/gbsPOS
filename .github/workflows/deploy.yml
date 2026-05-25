@@ -28,21 +28,23 @@ jobs:
       - uses: docker/setup-buildx-action@v3
       - uses: docker/login-action@v3
         with:
-          registry: ghcr.io
+          registry: ghcr
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build & push POS API
         uses: docker/build-push-action@v5
         with:
-          context: ./gbs-pos-api
+          context: .
+          file: ./gbs-pos-api/Dockerfile
           push: true
           tags: ghcr.io/${{ github.repository_owner }}/gbs-pos-api:latest
 
       - name: Build & push CMS API
         uses: docker/build-push-action@v5
         with:
-          context: ./gbs-cms-api
+          context: .
+          file: ./gbs-cms-api/Dockerfile
           push: true
           tags: ghcr.io/${{ github.repository_owner }}/gbs-cms-api:latest
 
@@ -57,6 +59,6 @@ jobs:
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
             cd /opt/gbs
-            docker compose -f docker-compose.prod.yml pull
-            docker compose -f docker-compose.prod.yml up -d
+            docker compose -f docker-compose.prod.yml --env-file .env pull
+            docker compose -f docker-compose.prod.yml --env-file .env up -d
             docker image prune -f
