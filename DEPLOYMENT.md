@@ -158,7 +158,7 @@ chmod 600 /opt/gbs/.env
 
 ## Step 4: Deploy the Stack
 
-### Option A: First-Time Deploy (Manual)
+### Option A: First-Time Deploy (Manual — Build Locally)
 
 On the VPS:
 
@@ -168,8 +168,9 @@ cd /opt/gbs
 # Clone your repo (or use SCP to copy docker-compose.prod.yml)
 git clone https://github.com/YOUR_USERNAME/YOUR_REPO.git .
 
-# Pull and start
-docker compose -f docker-compose.prod.yml up -d
+# IMPORTANT: create .env at /opt/gbs/.env (see Step 3 above)
+# Run from repo root so --env-file resolves correctly
+docker compose -f docker-compose.prod.yml --env-file .env up -d --build
 
 # Verify
 docker compose -f docker-compose.prod.yml ps
@@ -177,9 +178,23 @@ docker logs -f gbs-pos-api
 docker logs -f gbs-cms-api
 ```
 
+**Note:** First deploy builds images locally because GHCR images don't exist yet. After CI/CD runs (Step 5), future deploys will pull pre-built images.
+
 ### Option B: Automated Deploy (GitHub Actions)
 
-After setting up CI/CD (Step 5), every push to `main` will auto-deploy.
+After setting up CI/CD (Step 5), update `docker-compose.prod.yml` to use pre-built images:
+
+```yaml
+  pos-api:
+    image: ghcr.io/YOUR_USERNAME/gbs-pos-api:latest
+    # build: ./gbs-pos-api   # comment out or remove
+
+  cms-api:
+    image: ghcr.io/YOUR_USERNAME/gbs-cms-api:latest
+    # build: ./gbs-cms-api   # comment out or remove
+```
+
+Then every push to `main` will auto-deploy.
 
 ---
 
