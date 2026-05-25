@@ -1,0 +1,853 @@
+{
+  "info": {
+    "_postman_id": "gbs-pos-cms-api-collection",
+    "name": "GBS POS & CMS API",
+    "description": "Postman collection for GBS POS (:8080) and CMS (:8081) APIs. Default credentials: admin/admin123 or cashier/cashier123.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "POS API",
+      "item": [
+        {
+          "name": "Auth",
+          "item": [
+            {
+              "name": "Login",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"username\": \"admin\",\n  \"password\": \"admin123\"\n}"
+                },
+                "url": {
+                  "raw": "{{pos_base_url}}/v1/login",
+                  "host": [
+                    "{{pos_base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "login"
+                  ]
+                },
+                "description": "Authenticate and get JWT token. The token is automatically saved to `pos_token` variable."
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "var jsonData = pm.response.json();",
+                      "if (jsonData.success && jsonData.data && jsonData.data.token) {",
+                      "    pm.collectionVariables.set('pos_token', jsonData.data.token);",
+                      "    console.log('POS token saved');",
+                      "}"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Products",
+          "item": [
+            {
+              "name": "List Products",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{pos_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{pos_base_url}}/v1/products?storeType=RETAIL&lastSync=0",
+                  "host": [
+                    "{{pos_base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "products"
+                  ],
+                  "query": [
+                    {
+                      "key": "storeType",
+                      "value": "RETAIL"
+                    },
+                    {
+                      "key": "lastSync",
+                      "value": "0"
+                    }
+                  ]
+                },
+                "description": "List products. Optional filters: storeType, category, lastSync. Returns X-Last-Sync header."
+              }
+            },
+            {
+              "name": "Create Product",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{pos_token}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Teh Botol\",\n  \"price\": 5000.00,\n  \"category\": \"Beverages\",\n  \"imageUrl\": \"https://example.com/teh-botol.jpg\",\n  \"storeType\": \"RETAIL\"\n}"
+                },
+                "url": {
+                  "raw": "{{pos_base_url}}/v1/products",
+                  "host": [
+                    "{{pos_base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "products"
+                  ]
+                },
+                "description": "Create a new product. ADMIN role only. Returns 201 Created."
+              }
+            },
+            {
+              "name": "Update Product",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{pos_token}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Chitato Rasa Sapi Panggang\",\n  \"price\": 12000.00,\n  \"category\": \"Snacks\",\n  \"imageUrl\": \"https://images.unsplash.com/photo-1621939514649-28b12e81658b\",\n  \"storeType\": \"RETAIL\"\n}"
+                },
+                "url": {
+                  "raw": "{{pos_base_url}}/v1/products/1",
+                  "host": [
+                    "{{pos_base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "products",
+                    "1"
+                  ]
+                },
+                "description": "Update an existing product. ADMIN role only. Partial updates supported."
+              }
+            },
+            {
+              "name": "Delete Product",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{pos_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{pos_base_url}}/v1/products/1",
+                  "host": [
+                    "{{pos_base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "products",
+                    "1"
+                  ]
+                },
+                "description": "Delete a product. ADMIN role only. Returns 204 No Content."
+              }
+            }
+          ]
+        },
+        {
+          "name": "Orders",
+          "item": [
+            {
+              "name": "List Orders",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{pos_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{pos_base_url}}/v1/orders?storeType=RETAIL&isVoided=false&isSettled=false",
+                  "host": [
+                    "{{pos_base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "orders"
+                  ],
+                  "query": [
+                    {
+                      "key": "storeType",
+                      "value": "RETAIL"
+                    },
+                    {
+                      "key": "isVoided",
+                      "value": "false"
+                    },
+                    {
+                      "key": "isSettled",
+                      "value": "false"
+                    }
+                  ]
+                },
+                "description": "List orders with filters. Sorted by timestamp DESC."
+              }
+            },
+            {
+              "name": "Get Order",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{pos_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{pos_base_url}}/v1/orders/A1B2C3D4",
+                  "host": [
+                    "{{pos_base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "orders",
+                    "A1B2C3D4"
+                  ]
+                },
+                "description": "Get single order by ID."
+              }
+            },
+            {
+              "name": "Create Order",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{pos_token}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"id\": \"A1B2C3D4\",\n  \"items\": [\n    {\n      \"productId\": 1,\n      \"productName\": \"Chitato\",\n      \"productPrice\": 11500.00,\n      \"qty\": 2,\n      \"subtotal\": 23000.00\n    },\n    {\n      \"productId\": 2,\n      \"productName\": \"Indomie Goreng\",\n      \"productPrice\": 3500.00,\n      \"qty\": 3,\n      \"subtotal\": 10500.00\n    }\n  ],\n  \"subtotal\": 33500.00,\n  \"tax\": 3350.00,\n  \"total\": 36850.00,\n  \"paymentMethod\": \"CARD\",\n  \"timestamp\": 1716023456789,\n  \"storeType\": \"RETAIL\",\n  \"terminalId\": \"POS-001\",\n  \"transactionId\": \"TXN-20250115-001\",\n  \"approvalCode\": \"123456\",\n  \"entryMode\": \"CONTACTLESS\",\n  \"maskedAccount\": \"************1234\",\n  \"acqMid\": \"123456789012345\",\n  \"acqTid\": \"TID001\",\n  \"posMessageId\": \"MSG-ABC-123\",\n  \"bankName\": \"BCA\"\n}"
+                },
+                "url": {
+                  "raw": "{{pos_base_url}}/v1/orders",
+                  "host": [
+                    "{{pos_base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "orders"
+                  ]
+                },
+                "description": "Create an order (idempotent). Returns 201 on first create, 200 with idempotent:true on duplicate."
+              }
+            },
+            {
+              "name": "Bulk Sync Orders",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{pos_token}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"terminalId\": \"POS-001\",\n  \"orders\": [\n    {\n      \"id\": \"ORDER001\",\n      \"items\": [\n        {\n          \"productId\": 1,\n          \"productName\": \"Chitato\",\n          \"productPrice\": 11500.00,\n          \"qty\": 1,\n          \"subtotal\": 11500.00\n        }\n      ],\n      \"subtotal\": 11500.00,\n      \"tax\": 1150.00,\n      \"total\": 12650.00,\n      \"paymentMethod\": \"CASH\",\n      \"timestamp\": 1716023456790,\n      \"storeType\": \"RETAIL\",\n      \"terminalId\": \"POS-001\"\n    }\n  ]\n}"
+                },
+                "url": {
+                  "raw": "{{pos_base_url}}/v1/sync/orders",
+                  "host": [
+                    "{{pos_base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "sync",
+                    "orders"
+                  ]
+                },
+                "description": "Bulk sync orders from offline queue."
+              }
+            },
+            {
+              "name": "Void Order",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{pos_token}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"reason\": \"Customer requested cancellation\"\n}"
+                },
+                "url": {
+                  "raw": "{{pos_base_url}}/v1/orders/A1B2C3D4/void",
+                  "host": [
+                    "{{pos_base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "orders",
+                    "A1B2C3D4",
+                    "void"
+                  ]
+                },
+                "description": "Void an order. ADMIN role only. Cannot void settled or already-voided orders."
+              }
+            },
+            {
+              "name": "Unsettled Summary",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{pos_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{pos_base_url}}/v1/orders/unsettled/summary?storeType=RETAIL&terminalId=POS-001",
+                  "host": [
+                    "{{pos_base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "orders",
+                    "unsettled",
+                    "summary"
+                  ],
+                  "query": [
+                    {
+                      "key": "storeType",
+                      "value": "RETAIL"
+                    },
+                    {
+                      "key": "terminalId",
+                      "value": "POS-001"
+                    }
+                  ]
+                },
+                "description": "Get unsettled order summary grouped by payment method."
+              }
+            },
+            {
+              "name": "Settle Orders",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{pos_token}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"settlementId\": \"SETTLE-1716023456789\",\n  \"timestamp\": 1716023456789,\n  \"storeType\": \"RETAIL\",\n  \"terminalId\": \"POS-001\"\n}"
+                },
+                "url": {
+                  "raw": "{{pos_base_url}}/v1/orders/settle",
+                  "host": [
+                    "{{pos_base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "orders",
+                    "settle"
+                  ]
+                },
+                "description": "Run settlement batch. ADMIN role only. Atomically closes all unsettled, non-voided orders."
+              }
+            }
+          ]
+        },
+        {
+          "name": "Settlements",
+          "item": [
+            {
+              "name": "List Settlements",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{pos_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{pos_base_url}}/v1/settlements?limit=5&storeType=RETAIL",
+                  "host": [
+                    "{{pos_base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "settlements"
+                  ],
+                  "query": [
+                    {
+                      "key": "limit",
+                      "value": "5"
+                    },
+                    {
+                      "key": "storeType",
+                      "value": "RETAIL"
+                    }
+                  ]
+                },
+                "description": "List recent settlements."
+              }
+            },
+            {
+              "name": "Get Settlement",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{pos_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{pos_base_url}}/v1/settlements/SETTLE-1716023456789",
+                  "host": [
+                    "{{pos_base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "settlements",
+                    "SETTLE-1716023456789"
+                  ]
+                },
+                "description": "Get settlement detail by ID."
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "CMS API",
+      "item": [
+        {
+          "name": "Auth",
+          "item": [
+            {
+              "name": "Login",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"username\": \"admin\",\n  \"password\": \"admin123\"\n}"
+                },
+                "url": {
+                  "raw": "{{cms_base_url}}/v1/login",
+                  "host": [
+                    "{{cms_base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "login"
+                  ]
+                },
+                "description": "Authenticate and get JWT token for CMS. Token saved to `cms_token`."
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "var jsonData = pm.response.json();",
+                      "if (jsonData.success && jsonData.data && jsonData.data.token) {",
+                      "    pm.collectionVariables.set('cms_token', jsonData.data.token);",
+                      "    console.log('CMS token saved');",
+                      "}"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Ads",
+          "item": [
+            {
+              "name": "Upload Ad",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{cms_token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "file",
+                      "type": "file",
+                      "src": "/path/to/your/video.mp4"
+                    },
+                    {
+                      "key": "name",
+                      "value": "Indomie Promo Januari",
+                      "type": "text"
+                    },
+                    {
+                      "key": "storeTypes",
+                      "value": "RETAIL",
+                      "type": "text"
+                    },
+                    {
+                      "key": "playlistOrder",
+                      "value": "0",
+                      "type": "text"
+                    },
+                    {
+                      "key": "startDate",
+                      "value": "2025-01-01",
+                      "type": "text"
+                    },
+                    {
+                      "key": "endDate",
+                      "value": "2025-01-31",
+                      "type": "text"
+                    },
+                    {
+                      "key": "startTime",
+                      "value": "09:00:00",
+                      "type": "text"
+                    },
+                    {
+                      "key": "endTime",
+                      "value": "21:00:00",
+                      "type": "text"
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{cms_base_url}}/v1/ads/upload",
+                  "host": [
+                    "{{cms_base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "ads",
+                    "upload"
+                  ]
+                },
+                "description": "Upload a video ad (multipart/form-data). Max 50MB. ADMIN only."
+              }
+            },
+            {
+              "name": "List Ads",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{cms_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{cms_base_url}}/v1/ads?page=1&limit=20",
+                  "host": [
+                    "{{cms_base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "ads"
+                  ],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "1"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "20"
+                    }
+                  ]
+                },
+                "description": "List all ads with pagination. ADMIN only."
+              }
+            },
+            {
+              "name": "Get Ad",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{cms_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{cms_base_url}}/v1/ads/1",
+                  "host": [
+                    "{{cms_base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "ads",
+                    "1"
+                  ]
+                },
+                "description": "Get ad detail by ID. ADMIN only."
+              }
+            },
+            {
+              "name": "Update Ad",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{cms_token}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Indomie Promo Februari\",\n  \"storeTypes\": [\"RETAIL\", \"FNB\"],\n  \"playlistOrder\": 1,\n  \"isActive\": true,\n  \"startDate\": \"2025-02-01T00:00:00Z\",\n  \"endDate\": \"2025-02-28T00:00:00Z\",\n  \"startTime\": \"08:00:00\",\n  \"endTime\": \"22:00:00\"\n}"
+                },
+                "url": {
+                  "raw": "{{cms_base_url}}/v1/ads/1",
+                  "host": [
+                    "{{cms_base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "ads",
+                    "1"
+                  ]
+                },
+                "description": "Update ad metadata. ADMIN only."
+              }
+            },
+            {
+              "name": "Delete Ad",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{cms_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{cms_base_url}}/v1/ads/1",
+                  "host": [
+                    "{{cms_base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "ads",
+                    "1"
+                  ]
+                },
+                "description": "Delete ad and its file. ADMIN only. Returns 204."
+              }
+            },
+            {
+              "name": "Toggle Ad",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{cms_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{cms_base_url}}/v1/ads/1/toggle",
+                  "host": [
+                    "{{cms_base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "ads",
+                    "1",
+                    "toggle"
+                  ]
+                },
+                "description": "Toggle ad isActive status. ADMIN only."
+              }
+            },
+            {
+              "name": "Active Playlist",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{cms_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{cms_base_url}}/v1/ads/active?storeType=RETAIL",
+                  "host": [
+                    "{{cms_base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "ads",
+                    "active"
+                  ],
+                  "query": [
+                    {
+                      "key": "storeType",
+                      "value": "RETAIL"
+                    }
+                  ]
+                },
+                "description": "Get active playlist for a store type (called by Android POS)."
+              }
+            },
+            {
+              "name": "Download Ad",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{cms_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{cms_base_url}}/v1/ads/download/1",
+                  "host": [
+                    "{{cms_base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "ads",
+                    "download",
+                    "1"
+                  ]
+                },
+                "description": "Download video file (binary stream). Called by Android POS."
+              }
+            },
+            {
+              "name": "Log Ad Play",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{cms_token}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"terminalId\": \"POS-001\",\n  \"storeType\": \"RETAIL\"\n}"
+                },
+                "url": {
+                  "raw": "{{cms_base_url}}/v1/ads/1/play",
+                  "host": [
+                    "{{cms_base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "ads",
+                    "1",
+                    "play"
+                  ]
+                },
+                "description": "Log that an ad was played (optional analytics)."
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "event": [],
+  "variable": [
+    {
+      "key": "pos_base_url",
+      "value": "http://localhost:8080",
+      "type": "string"
+    },
+    {
+      "key": "cms_base_url",
+      "value": "http://localhost:8081",
+      "type": "string"
+    },
+    {
+      "key": "pos_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "cms_token",
+      "value": "",
+      "type": "string"
+    }
+  ]
+}

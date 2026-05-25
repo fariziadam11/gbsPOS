@@ -17,11 +17,15 @@ import (
 	"gbs-cms-api/internal/service"
 
 	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
 	"github.com/rs/zerolog"
 	"gorm.io/gorm"
 )
 
 func main() {
+	_ = godotenv.Load("../../.env")
+	_ = godotenv.Load(".env")
+
 	cfg, err := config.Load()
 	if err != nil {
 		log.Fatal("failed to load config: ", err)

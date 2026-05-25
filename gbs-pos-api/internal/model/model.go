@@ -8,6 +8,7 @@ type User struct {
 	PasswordHash string    `gorm:"size:255;not null" json:"-"`
 	Name         string    `gorm:"size:100" json:"name"`
 	Role         string    `gorm:"size:20;not null" json:"role"`
+	Gender       string    `gorm:"size:100" json:"gender"`
 	CreatedAt    time.Time `json:"createdAt"`
 	UpdatedAt    time.Time `json:"updatedAt"`
 }
@@ -24,32 +25,32 @@ type Product struct {
 }
 
 type Order struct {
-	ID            string        `gorm:"primaryKey;size:32" json:"id"`
-	Subtotal      float64       `gorm:"type:decimal(12,2);not null" json:"subtotal"`
-	Tax           float64       `gorm:"type:decimal(12,2);not null" json:"tax"`
-	Total         float64       `gorm:"type:decimal(12,2);not null" json:"total"`
-	PaymentMethod string        `gorm:"size:20;not null" json:"paymentMethod"`
-	CashReceived  *float64      `gorm:"type:decimal(12,2)" json:"cashReceived"`
-	ChangeAmount  *float64      `gorm:"type:decimal(12,2)" json:"changeAmount"`
-	Timestamp     int64         `gorm:"not null" json:"timestamp"`
-	IsVoided      bool          `gorm:"not null;default:false" json:"isVoided"`
-	IsSettled     bool          `gorm:"not null;default:false" json:"isSettled"`
-	TransactionID string        `gorm:"size:100" json:"transactionId"`
-	ApprovalCode  string        `gorm:"size:50" json:"approvalCode"`
-	EntryMode     string        `gorm:"size:20" json:"entryMode"`
-	MaskedAccount string        `gorm:"size:50" json:"maskedAccount"`
-	AcqMid        string        `gorm:"size:50" json:"acqMid"`
-	AcqTid        string        `gorm:"size:50" json:"acqTid"`
-	PosMessageID  string        `gorm:"size:100" json:"posMessageId"`
-	BankName      string        `gorm:"size:50" json:"bankName"`
-	StoreType     string        `gorm:"size:20" json:"storeType"`
-	TerminalID    string        `gorm:"size:32" json:"terminalId"`
-	VoidReason    string        `gorm:"size:255" json:"voidReason"`
-	VoidedBy      string        `gorm:"size:50" json:"voidedBy"`
-	VoidedAt      *time.Time    `json:"voidedAt"`
-	CreatedAt     time.Time     `json:"createdAt"`
-	UpdatedAt     time.Time     `json:"updatedAt"`
-	Items         []OrderItem   `gorm:"foreignKey:OrderID;constraint:OnDelete:CASCADE" json:"items"`
+	ID            string      `gorm:"primaryKey;size:32" json:"id"`
+	Subtotal      float64     `gorm:"type:decimal(12,2);not null" json:"subtotal"`
+	Tax           float64     `gorm:"type:decimal(12,2);not null" json:"tax"`
+	Total         float64     `gorm:"type:decimal(12,2);not null" json:"total"`
+	PaymentMethod string      `gorm:"size:20;not null" json:"paymentMethod"`
+	CashReceived  *float64    `gorm:"type:decimal(12,2)" json:"cashReceived"`
+	ChangeAmount  *float64    `gorm:"type:decimal(12,2)" json:"changeAmount"`
+	Timestamp     int64       `gorm:"not null" json:"timestamp"`
+	IsVoided      bool        `gorm:"not null;default:false" json:"isVoided"`
+	IsSettled     bool        `gorm:"not null;default:false" json:"isSettled"`
+	TransactionID string      `gorm:"size:100" json:"transactionId"`
+	ApprovalCode  string      `gorm:"size:50" json:"approvalCode"`
+	EntryMode     string      `gorm:"size:20" json:"entryMode"`
+	MaskedAccount string      `gorm:"size:50" json:"maskedAccount"`
+	AcqMid        string      `gorm:"size:50" json:"acqMid"`
+	AcqTid        string      `gorm:"size:50" json:"acqTid"`
+	PosMessageID  string      `gorm:"size:100" json:"posMessageId"`
+	BankName      string      `gorm:"size:50" json:"bankName"`
+	StoreType     string      `gorm:"size:20" json:"storeType"`
+	TerminalID    string      `gorm:"size:32" json:"terminalId"`
+	VoidReason    string      `gorm:"size:255" json:"voidReason"`
+	VoidedBy      string      `gorm:"size:50" json:"voidedBy"`
+	VoidedAt      *time.Time  `json:"voidedAt"`
+	CreatedAt     time.Time   `json:"createdAt"`
+	UpdatedAt     time.Time   `json:"updatedAt"`
+	Items         []OrderItem `gorm:"foreignKey:OrderID;constraint:OnDelete:CASCADE" json:"items"`
 }
 
 type OrderItem struct {

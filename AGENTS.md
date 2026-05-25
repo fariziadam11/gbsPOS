@@ -28,6 +28,7 @@ cd gbs-pos-api && go build ./cmd/server
 ## Environment & Config
 
 Copy `.env.example` to `.env` in each module. Config is loaded with `github.com/caarlos0/env/v10` (`internal/config/config.go`).
+The `.env` file is automatically loaded at startup via `github.com/joho/godotenv` in `cmd/server/main.go`.
 
 **Critical env vars:**
 - `JWT_SECRET` — mandatory, must be ≥32 characters (validated at startup)
