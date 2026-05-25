@@ -1,8 +1,9 @@
 package repository
 
 import (
-	"time"
 	"gbs-pos-api/internal/model"
+	"time"
+
 	"gorm.io/gorm"
 )
 
@@ -14,7 +15,10 @@ func NewProductRepository(db *gorm.DB) *ProductRepository {
 	return &ProductRepository{db: db}
 }
 
-func (r *ProductRepository) FindAll(storeType, category string, lastSync int64) ([]model.Product, error) {
+func (r *ProductRepository) FindAll(
+	storeType, category string,
+	lastSync int64,
+) ([]model.Product, error) {
 	var products []model.Product
 	query := r.db.Order("id ASC")
 	if storeType != "" {

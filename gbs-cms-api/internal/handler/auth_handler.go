@@ -1,9 +1,10 @@
 package handler
 
 import (
-	"net/http"
 	"gbs-cms-api/internal/service"
 	"gbs-common/pkg/response"
+	"net/http"
+
 	"github.com/gin-gonic/gin"
 )
 
@@ -23,12 +24,18 @@ type LoginRequest struct {
 func (h *AuthHandler) Login(c *gin.Context) {
 	var req LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusUnprocessableEntity, response.ValidationError("Invalid request body", nil))
+		c.JSON(
+			http.StatusUnprocessableEntity,
+			response.ValidationError("Invalid request body", nil),
+		)
 		return
 	}
 	result, err := h.authService.Login(req.Username, req.Password)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, response.Error("INVALID_CREDENTIALS", "Username or password is incorrect"))
+		c.JSON(
+			http.StatusUnauthorized,
+			response.Error("INVALID_CREDENTIALS", "Username or password is incorrect"),
+		)
 		return
 	}
 	c.JSON(http.StatusOK, response.Success(gin.H{

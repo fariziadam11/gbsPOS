@@ -3,14 +3,15 @@ package handler
 import (
 	"errors"
 	"fmt"
+	"gbs-cms-api/internal/model"
+	"gbs-cms-api/internal/service"
+	"gbs-common/pkg/response"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strconv"
 	"time"
-	"gbs-cms-api/internal/model"
-	"gbs-cms-api/internal/service"
-	"gbs-common/pkg/response"
+
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
@@ -33,9 +34,18 @@ func (h *CMSHandler) UploadAd(c *gin.Context) {
 	if err := h.cmsService.ValidateUploadFile(header.Filename, header.Size); err != nil {
 		switch err.Error() {
 		case "FILE_TOO_LARGE":
-			c.JSON(http.StatusRequestEntityTooLarge, response.Error("FILE_TOO_LARGE", "Maximum file size is 50MB"))
+			c.JSON(
+				http.StatusRequestEntityTooLarge,
+				response.Error("FILE_TOO_LARGE", "Maximum file size is 50MB"),
+			)
 		case "INVALID_FILE_TYPE":
-			c.JSON(http.StatusUnsupportedMediaType, response.Error("INVALID_FILE_TYPE", "Only video/mp4, video/webm, video/quicktime files are allowed"))
+			c.JSON(
+				http.StatusUnsupportedMediaType,
+				response.Error(
+					"INVALID_FILE_TYPE",
+					"Only video/mp4, video/webm, video/quicktime files are allowed",
+				),
+			)
 		default:
 			c.JSON(http.StatusBadRequest, response.Error("VALIDATION_ERROR", err.Error()))
 		}
@@ -69,10 +79,28 @@ func (h *CMSHandler) UploadAd(c *gin.Context) {
 		c.JSON(http.StatusUnauthorized, response.Error("UNAUTHORIZED", "Invalid token claims"))
 		return
 	}
-	ad, err := h.cmsService.CreateAd(name, header.Filename, header.Header.Get("Content-Type"), header.Size, storeTypes, playlistOrder, startDate, endDate, startTime, endTime, uint(createdByUint))
+	ad, err := h.cmsService.CreateAd(
+		name,
+		header.Filename,
+		header.Header.Get("Content-Type"),
+		header.Size,
+		storeTypes,
+		playlistOrder,
+		startDate,
+		endDate,
+		startTime,
+		endTime,
+		uint(createdByUint),
+	)
 	if err != nil {
 		if err.Error() == "INVALID_SCHEDULE" {
-			c.JSON(http.StatusUnprocessableEntity, response.Error("INVALID_SCHEDULE", "Start date must be before or equal to end date"))
+			c.JSON(
+				http.StatusUnprocessableEntity,
+				response.Error(
+					"INVALID_SCHEDULE",
+					"Start date must be before or equal to end date",
+				),
+			)
 			return
 		}
 		c.JSON(http.StatusInternalServerError, response.Error("UPLOAD_FAILED", err.Error()))
@@ -112,7 +140,10 @@ func (h *CMSHandler) GetAd(c *gin.Context) {
 	ad, err := h.cmsService.GetAd(uint(id))
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			c.JSON(http.StatusNotFound, response.Error("AD_NOT_FOUND", "Ad with ID "+c.Param("id")+" not found"))
+			c.JSON(
+				http.StatusNotFound,
+				response.Error("AD_NOT_FOUND", "Ad with ID "+c.Param("id")+" not found"),
+			)
 			return
 		}
 		c.JSON(http.StatusInternalServerError, response.Error("INTERNAL_SERVER_ERROR", err.Error()))
@@ -129,17 +160,29 @@ func (h *CMSHandler) UpdateAd(c *gin.Context) {
 	}
 	var updates model.Ad
 	if err := c.ShouldBindJSON(&updates); err != nil {
-		c.JSON(http.StatusUnprocessableEntity, response.ValidationError("Invalid request body", nil))
+		c.JSON(
+			http.StatusUnprocessableEntity,
+			response.ValidationError("Invalid request body", nil),
+		)
 		return
 	}
 	ad, err := h.cmsService.UpdateAd(uint(id), &updates)
 	if err != nil {
 		if err.Error() == "INVALID_SCHEDULE" {
-			c.JSON(http.StatusUnprocessableEntity, response.Error("INVALID_SCHEDULE", "Start date must be before or equal to end date"))
+			c.JSON(
+				http.StatusUnprocessableEntity,
+				response.Error(
+					"INVALID_SCHEDULE",
+					"Start date must be before or equal to end date",
+				),
+			)
 			return
 		}
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			c.JSON(http.StatusNotFound, response.Error("AD_NOT_FOUND", "Ad with ID "+c.Param("id")+" not found"))
+			c.JSON(
+				http.StatusNotFound,
+				response.Error("AD_NOT_FOUND", "Ad with ID "+c.Param("id")+" not found"),
+			)
 			return
 		}
 		c.JSON(http.StatusInternalServerError, response.Error("INTERNAL_SERVER_ERROR", err.Error()))
@@ -156,7 +199,10 @@ func (h *CMSHandler) DeleteAd(c *gin.Context) {
 	}
 	if err := h.cmsService.DeleteAd(uint(id)); err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			c.JSON(http.StatusNotFound, response.Error("AD_NOT_FOUND", "Ad with ID "+c.Param("id")+" not found"))
+			c.JSON(
+				http.StatusNotFound,
+				response.Error("AD_NOT_FOUND", "Ad with ID "+c.Param("id")+" not found"),
+			)
 			return
 		}
 		c.JSON(http.StatusInternalServerError, response.Error("INTERNAL_SERVER_ERROR", err.Error()))
@@ -174,7 +220,10 @@ func (h *CMSHandler) ToggleAd(c *gin.Context) {
 	ad, err := h.cmsService.ToggleAd(uint(id))
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			c.JSON(http.StatusNotFound, response.Error("AD_NOT_FOUND", "Ad with ID "+c.Param("id")+" not found"))
+			c.JSON(
+				http.StatusNotFound,
+				response.Error("AD_NOT_FOUND", "Ad with ID "+c.Param("id")+" not found"),
+			)
 			return
 		}
 		c.JSON(http.StatusInternalServerError, response.Error("INTERNAL_SERVER_ERROR", err.Error()))
@@ -231,7 +280,10 @@ func (h *CMSHandler) DownloadAd(c *gin.Context) {
 	}
 	ad, err := h.cmsService.GetAd(uint(id))
 	if err != nil {
-		c.JSON(http.StatusNotFound, response.Error("AD_NOT_FOUND", "Ad with ID "+c.Param("id")+" not found"))
+		c.JSON(
+			http.StatusNotFound,
+			response.Error("AD_NOT_FOUND", "Ad with ID "+c.Param("id")+" not found"),
+		)
 		return
 	}
 	info, err := os.Stat(ad.StoragePath)
@@ -247,7 +299,10 @@ func (h *CMSHandler) DownloadAd(c *gin.Context) {
 	c.Header("Content-Length", strconv.FormatInt(info.Size(), 10))
 	c.Header("Accept-Ranges", "bytes")
 	c.Header("Cache-Control", "public, max-age=86400")
-	c.Header("Content-Disposition", fmt.Sprintf("inline; filename=\"%s\"", filepath.Base(ad.StoragePath)))
+	c.Header(
+		"Content-Disposition",
+		fmt.Sprintf("inline; filename=\"%s\"", filepath.Base(ad.StoragePath)),
+	)
 	c.File(ad.StoragePath)
 }
 
@@ -262,7 +317,10 @@ func (h *CMSHandler) LogPlay(c *gin.Context) {
 		StoreType  string `json:"storeType" binding:"required"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusUnprocessableEntity, response.ValidationError("Invalid request body", nil))
+		c.JSON(
+			http.StatusUnprocessableEntity,
+			response.ValidationError("Invalid request body", nil),
+		)
 		return
 	}
 	if err := h.cmsService.LogPlay(uint(id), req.TerminalID, req.StoreType); err != nil {

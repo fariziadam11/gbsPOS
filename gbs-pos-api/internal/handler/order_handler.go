@@ -2,11 +2,13 @@ package handler
 
 import (
 	"errors"
-	"net/http"
-	"strconv"
+	"gbs-common/pkg/response"
+	"gbs-pos-api/internal/dto"
 	"gbs-pos-api/internal/model"
 	"gbs-pos-api/internal/service"
-	"gbs-common/pkg/response"
+	"net/http"
+	"strconv"
+
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
@@ -16,7 +18,10 @@ type OrderHandler struct {
 	settlementService *service.SettlementService
 }
 
-func NewOrderHandler(orderService *service.OrderService, settlementService *service.SettlementService) *OrderHandler {
+func NewOrderHandler(
+	orderService *service.OrderService,
+	settlementService *service.SettlementService,
+) *OrderHandler {
 	return &OrderHandler{orderService: orderService, settlementService: settlementService}
 }
 
@@ -35,7 +40,15 @@ func (h *OrderHandler) List(c *gin.Context) {
 		b := v == "true"
 		isSettled = &b
 	}
-	orders, err := h.orderService.List(storeType, startDate, endDate, isVoided, isSettled, paymentMethod, terminalID)
+	orders, err := h.orderService.List(
+		storeType,
+		startDate,
+		endDate,
+		isVoided,
+		isSettled,
+		paymentMethod,
+		terminalID,
+	)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, response.Error("INTERNAL_SERVER_ERROR", err.Error()))
 		return
@@ -48,7 +61,10 @@ func (h *OrderHandler) Get(c *gin.Context) {
 	order, err := h.orderService.Get(id)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			c.JSON(http.StatusNotFound, response.Error("ORDER_NOT_FOUND", "Order with ID "+id+" not found"))
+			c.JSON(
+				http.StatusNotFound,
+				response.Error("ORDER_NOT_FOUND", "Order with ID "+id+" not found"),
+			)
 			return
 		}
 		c.JSON(http.StatusInternalServerError, response.Error("INTERNAL_SERVER_ERROR", err.Error()))
@@ -58,35 +74,13 @@ func (h *OrderHandler) Get(c *gin.Context) {
 }
 
 func (h *OrderHandler) Create(c *gin.Context) {
-	var req struct {
-		ID            string `json:"id" binding:"required"`
-		Items         []struct {
-			ProductID    int     `json:"productId" binding:"required"`
-			ProductName  string  `json:"productName" binding:"required"`
-			ProductPrice float64 `json:"productPrice" binding:"required"`
-			Qty          int     `json:"qty" binding:"required"`
-			Subtotal     float64 `json:"subtotal" binding:"required"`
-		} `json:"items" binding:"required"`
-		Subtotal      float64  `json:"subtotal" binding:"required"`
-		Tax           float64  `json:"tax" binding:"required"`
-		Total         float64  `json:"total" binding:"required"`
-		PaymentMethod string   `json:"paymentMethod" binding:"required"`
-		CashReceived  *float64 `json:"cashReceived"`
-		ChangeAmount  *float64 `json:"changeAmount"`
-		Timestamp     int64    `json:"timestamp" binding:"required"`
-		StoreType     string   `json:"storeType"`
-		TerminalID    string   `json:"terminalId"`
-		TransactionID string   `json:"transactionId"`
-		ApprovalCode  string   `json:"approvalCode"`
-		EntryMode     string   `json:"entryMode"`
-		MaskedAccount string   `json:"maskedAccount"`
-		AcqMid        string   `json:"acqMid"`
-		AcqTid        string   `json:"acqTid"`
-		PosMessageID  string   `json:"posMessageId"`
-		BankName      string   `json:"bankName"`
-	}
+	var req dto.CreateOrderRequest
+	
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusUnprocessableEntity, response.ValidationError("Invalid request body", nil))
+		c.JSON(
+			http.StatusUnprocessableEntity,
+			response.ValidationError("Invalid request body", nil),
+		)
 		return
 	}
 	items := make([]model.OrderItem, len(req.Items))
@@ -138,11 +132,13 @@ func (h *OrderHandler) Create(c *gin.Context) {
 
 func (h *OrderHandler) Void(c *gin.Context) {
 	id := c.Param("id")
-	var req struct {
-		Reason string `json:"reason"`
-	}
+	var req dto.VoidOrderRequest
+
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusUnprocessableEntity, response.ValidationError("Invalid request body", nil))
+		c.JSON(
+			http.StatusUnprocessableEntity,
+			response.ValidationError("Invalid request body", nil),
+		)
 		return
 	}
 	voidedBy := c.GetString("username")
@@ -150,13 +146,25 @@ func (h *OrderHandler) Void(c *gin.Context) {
 	if err != nil {
 		switch err.Error() {
 		case "ORDER_NOT_FOUND":
-			c.JSON(http.StatusNotFound, response.Error("ORDER_NOT_FOUND", "Order with ID "+id+" not found"))
+			c.JSON(
+				http.StatusNotFound,
+				response.Error("ORDER_NOT_FOUND", "Order with ID "+id+" not found"),
+			)
 		case "ORDER_ALREADY_VOIDED":
-			c.JSON(http.StatusConflict, response.Error("ORDER_ALREADY_VOIDED", "Order "+id+" has already been voided"))
+			c.JSON(
+				http.StatusConflict,
+				response.Error("ORDER_ALREADY_VOIDED", "Order "+id+" has already been voided"),
+			)
 		case "ORDER_ALREADY_SETTLED":
-			c.JSON(http.StatusConflict, response.Error("ORDER_ALREADY_SETTLED", "Cannot void a settled order"))
+			c.JSON(
+				http.StatusConflict,
+				response.Error("ORDER_ALREADY_SETTLED", "Cannot void a settled order"),
+			)
 		default:
-			c.JSON(http.StatusInternalServerError, response.Error("INTERNAL_SERVER_ERROR", err.Error()))
+			c.JSON(
+				http.StatusInternalServerError,
+				response.Error("INTERNAL_SERVER_ERROR", err.Error()),
+			)
 		}
 		return
 	}
@@ -175,12 +183,13 @@ func (h *OrderHandler) UnsettledSummary(c *gin.Context) {
 }
 
 func (h *OrderHandler) BulkSync(c *gin.Context) {
-	var req struct {
-		TerminalID string         `json:"terminalId"`
-		Orders     []model.Order  `json:"orders" binding:"required"`
-	}
+	var req dto.BulkSyncOrderRequest
+	
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusUnprocessableEntity, response.ValidationError("Invalid request body", nil))
+		c.JSON(
+			http.StatusUnprocessableEntity,
+			response.ValidationError("Invalid request body", nil),
+		)
 		return
 	}
 	for i := range req.Orders {
@@ -197,20 +206,27 @@ func (h *OrderHandler) BulkSync(c *gin.Context) {
 }
 
 func (h *OrderHandler) Settle(c *gin.Context) {
-	var req struct {
-		SettlementID string `json:"settlementId" binding:"required"`
-		Timestamp    int64  `json:"timestamp" binding:"required"`
-		StoreType    string `json:"storeType"`
-		TerminalID   string `json:"terminalId"`
-	}
+	var req dto.SettleOrderRequest
+
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusUnprocessableEntity, response.ValidationError("Invalid request body", nil))
+		c.JSON(
+			http.StatusUnprocessableEntity,
+			response.ValidationError("Invalid request body", nil),
+		)
 		return
 	}
-	settlement, err := h.settlementService.Settle(req.SettlementID, req.Timestamp, req.StoreType, req.TerminalID)
+	settlement, err := h.settlementService.Settle(
+		req.SettlementID,
+		req.Timestamp,
+		req.StoreType,
+		req.TerminalID,
+	)
 	if err != nil {
 		if err.Error() == "NO_UNSETTLED_ORDERS" {
-			c.JSON(http.StatusConflict, response.Error("NO_UNSETTLED_ORDERS", "There are no unsettled orders to settle"))
+			c.JSON(
+				http.StatusConflict,
+				response.Error("NO_UNSETTLED_ORDERS", "There are no unsettled orders to settle"),
+			)
 			return
 		}
 		c.JSON(http.StatusInternalServerError, response.Error("INTERNAL_SERVER_ERROR", err.Error()))

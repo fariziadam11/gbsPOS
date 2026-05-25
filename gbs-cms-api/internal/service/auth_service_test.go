@@ -6,6 +6,7 @@ import (
 	"gbs-cms-api/internal/database"
 	"gbs-cms-api/internal/model"
 	"gbs-cms-api/internal/repository"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/crypto/bcrypt"
@@ -17,7 +18,9 @@ func setupAuthTest(t *testing.T) (*AuthService, *gorm.DB) {
 	require.NoError(t, err)
 
 	hash, _ := bcrypt.GenerateFromPassword([]byte("admin123"), bcrypt.DefaultCost)
-	db.Create(&model.User{Username: "admin", PasswordHash: string(hash), Name: "Admin", Role: "ADMIN"})
+	db.Create(
+		&model.User{Username: "admin", PasswordHash: string(hash), Name: "Admin", Role: "ADMIN"},
+	)
 
 	userRepo := repository.NewUserRepository(db)
 	return NewAuthService(userRepo, "test-secret-key-minimum-32-characters", 24), db

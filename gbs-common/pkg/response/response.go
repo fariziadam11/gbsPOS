@@ -1,10 +1,10 @@
 package response
 
 type Response struct {
-	Success    bool        `json:"success"`
-	Data       interface{} `json:"data,omitempty"`
+	Success    bool         `json:"success"`
+	Data       interface{}  `json:"data,omitempty"`
 	Error      *ErrorDetail `json:"error,omitempty"`
-	Idempotent bool        `json:"idempotent,omitempty"`
+	Idempotent bool         `json:"idempotent,omitempty"`
 }
 
 type ErrorDetail struct {
@@ -31,5 +31,8 @@ func Error(code, message string) Response {
 }
 
 func ValidationError(message string, details []FieldError) Response {
-	return Response{Success: false, Error: &ErrorDetail{Code: "VALIDATION_ERROR", Message: message, Details: details}}
+	return Response{
+		Success: false,
+		Error:   &ErrorDetail{Code: "VALIDATION_ERROR", Message: message, Details: details},
+	}
 }

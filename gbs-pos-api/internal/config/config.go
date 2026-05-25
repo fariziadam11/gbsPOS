@@ -2,18 +2,20 @@ package config
 
 import (
 	"fmt"
+
 	"github.com/caarlos0/env/v10"
+	"github.com/joho/godotenv"
 )
 
 type Config struct {
-	Port           string `env:"PORT" envDefault:"8080"`
-	Env            string `env:"ENV" envDefault:"development"`
-	DatabaseURL    string `env:"DATABASE_URL" envDefault:"postgres://gbspos:gbspos_secret@localhost:5432/gbs_pos?sslmode=disable"`
-	MigrationsPath string `env:"MIGRATIONS_PATH" envDefault:""`
+	Port           string `env:"PORT"             envDefault:"8080"`
+	Env            string `env:"ENV"              envDefault:"development"`
+	DatabaseURL    string `env:"DATABASE_URL"     envDefault:"postgres://gbspos:gbspos_secret@localhost:5432/gbs_pos?sslmode=disable"`
+	MigrationsPath string `env:"MIGRATIONS_PATH"  envDefault:""`
 	JWTSecret      string `env:"JWT_SECRET"`
 	JWTExpiryHours int    `env:"JWT_EXPIRY_HOURS" envDefault:"24"`
-	LogLevel       string `env:"LOG_LEVEL" envDefault:"debug"`
-	UploadDir      string `env:"UPLOAD_DIR" envDefault:"./uploads/ads"`
+	LogLevel       string `env:"LOG_LEVEL"        envDefault:"debug"`
+	UploadDir      string `env:"UPLOAD_DIR"       envDefault:"./uploads/ads"`
 }
 
 func (c *Config) Validate() error {
@@ -27,6 +29,8 @@ func (c *Config) Validate() error {
 }
 
 func Load() (*Config, error) {
+	_ = godotenv.Load()
+	
 	var cfg Config
 	if err := env.Parse(&cfg); err != nil {
 		return nil, err

@@ -3,9 +3,11 @@ package service
 import (
 	"errors"
 	"fmt"
-	"time"
+	"gbs-pos-api/internal/dto"
 	"gbs-pos-api/internal/model"
 	"gbs-pos-api/internal/repository"
+	"time"
+
 	"gorm.io/gorm"
 )
 
@@ -17,8 +19,21 @@ func NewOrderService(repo *repository.OrderRepository) *OrderService {
 	return &OrderService{repo: repo}
 }
 
-func (s *OrderService) List(storeType string, startDate, endDate int64, isVoided, isSettled *bool, paymentMethod, terminalID string) ([]model.Order, error) {
-	return s.repo.FindAll(storeType, startDate, endDate, isVoided, isSettled, paymentMethod, terminalID)
+func (s *OrderService) List(
+	storeType string,
+	startDate, endDate int64,
+	isVoided, isSettled *bool,
+	paymentMethod, terminalID string,
+) ([]model.Order, error) {
+	return s.repo.FindAll(
+		storeType,
+		startDate,
+		endDate,
+		isVoided,
+		isSettled,
+		paymentMethod,
+		terminalID,
+	)
 }
 
 func (s *OrderService) Get(id string) (*model.Order, error) {
@@ -67,16 +82,8 @@ func (s *OrderService) Void(id, reason, voidedBy string) (*model.Order, error) {
 	return s.repo.FindByIDWithItems(id)
 }
 
-type BulkSyncResult struct {
-	Orders      []model.Order `json:"orders"`
-	Created     int           `json:"created"`
-	Existing    int           `json:"existing"`
-	Failed      int           `json:"failed"`
-	Idempotent  bool          `json:"idempotent"`
-}
-
-func (s *OrderService) BulkCreate(orders []model.Order) (*BulkSyncResult, error) {
-	result := &BulkSyncResult{
+func (s *OrderService) BulkCreate(orders []model.Order) (*dto.BulkSyncResult, error) {
+	result := &dto.BulkSyncResult{
 		Orders: make([]model.Order, 0, len(orders)),
 	}
 	for i := range orders {
