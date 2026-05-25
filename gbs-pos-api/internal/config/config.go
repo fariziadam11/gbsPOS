@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/caarlos0/env/v10"
+	"github.com/joho/godotenv"
 )
 
 type Config struct {
@@ -28,6 +29,8 @@ func (c *Config) Validate() error {
 }
 
 func Load() (*Config, error) {
+	_ = godotenv.Load()
+	
 	var cfg Config
 	if err := env.Parse(&cfg); err != nil {
 		return nil, err
