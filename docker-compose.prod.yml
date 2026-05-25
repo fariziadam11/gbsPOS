@@ -18,9 +18,11 @@ services:
       - gbs
 
   pos-api:
-    # For CI/CD (GitHub Actions): replace yourusername with your GitHub username/org
+    # For CI/CD (GitHub Actions): uncomment image and comment out build
     # image: ghcr.io/yourusername/gbs-pos-api:latest
-    build: ./gbs-pos-api
+    build:
+      context: .
+      dockerfile: gbs-pos-api/Dockerfile
     container_name: gbs-pos-api
     restart: unless-stopped
     ports:
@@ -48,9 +50,11 @@ services:
       start_period: 10s
 
   cms-api:
-    # For CI/CD (GitHub Actions): replace yourusername with your GitHub username/org
+    # For CI/CD (GitHub Actions): uncomment image and comment out build
     # image: ghcr.io/yourusername/gbs-cms-api:latest
-    build: ./gbs-cms-api
+    build:
+      context: .
+      dockerfile: gbs-cms-api/Dockerfile
     container_name: gbs-cms-api
     restart: unless-stopped
     ports:
