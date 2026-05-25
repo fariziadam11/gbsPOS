@@ -27,7 +27,6 @@ services:
       PORT: 8080
       ENV: production
       DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/gbs_pos?sslmode=disable
-      MIGRATIONS_PATH: /app/migrations
       JWT_SECRET: ${JWT_SECRET}
       JWT_EXPIRY_HOURS: 24
       LOG_LEVEL: info

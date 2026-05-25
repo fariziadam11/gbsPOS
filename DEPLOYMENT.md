@@ -116,11 +116,21 @@ ingress:
 ```
 
 5. Route DNS to the tunnel (in Cloudflare Dashboard):
+
+**Option A: Public Hostnames (Recommended)**
 - Go to **Zero Trust** -> **Networks** -> **Tunnels**
 - Find `gbs-backend` -> **Configure**
 - Add public hostnames:
   - `api-pos.yourdomain.com` -> `http://localhost:8082`
   - `api-cms.yourdomain.com` -> `http://localhost:8081`
+
+**Option B: Manual DNS Records (if Option A doesn't work)**
+- Go to **Cloudflare Dashboard** -> **DNS** -> **Records**
+- Add two **CNAME** records:
+  - Name: `api-pos` | Target: `<YOUR_TUNNEL_ID>.cfargotunnel.com` | Proxy status: Proxied (orange cloud)
+  - Name: `api-cms` | Target: `<YOUR_TUNNEL_ID>.cfargotunnel.com` | Proxy status: Proxied (orange cloud)
+
+**Note:** If `armmada.id` is your domain, replace `yourdomain.com` with `armmada.id` above.
 
 6. Run the tunnel as a service:
 ```bash
@@ -444,6 +454,8 @@ docker exec gbs-pos-api /app/gbs-pos-api migrate up
 | `migration failed` | Schema conflict | Run `docker exec gbs-postgres psql -U gbs_prod -d gbs_pos` and inspect |
 | Cloudflare 502 error | Tunnel not running | `sudo systemctl status cloudflared` |
 | `ghcr.io denied` on pull | Package is private | Make GHCR packages public (Step 4.3) or `docker login ghcr.io` on VPS |
+| DNS doesn't resolve (`api-pos.armmada.id` not found) | DNS records not created | See Step 2, Option B — manually create CNAME records in Cloudflare DNS |
+| Cloudflare 502 Bad Gateway | Tunnel not connected or services down | Check `sudo systemctl status cloudflared` and `docker compose ps` |
 
 ---
 
