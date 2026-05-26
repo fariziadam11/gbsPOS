@@ -1,0 +1,10 @@
+.git
+.env
+.env.example
+bin/
+dist/
+*.test
+*.out
+coverage/
+node_modules/
+README.md

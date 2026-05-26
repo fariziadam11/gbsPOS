@@ -4,6 +4,7 @@ import (
 	"gbs-common/middleware"
 	"gbs-pos-api/internal/config"
 	"gbs-pos-api/internal/handler"
+	"net/http"
 
 	"github.com/gin-gonic/gin"
 )
@@ -69,6 +70,10 @@ func Setup(
 	r.Use(middleware.LoggerMiddleware())
 	r.Use(gin.Recovery())
 	r.Use(middleware.CORSMiddleware())
+
+	r.GET("/health", func(c *gin.Context) {
+		c.String(http.StatusOK, "ok")
+	})	
 
 	v1 := r.Group("/v1")
 

@@ -75,6 +75,10 @@ func main() {
 	r.Use(gin.Recovery())
 	r.Use(middleware.CORSMiddleware())
 
+	r.GET("/health", func(c *gin.Context) {
+		c.String(http.StatusOK, "ok")
+	})
+
 	v1 := r.Group("/v1")
 	{
 		v1.POST("/login", authHandler.Login)
