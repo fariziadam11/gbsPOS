@@ -1,0 +1,43 @@
+* [33m93f5274[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mfeature/cms-web[m[33m, [m[1;32mmain[m[33m)[m chore: gbs-pos-api: add dto
+*   [33m19d3f83[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/adam[m[33m, [m[1;31morigin/HEAD[m[33m, [m[1;32madam[m[33m)[m merge branch main - adam
+[32m|[m[33m\[m  
+[32m|[m * [33mdb23123[m update
+[32m|[m * [33m9506793[m update
+[32m|[m * [33m9f61c9f[m update
+[32m|[m * [33m44afdbf[m update
+[32m|[m * [33mbfce28a[m update
+[32m|[m * [33mf947e0c[m update
+* [33m|[m [33m7d7a997[m chore: gbs-cms-api: just go mod tidy
+* [33m|[m [33m176de27[m chore: gbs-pos-api: just go mod tidy
+* [33m|[m [33m3da96c3[m[33m ([m[1;32mfeature/abc[m[33m)[m feat: gbs-pos-api: fix model
+* [33m|[m   [33m5dd4d15[m merge branch adam
+[33m|[m[35m\[m [33m\[m  
+[33m|[m [35m|[m[33m/[m  
+[33m|[m[33m/[m[35m|[m   
+[33m|[m * [33mae39532[m feat: remove migration 009_add_gender_to_users (test)
+[33m|[m * [33mb6c1fa0[m[33m ([m[1;32mfeature/migrations[m[33m)[m feat: gbs-pos-api: add godotenv n migrations
+* [35m|[m [33m73e9408[m update
+[35m|[m [35m|[m * [33ma794010[m[33m ([m[1;32mtest/weekly-1-test[m[33m)[m chore: gbs-pos-api: add AIR. test auto migrate. add gender in users gbs_pos
+[35m|[m [35m|[m[35m/[m  
+[35m|[m * [33m99e7ff7[m feat: gbs-pos-api: fix route
+[35m|[m * [33me25d216[m feat: gbs-pos-api: seeding, route
+[35m|[m * [33m9a2a5ba[m feat: gbs-cms-api: add dto
+[35m|[m * [33m1fdd43e[m[33m ([m[1;32mfeature/tdd/gbs-pos-api[m[33m)[m feat: gbs-pos-api: repository: add settlement_repo_test.go
+[35m|[m * [33m920e5f7[m feat: gbs-pos-api: repository: add order_repo_test.go
+[35m|[m * [33mc3d0192[m[33m ([m[1;31morigin/feature/tdd-cms-api[m[33m, [m[1;32mfeature/tdd-cms-api[m[33m)[m feat: gbs-cms-api: repository: add user_repo_test.go
+[35m|[m * [33m9c61814[m feat: gbs-cms-api: model: remove default:true in  model Ad field IsActive due to bug false value to default (true)
+[35m|[m * [33mb567cf4[m feat: gbs-cms-api: repository: Add tdd ad_repo
+[35m|[m * [33m68ce425[m feat: fix: gbs-cms-api: migration n seed
+[35m|[m * [33m09196f9[m feat: gbs-cms-api: fix: service: fix tdd GetActivePlaylist
+[35m|[m * [33mad5677f[m update
+[35m|[m[35m/[m  
+* [33m07ced86[m update
+[36m|[m * [33m81a737f[m[33m ([m[1;31morigin/feature-1/dockers[m[33m, [m[1;32mfeature-1/dockers[m[33m)[m feat: gbs-cms-api: add migrations
+[36m|[m * [33m8e6ed6c[m feat: fix DockerFile error copying gbs-cms-api n gbs-pos-api
+[36m|[m[36m/[m  
+* [33m4839e4c[m update
+* [33m2dc09af[m update
+* [33mc555fad[m update
+* [33m5221c7d[m update
+* [33m9df16cf[m first commit
+* [33m30e3823[m first commit

@@ -1,17 +1,30 @@
 <script setup lang="ts">
-import Toast from 'primevue/toast'
-import ConfirmDialog from 'primevue/confirmdialog'
-import AppHeader from './components/AppHeader.vue'
-import AppSidebar from './components/AppSidebar.vue'
+import { computed } from "vue";
+import { useRoute } from "vue-router";
+
+import Toast from "primevue/toast";
+import ConfirmDialog from "primevue/confirmdialog";
+
+import AppHeader from "./components/AppHeader.vue";
+import AppSidebar from "./components/AppSidebar.vue";
+
+const route = useRoute();
+
+const isAuthenticatedPage = computed(() => {
+  return route.meta.requiresAuth;
+});
 </script>
 
 <template>
   <div class="app-layout">
     <Toast position="top-right" />
     <ConfirmDialog />
-    <AppHeader />
+
+    <AppHeader v-if="isAuthenticatedPage" />
+
     <div class="app-body">
-      <AppSidebar />
+      <AppSidebar v-if="isAuthenticatedPage" />
+
       <main class="app-main">
         <RouterView />
       </main>
