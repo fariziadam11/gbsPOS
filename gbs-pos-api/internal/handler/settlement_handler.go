@@ -2,10 +2,11 @@ package handler
 
 import (
 	"errors"
+	"gbs-common/pkg/response"
+	"gbs-pos-api/internal/service"
 	"net/http"
 	"strconv"
-	"gbs-pos-api/internal/service"
-	"gbs-common/pkg/response"
+
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
@@ -37,7 +38,10 @@ func (h *SettlementHandler) Get(c *gin.Context) {
 	settlement, err := h.settlementService.Get(id)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			c.JSON(http.StatusNotFound, response.Error("SETTLEMENT_NOT_FOUND", "Settlement with ID "+id+" not found"))
+			c.JSON(
+				http.StatusNotFound,
+				response.Error("SETTLEMENT_NOT_FOUND", "Settlement with ID "+id+" not found"),
+			)
 			return
 		}
 		c.JSON(http.StatusInternalServerError, response.Error("INTERNAL_SERVER_ERROR", err.Error()))

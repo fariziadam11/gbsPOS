@@ -5,9 +5,10 @@ import (
 	"strings"
 	"time"
 
+	"gbs-common/pkg/response"
+
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
-	"gbs-common/pkg/response"
 )
 
 func NewAuthMiddleware(jwtSecret string) gin.HandlerFunc {
@@ -15,7 +16,10 @@ func NewAuthMiddleware(jwtSecret string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, response.Error("UNAUTHORIZED", "Missing authorization header"))
+			c.AbortWithStatusJSON(
+				http.StatusUnauthorized,
+				response.Error("UNAUTHORIZED", "Missing authorization header"),
+			)
 			return
 		}
 
@@ -29,13 +33,19 @@ func NewAuthMiddleware(jwtSecret string) gin.HandlerFunc {
 		)
 
 		if err != nil || !token.Valid {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, response.Error("INVALID_TOKEN", "Invalid or expired token"))
+			c.AbortWithStatusJSON(
+				http.StatusUnauthorized,
+				response.Error("INVALID_TOKEN", "Invalid or expired token"),
+			)
 			return
 		}
 
 		claims, ok := token.Claims.(jwt.MapClaims)
 		if !ok {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, response.Error("INVALID_TOKEN", "Invalid token claims"))
+			c.AbortWithStatusJSON(
+				http.StatusUnauthorized,
+				response.Error("INVALID_TOKEN", "Invalid token claims"),
+			)
 			return
 		}
 
@@ -55,6 +65,12 @@ func RequireRole(roles ...string) gin.HandlerFunc {
 				return
 			}
 		}
-		c.AbortWithStatusJSON(http.StatusForbidden, response.Error("INSUFFICIENT_PERMISSIONS", "You don't have permission to access this resource"))
+		c.AbortWithStatusJSON(
+			http.StatusForbidden,
+			response.Error(
+				"INSUFFICIENT_PERMISSIONS",
+				"You don't have permission to access this resource",
+			),
+		)
 	}
 }

@@ -6,6 +6,7 @@ import (
 	"gbs-pos-api/internal/database"
 	"gbs-pos-api/internal/model"
 	"gbs-pos-api/internal/repository"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"
@@ -15,7 +16,9 @@ func setupProductTest(t *testing.T) (*ProductService, *gorm.DB) {
 	db, err := database.NewTestDB()
 	require.NoError(t, err)
 
-	db.Create(&model.Product{Name: "Chitato", Price: 11500, Category: "Snacks", StoreType: "RETAIL"})
+	db.Create(
+		&model.Product{Name: "Chitato", Price: 11500, Category: "Snacks", StoreType: "RETAIL"},
+	)
 	db.Create(&model.Product{Name: "Nasi Goreng", Price: 25000, Category: "Food", StoreType: "FNB"})
 
 	repo := repository.NewProductRepository(db)
@@ -57,7 +60,12 @@ func TestProductService_Get_NotFound(t *testing.T) {
 func TestProductService_Create(t *testing.T) {
 	svc, _ := setupProductTest(t)
 
-	product := &model.Product{Name: "Teh Botol", Price: 5000, Category: "Beverages", StoreType: "RETAIL"}
+	product := &model.Product{
+		Name:      "Teh Botol",
+		Price:     5000,
+		Category:  "Beverages",
+		StoreType: "RETAIL",
+	}
 	err := svc.Create(product)
 	require.NoError(t, err)
 	assert.NotZero(t, product.ID)
@@ -66,7 +74,10 @@ func TestProductService_Create(t *testing.T) {
 func TestProductService_Update(t *testing.T) {
 	svc, _ := setupProductTest(t)
 
-	updated, err := svc.Update(1, &model.Product{Name: "Chitato BBQ", Price: 12000, Category: "Snacks", StoreType: "RETAIL"})
+	updated, err := svc.Update(
+		1,
+		&model.Product{Name: "Chitato BBQ", Price: 12000, Category: "Snacks", StoreType: "RETAIL"},
+	)
 	require.NoError(t, err)
 	assert.Equal(t, "Chitato BBQ", updated.Name)
 	assert.Equal(t, 12000.0, updated.Price)

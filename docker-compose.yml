@@ -1,62 +1,62 @@
 services:
-  pos-api:
-    build:
-      context: .
-      dockerfile: ./gbs-pos-api/Dockerfile
-    ports:
-      - "8080:8080"
-    environment:
-      - DATABASE_URL=postgres://postgres:123@postgres:5432/gbs_pos?sslmode=disable
-      - MIGRATIONS_PATH=/root/migrations
-      - JWT_SECRET=872417e0370c7bb5705b380b2a4efe03af542dff46f682cc5b6a6e3366200fcb
-      - PORT=8080
-      - ENV=production
-      - LOG_LEVEL=info
-    depends_on:
-      postgres:
-        condition: service_healthy
-    volumes:
-      - pos-uploads:/uploads/pos
-    restart: unless-stopped
+    pos-api:
+        build:
+            context: .
+            dockerfile: ./gbs-pos-api/Dockerfile
+        ports:
+            - "8080:8080"
+        environment:
+            - DATABASE_URL=postgres://postgres:123@postgres:5432/gbs_pos?sslmode=disable
+            - MIGRATIONS_PATH=/root/migrations
+            - JWT_SECRET=872417e0370c7bb5705b380b2a4efe03af542dff46f682cc5b6a6e3366200fcb
+            - PORT=8080
+            - ENV=production
+            - LOG_LEVEL=info
+        depends_on:
+            postgres:
+                condition: service_healthy
+        volumes:
+            - pos-uploads:/uploads/pos
+        restart: unless-stopped
 
-  cms-api:
-    build:
-      context: .
-      dockerfile: ./gbs-cms-api/Dockerfile
-    ports:
-      - "8081:8081"
-    environment:
-      - DATABASE_URL=postgres://postgres:123@postgres:5432/gbs_pos?sslmode=disable
-      - JWT_SECRET=872417e0370c7bb5705b380b2a4efe03af542dff46f682cc5b6a6e3366200fcb
-      - PORT=8081
-      - ENV=production
-      - LOG_LEVEL=info
-      - UPLOAD_DIR=/uploads/ads
-    depends_on:
-      postgres:
-        condition: service_healthy
-    volumes:
-      - cms-uploads:/uploads/ads
-    restart: unless-stopped
+    cms-api:
+        build:
+            context: .
+            dockerfile: ./gbs-cms-api/Dockerfile
+        ports:
+            - "8081:8081"
+        environment:
+            - DATABASE_URL=postgres://postgres:123@postgres:5432/gbs_pos?sslmode=disable
+            - JWT_SECRET=872417e0370c7bb5705b380b2a4efe03af542dff46f682cc5b6a6e3366200fcb
+            - PORT=8081
+            - ENV=production
+            - LOG_LEVEL=info
+            - UPLOAD_DIR=/uploads/ads
+        depends_on:
+            postgres:
+                condition: service_healthy
+        volumes:
+            - cms-uploads:/uploads/ads
+        restart: unless-stopped
 
-  postgres:
-    image: postgres:15-alpine
-    environment:
-      - POSTGRES_DB=gbs_pos
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=123
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-    ports:
-      - "5433:5432"
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-    restart: unless-stopped
+    postgres:
+        image: postgres:15-alpine
+        environment:
+            - POSTGRES_DB=gbs_pos
+            - POSTGRES_USER=postgres
+            - POSTGRES_PASSWORD=123
+        volumes:
+            - pgdata:/var/lib/postgresql/data
+        ports:
+            - "5433:5432"
+        healthcheck:
+            test: ["CMD-SHELL", "pg_isready -U postgres"]
+            interval: 5s
+            timeout: 5s
+            retries: 5
+        restart: unless-stopped
 
 volumes:
-  pgdata:
-  pos-uploads:
-  cms-uploads:
+    pgdata:
+    pos-uploads:
+    cms-uploads:

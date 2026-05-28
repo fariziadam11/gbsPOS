@@ -7,6 +7,7 @@ import (
 	"gbs-pos-api/internal/database"
 	"gbs-pos-api/internal/model"
 	"gbs-pos-api/internal/repository"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"
@@ -24,9 +25,39 @@ func setupSettlementTest(t *testing.T) (*SettlementService, *repository.OrderRep
 func TestSettlementService_GetUnsettledSummary(t *testing.T) {
 	svc, _, db := setupSettlementTest(t)
 
-	db.Create(&model.Order{ID: "O1", Total: 10000, PaymentMethod: "CASH", Timestamp: time.Now().UnixMilli(), IsVoided: false, IsSettled: false, StoreType: "RETAIL"})
-	db.Create(&model.Order{ID: "O2", Total: 20000, PaymentMethod: "CARD", Timestamp: time.Now().UnixMilli(), IsVoided: false, IsSettled: false, StoreType: "RETAIL"})
-	db.Create(&model.Order{ID: "O3", Total: 5000, PaymentMethod: "QRIS", Timestamp: time.Now().UnixMilli(), IsVoided: false, IsSettled: false, StoreType: "RETAIL"})
+	db.Create(
+		&model.Order{
+			ID:            "O1",
+			Total:         10000,
+			PaymentMethod: "CASH",
+			Timestamp:     time.Now().UnixMilli(),
+			IsVoided:      false,
+			IsSettled:     false,
+			StoreType:     "RETAIL",
+		},
+	)
+	db.Create(
+		&model.Order{
+			ID:            "O2",
+			Total:         20000,
+			PaymentMethod: "CARD",
+			Timestamp:     time.Now().UnixMilli(),
+			IsVoided:      false,
+			IsSettled:     false,
+			StoreType:     "RETAIL",
+		},
+	)
+	db.Create(
+		&model.Order{
+			ID:            "O3",
+			Total:         5000,
+			PaymentMethod: "QRIS",
+			Timestamp:     time.Now().UnixMilli(),
+			IsVoided:      false,
+			IsSettled:     false,
+			StoreType:     "RETAIL",
+		},
+	)
 
 	summary, err := svc.GetUnsettledSummary("RETAIL", "")
 	require.NoError(t, err)
@@ -40,8 +71,28 @@ func TestSettlementService_GetUnsettledSummary(t *testing.T) {
 func TestSettlementService_Settle(t *testing.T) {
 	svc, orderRepo, db := setupSettlementTest(t)
 
-	db.Create(&model.Order{ID: "O1", Total: 10000, PaymentMethod: "CASH", Timestamp: time.Now().UnixMilli(), IsVoided: false, IsSettled: false, StoreType: "RETAIL"})
-	db.Create(&model.Order{ID: "O2", Total: 20000, PaymentMethod: "CARD", Timestamp: time.Now().UnixMilli(), IsVoided: false, IsSettled: false, StoreType: "RETAIL"})
+	db.Create(
+		&model.Order{
+			ID:            "O1",
+			Total:         10000,
+			PaymentMethod: "CASH",
+			Timestamp:     time.Now().UnixMilli(),
+			IsVoided:      false,
+			IsSettled:     false,
+			StoreType:     "RETAIL",
+		},
+	)
+	db.Create(
+		&model.Order{
+			ID:            "O2",
+			Total:         20000,
+			PaymentMethod: "CARD",
+			Timestamp:     time.Now().UnixMilli(),
+			IsVoided:      false,
+			IsSettled:     false,
+			StoreType:     "RETAIL",
+		},
+	)
 
 	settlement, err := svc.Settle("SETTLE-001", time.Now().UnixMilli(), "RETAIL", "")
 	require.NoError(t, err)
@@ -69,8 +120,28 @@ func TestSettlementService_Settle_NoOrders(t *testing.T) {
 func TestSettlementService_Settle_DoesNotIncludeVoided(t *testing.T) {
 	svc, _, db := setupSettlementTest(t)
 
-	db.Create(&model.Order{ID: "O1", Total: 10000, PaymentMethod: "CASH", Timestamp: time.Now().UnixMilli(), IsVoided: true, IsSettled: false, StoreType: "RETAIL"})
-	db.Create(&model.Order{ID: "O2", Total: 20000, PaymentMethod: "CARD", Timestamp: time.Now().UnixMilli(), IsVoided: false, IsSettled: false, StoreType: "RETAIL"})
+	db.Create(
+		&model.Order{
+			ID:            "O1",
+			Total:         10000,
+			PaymentMethod: "CASH",
+			Timestamp:     time.Now().UnixMilli(),
+			IsVoided:      true,
+			IsSettled:     false,
+			StoreType:     "RETAIL",
+		},
+	)
+	db.Create(
+		&model.Order{
+			ID:            "O2",
+			Total:         20000,
+			PaymentMethod: "CARD",
+			Timestamp:     time.Now().UnixMilli(),
+			IsVoided:      false,
+			IsSettled:     false,
+			StoreType:     "RETAIL",
+		},
+	)
 
 	settlement, err := svc.Settle("SETTLE-001", time.Now().UnixMilli(), "RETAIL", "")
 	require.NoError(t, err)

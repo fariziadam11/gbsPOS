@@ -7,11 +7,12 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"gbs-pos-api/internal/database"
 	"gbs-common/middleware"
+	"gbs-pos-api/internal/database"
 	"gbs-pos-api/internal/model"
 	"gbs-pos-api/internal/repository"
 	"gbs-pos-api/internal/service"
+
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -19,7 +20,9 @@ import (
 	"gorm.io/gorm"
 )
 
-func setupHandlerTest(t *testing.T) (*gin.Engine, *service.AuthService, *service.OrderService, *service.SettlementService, *gorm.DB) {
+func setupHandlerTest(
+	t *testing.T,
+) (*gin.Engine, *service.AuthService, *service.OrderService, *service.SettlementService, *gorm.DB) {
 	gin.SetMode(gin.TestMode)
 	db, err := database.NewTestDB()
 	require.NoError(t, err)
@@ -29,9 +32,18 @@ func setupHandlerTest(t *testing.T) (*gin.Engine, *service.AuthService, *service
 
 	// Seed users
 	hash, _ := bcrypt.GenerateFromPassword([]byte("admin123"), bcrypt.DefaultCost)
-	db.Create(&model.User{Username: "admin", PasswordHash: string(hash), Name: "Admin", Role: "ADMIN"})
+	db.Create(
+		&model.User{Username: "admin", PasswordHash: string(hash), Name: "Admin", Role: "ADMIN"},
+	)
 	cashierHash, _ := bcrypt.GenerateFromPassword([]byte("cashier123"), bcrypt.DefaultCost)
-	db.Create(&model.User{Username: "cashier", PasswordHash: string(cashierHash), Name: "Cashier", Role: "CASHIER"})
+	db.Create(
+		&model.User{
+			Username:     "cashier",
+			PasswordHash: string(cashierHash),
+			Name:         "Cashier",
+			Role:         "CASHIER",
+		},
+	)
 
 	userRepo := repository.NewUserRepository(db)
 	orderRepo := repository.NewOrderRepository(db)
@@ -113,7 +125,13 @@ func TestOrderHandler_Create(t *testing.T) {
 		"paymentMethod": "CASH",
 		"timestamp":     1716023456789,
 		"items": []map[string]interface{}{
-			{"productId": 1, "productName": "Chitato", "productPrice": 10000, "qty": 2, "subtotal": 20000},
+			{
+				"productId":    1,
+				"productName":  "Chitato",
+				"productPrice": 10000,
+				"qty":          2,
+				"subtotal":     20000,
+			},
 		},
 	}
 	body, _ := json.Marshal(order)
@@ -142,7 +160,15 @@ func TestOrderHandler_Create_Idempotent(t *testing.T) {
 		"total":         22000,
 		"paymentMethod": "CASH",
 		"timestamp":     1716023456789,
-		"items":         []map[string]interface{}{{"productId": 1, "productName": "Chitato", "productPrice": 10000, "qty": 2, "subtotal": 20000}},
+		"items": []map[string]interface{}{
+			{
+				"productId":    1,
+				"productName":  "Chitato",
+				"productPrice": 10000,
+				"qty":          2,
+				"subtotal":     20000,
+			},
+		},
 	}
 
 	// First create
@@ -172,7 +198,11 @@ func TestOrderHandler_Void_ForbiddenForCashier(t *testing.T) {
 	result, _ := authSvc.Login("cashier", "cashier123")
 	token := result.Token
 
-	req := httptest.NewRequest(http.MethodPatch, "/v1/orders/ORDER-001/void", bytes.NewReader([]byte(`{"reason":"test"}`)))
+	req := httptest.NewRequest(
+		http.MethodPatch,
+		"/v1/orders/ORDER-001/void",
+		bytes.NewReader([]byte(`{"reason":"test"}`)),
+	)
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", "Bearer "+token)
 	w := httptest.NewRecorder()
@@ -187,9 +217,22 @@ func TestOrderHandler_Void_AdminSuccess(t *testing.T) {
 	token := result.Token
 
 	// Create order
-	db.Create(&model.Order{ID: "ORDER-VOID", Total: 10000, PaymentMethod: "CASH", Timestamp: 1716023456789, IsVoided: false, IsSettled: false})
+	db.Create(
+		&model.Order{
+			ID:            "ORDER-VOID",
+			Total:         10000,
+			PaymentMethod: "CASH",
+			Timestamp:     1716023456789,
+			IsVoided:      false,
+			IsSettled:     false,
+		},
+	)
 
-	req := httptest.NewRequest(http.MethodPatch, "/v1/orders/ORDER-VOID/void", bytes.NewReader([]byte(`{"reason":"Customer requested"}`)))
+	req := httptest.NewRequest(
+		http.MethodPatch,
+		"/v1/orders/ORDER-VOID/void",
+		bytes.NewReader([]byte(`{"reason":"Customer requested"}`)),
+	)
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", "Bearer "+token)
 	w := httptest.NewRecorder()
@@ -203,7 +246,12 @@ func TestProductHandler_Create_ForbiddenForCashier(t *testing.T) {
 	result, _ := authSvc.Login("cashier", "cashier123")
 	token := result.Token
 
-	product := map[string]interface{}{"name": "Test", "price": 1000, "category": "Test", "storeType": "RETAIL"}
+	product := map[string]interface{}{
+		"name":      "Test",
+		"price":     1000,
+		"category":  "Test",
+		"storeType": "RETAIL",
+	}
 	body, _ := json.Marshal(product)
 	req := httptest.NewRequest(http.MethodPost, "/v1/products", bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")

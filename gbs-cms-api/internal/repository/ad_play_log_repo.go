@@ -2,6 +2,7 @@ package repository
 
 import (
 	"gbs-cms-api/internal/model"
+
 	"gorm.io/gorm"
 )
 

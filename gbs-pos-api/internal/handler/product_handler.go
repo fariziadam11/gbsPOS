@@ -2,12 +2,13 @@ package handler
 
 import (
 	"errors"
+	"gbs-common/pkg/response"
+	"gbs-pos-api/internal/model"
+	"gbs-pos-api/internal/service"
 	"net/http"
 	"strconv"
 	"time"
-	"gbs-pos-api/internal/model"
-	"gbs-pos-api/internal/service"
-	"gbs-common/pkg/response"
+
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
@@ -36,7 +37,10 @@ func (h *ProductHandler) List(c *gin.Context) {
 func (h *ProductHandler) Create(c *gin.Context) {
 	var product model.Product
 	if err := c.ShouldBindJSON(&product); err != nil {
-		c.JSON(http.StatusUnprocessableEntity, response.ValidationError("Invalid request body", nil))
+		c.JSON(
+			http.StatusUnprocessableEntity,
+			response.ValidationError("Invalid request body", nil),
+		)
 		return
 	}
 	if err := h.productService.Create(&product); err != nil {
@@ -55,13 +59,19 @@ func (h *ProductHandler) Update(c *gin.Context) {
 	}
 	var updates model.Product
 	if err := c.ShouldBindJSON(&updates); err != nil {
-		c.JSON(http.StatusUnprocessableEntity, response.ValidationError("Invalid request body", nil))
+		c.JSON(
+			http.StatusUnprocessableEntity,
+			response.ValidationError("Invalid request body", nil),
+		)
 		return
 	}
 	product, err := h.productService.Update(uint(id), &updates)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			c.JSON(http.StatusNotFound, response.Error("PRODUCT_NOT_FOUND", "Product with ID "+idStr+" not found"))
+			c.JSON(
+				http.StatusNotFound,
+				response.Error("PRODUCT_NOT_FOUND", "Product with ID "+idStr+" not found"),
+			)
 			return
 		}
 		c.JSON(http.StatusInternalServerError, response.Error("INTERNAL_SERVER_ERROR", err.Error()))
@@ -79,7 +89,10 @@ func (h *ProductHandler) Delete(c *gin.Context) {
 	}
 	if err := h.productService.Delete(uint(id)); err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			c.JSON(http.StatusNotFound, response.Error("PRODUCT_NOT_FOUND", "Product with ID "+idStr+" not found"))
+			c.JSON(
+				http.StatusNotFound,
+				response.Error("PRODUCT_NOT_FOUND", "Product with ID "+idStr+" not found"),
+			)
 			return
 		}
 		c.JSON(http.StatusInternalServerError, response.Error("INTERNAL_SERVER_ERROR", err.Error()))

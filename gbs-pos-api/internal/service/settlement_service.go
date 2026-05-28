@@ -2,9 +2,11 @@ package service
 
 import (
 	"fmt"
-	"time"
+	"gbs-pos-api/internal/dto"
 	"gbs-pos-api/internal/model"
 	"gbs-pos-api/internal/repository"
+	"time"
+
 	"gorm.io/gorm"
 )
 
@@ -13,38 +15,36 @@ type SettlementService struct {
 	settlementRepo *repository.SettlementRepository
 }
 
-func NewSettlementService(orderRepo *repository.OrderRepository, settlementRepo *repository.SettlementRepository) *SettlementService {
+func NewSettlementService(
+	orderRepo *repository.OrderRepository,
+	settlementRepo *repository.SettlementRepository,
+) *SettlementService {
 	return &SettlementService{orderRepo: orderRepo, settlementRepo: settlementRepo}
 }
 
-type UnsettledSummary struct {
-	Count          int                               `json:"count"`
-	Total          float64                           `json:"total"`
-	PaymentSummary map[string]PaymentMethodSummary   `json:"paymentSummary"`
-}
-
-type PaymentMethodSummary struct {
-	Count int     `json:"count"`
-	Total float64 `json:"total"`
-}
-
-func (s *SettlementService) GetUnsettledSummary(storeType, terminalID string) (*UnsettledSummary, error) {
+func (s *SettlementService) GetUnsettledSummary(
+	storeType, terminalID string,
+) (*dto.UnsettledSummary, error) {
 	count, total, summary, err := s.orderRepo.FindUnsettledSummary(storeType, terminalID)
 	if err != nil {
 		return nil, err
 	}
-	paymentSummary := make(map[string]PaymentMethodSummary)
+	paymentSummary := make(map[string]dto.PaymentMethodSummary)
 	for k, v := range summary {
-		paymentSummary[k] = PaymentMethodSummary{Count: v.Count, Total: v.Total}
+		paymentSummary[k] = dto.PaymentMethodSummary{Count: v.Count, Total: v.Total}
 	}
-	return &UnsettledSummary{
+	return &dto.UnsettledSummary{
 		Count:          count,
 		Total:          total,
 		PaymentSummary: paymentSummary,
 	}, nil
 }
 
-func (s *SettlementService) Settle(settlementID string, timestamp int64, storeType, terminalID string) (*model.Settlement, error) {
+func (s *SettlementService) Settle(
+	settlementID string,
+	timestamp int64,
+	storeType, terminalID string,
+) (*model.Settlement, error) {
 	var result *model.Settlement
 	err := s.orderRepo.Transaction(func(tx *gorm.DB) error {
 		txOrderRepo := s.orderRepo.WithTx(tx)

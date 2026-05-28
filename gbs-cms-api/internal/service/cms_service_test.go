@@ -8,6 +8,7 @@ import (
 	"gbs-cms-api/internal/database"
 	"gbs-cms-api/internal/model"
 	"gbs-cms-api/internal/repository"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"
@@ -28,7 +29,19 @@ func TestCMSService_CreateAd(t *testing.T) {
 	startDate := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
 	endDate := time.Date(2025, 1, 31, 0, 0, 0, 0, time.UTC)
 
-	ad, err := svc.CreateAd("Indomie Promo", "indomie.mp4", "video/mp4", 5242880, []string{"RETAIL"}, 0, &startDate, &endDate, nil, nil, 1)
+	ad, err := svc.CreateAd(
+		"Indomie Promo",
+		"indomie.mp4",
+		"video/mp4",
+		5242880,
+		[]string{"RETAIL"},
+		0,
+		&startDate,
+		&endDate,
+		nil,
+		nil,
+		1,
+	)
 	require.NoError(t, err)
 	assert.Equal(t, "Indomie Promo", ad.Name)
 	assert.Equal(t, []string{"RETAIL"}, ad.StoreTypes)
@@ -41,7 +54,19 @@ func TestCMSService_CreateAd_InvalidSchedule(t *testing.T) {
 	startDate := time.Date(2025, 2, 1, 0, 0, 0, 0, time.UTC)
 	endDate := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
 
-	_, err := svc.CreateAd("Invalid", "file.mp4", "video/mp4", 1000, []string{"RETAIL"}, 0, &startDate, &endDate, nil, nil, 1)
+	_, err := svc.CreateAd(
+		"Invalid",
+		"file.mp4",
+		"video/mp4",
+		1000,
+		[]string{"RETAIL"},
+		0,
+		&startDate,
+		&endDate,
+		nil,
+		nil,
+		1,
+	)
 	assert.Error(t, err)
 	assert.Equal(t, "INVALID_SCHEDULE", err.Error())
 }
@@ -49,10 +74,28 @@ func TestCMSService_CreateAd_InvalidSchedule(t *testing.T) {
 func TestCMSService_UpdateAd(t *testing.T) {
 	svc, db := setupCMSTest(t)
 
-	ad := &model.Ad{Name: "Old Name", Filename: "old.mp4", StoragePath: "/uploads/old.mp4", FileSize: 1000, MimeType: "video/mp4", StoreTypes: []string{"RETAIL"}, PlaylistOrder: 0, IsActive: true, CreatedBy: 1}
+	ad := &model.Ad{
+		Name:          "Old Name",
+		Filename:      "old.mp4",
+		StoragePath:   "/uploads/old.mp4",
+		FileSize:      1000,
+		MimeType:      "video/mp4",
+		StoreTypes:    []string{"RETAIL"},
+		PlaylistOrder: 0,
+		IsActive:      true,
+		CreatedBy:     1,
+	}
 	db.Create(ad)
 
-	updated, err := svc.UpdateAd(ad.ID, &model.Ad{Name: "New Name", StoreTypes: []string{"RETAIL", "FNB"}, PlaylistOrder: 1, IsActive: false})
+	updated, err := svc.UpdateAd(
+		ad.ID,
+		&model.Ad{
+			Name:          "New Name",
+			StoreTypes:    []string{"RETAIL", "FNB"},
+			PlaylistOrder: 1,
+			IsActive:      false,
+		},
+	)
 	require.NoError(t, err)
 	assert.Equal(t, "New Name", updated.Name)
 	assert.Equal(t, []string{"RETAIL", "FNB"}, updated.StoreTypes)
@@ -63,7 +106,16 @@ func TestCMSService_UpdateAd(t *testing.T) {
 func TestCMSService_ToggleAd(t *testing.T) {
 	svc, db := setupCMSTest(t)
 
-	ad := &model.Ad{Name: "Ad", Filename: "ad.mp4", StoragePath: "/uploads/ad.mp4", FileSize: 1000, MimeType: "video/mp4", StoreTypes: []string{"RETAIL"}, IsActive: true, CreatedBy: 1}
+	ad := &model.Ad{
+		Name:        "Ad",
+		Filename:    "ad.mp4",
+		StoragePath: "/uploads/ad.mp4",
+		FileSize:    1000,
+		MimeType:    "video/mp4",
+		StoreTypes:  []string{"RETAIL"},
+		IsActive:    true,
+		CreatedBy:   1,
+	}
 	db.Create(ad)
 
 	toggled, err := svc.ToggleAd(ad.ID)
@@ -78,12 +130,33 @@ func TestCMSService_GetActivePlaylist(t *testing.T) {
 	startDate := now.AddDate(0, 0, -1)
 	endDate := now.AddDate(0, 0, 1)
 
-	ad := &model.Ad{Name: "Active Ad", Filename: "active.mp4", StoragePath: "/uploads/active.mp4", FileSize: 1000, MimeType: "video/mp4", StoreTypes: []string{"RETAIL"}, IsActive: true, StartDate: &startDate, EndDate: &endDate, CreatedBy: 1}
+	ad := &model.Ad{
+		Name:        "Active Ad",
+		Filename:    "active.mp4",
+		StoragePath: "/uploads/active.mp4",
+		FileSize:    1000,
+		MimeType:    "video/mp4",
+		StoreTypes:  []string{"RETAIL"},
+		IsActive:    true,
+		StartDate:   &startDate,
+		EndDate:     &endDate,
+		CreatedBy:   1,
+	}
 	db.Create(ad)
 
 	// Inactive ad
-	inactive := &model.Ad{Name: "Inactive", Filename: "inactive.mp4", StoragePath: "/uploads/inactive.mp4", FileSize: 1000, MimeType: "video/mp4", StoreTypes: []string{"RETAIL"}, IsActive: false, CreatedBy: 1}
-	db.Select("is_active").Create(inactive)
+	inactive := &model.Ad{
+		Name:        "Inactive",
+		Filename:    "inactive.mp4",
+		StoragePath: "/uploads/inactive.mp4",
+		FileSize:    1000,
+		MimeType:    "video/mp4",
+		StoreTypes:  []string{"RETAIL"},
+		IsActive:    false,
+		CreatedBy:   1,
+	}
+	require.NoError(t, db.Create(inactive).Error)
+	require.NoError(t, db.Model(inactive).UpdateColumn("is_active", false).Error)
 
 	playlist, err := svc.GetActivePlaylist("RETAIL")
 	require.NoError(t, err)
@@ -102,7 +175,16 @@ func TestCMSService_ValidateUploadFile(t *testing.T) {
 func TestCMSService_LogPlay(t *testing.T) {
 	svc, db := setupCMSTest(t)
 
-	ad := &model.Ad{Name: "Ad", Filename: "ad.mp4", StoragePath: "/uploads/ad.mp4", FileSize: 1000, MimeType: "video/mp4", StoreTypes: []string{"RETAIL"}, IsActive: true, CreatedBy: 1}
+	ad := &model.Ad{
+		Name:        "Ad",
+		Filename:    "ad.mp4",
+		StoragePath: "/uploads/ad.mp4",
+		FileSize:    1000,
+		MimeType:    "video/mp4",
+		StoreTypes:  []string{"RETAIL"},
+		IsActive:    true,
+		CreatedBy:   1,
+	}
 	db.Create(ad)
 
 	err := svc.LogPlay(ad.ID, "POS-001", "RETAIL")
