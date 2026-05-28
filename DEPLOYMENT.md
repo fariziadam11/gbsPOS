@@ -289,7 +289,33 @@ Then monitor the run at: `https://github.com/YOUR_USERNAME/YOUR_REPO/actions`
 
 ---
 
-## Step 7: Verify the Deployment
+## Step 7: Connect to Database with DBeaver (Optional)
+
+Postgres is exposed on `127.0.0.1:5432` inside the VPS. To connect from DBeaver, use an **SSH Tunnel**:
+
+### DBeaver Connection Settings
+
+| Tab | Setting | Value |
+|-----|---------|-------|
+| **Main** | Host | `localhost` |
+| **Main** | Port | `5432` |
+| **Main** | Database | `gbs_pos` |
+| **Main** | Username | `gbs_prod` |
+| **Main** | Password | *(from `/opt/gbs/.env`)* |
+| **SSH** | Use SSH Tunnel | ✅ |
+| **SSH** | Host/IP | *(your VPS public IP)* |
+| **SSH** | Port | `22` |
+| **SSH** | Authentication | Public Key |
+| **SSH** | Private Key | `~/.ssh/id_rsa` |
+| **SSH** | Username | `root` or `ubuntu` |
+
+Click **Test Connection**.
+
+**Security note:** Postgres binds to `127.0.0.1:5432` only (not `0.0.0.0`), so it cannot be reached from the internet directly. The SSH tunnel is the only way in.
+
+---
+
+## Step 8: Verify the Deployment
 
 ### Health Checks
 
