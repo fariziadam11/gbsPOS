@@ -12,6 +12,16 @@ import (
 	"gorm.io/gorm"
 )
 
+type seedOrderRequest struct {
+	ID            string
+	PaymentMethod string
+	IsVoided      bool
+	IsSettled     bool
+	StoreType     string
+	TerminalID    string
+	Total         float64
+}
+
 func setupOrderRepoTestDB(t *testing.T) *gorm.DB {
 
 	db, err := gorm.Open(
@@ -34,33 +44,27 @@ func setupOrderRepoTestDB(t *testing.T) *gorm.DB {
 func seedOrder(
 	t *testing.T,
 	db *gorm.DB,
-	id string,
-	paymentMethod string,
-	isVoided bool,
-	isSettled bool,
-	storeType string,
-	terminalID string,
-	total float64,
+	req seedOrderRequest,
 ) {
 
 	order := model.Order{
-		ID:            id,
-		Subtotal:      total,
+		ID:            req.ID,
+		Subtotal:      req.Total,
 		Tax:           0,
-		Total:         total,
-		PaymentMethod: paymentMethod,
+		Total:         req.Total,
+		PaymentMethod: req.PaymentMethod,
 		Timestamp:     time.Now().UnixMilli(),
-		IsVoided:      isVoided,
-		IsSettled:     isSettled,
-		StoreType:     storeType,
-		TerminalID:    terminalID,
+		IsVoided:      req.IsVoided,
+		IsSettled:     req.IsSettled,
+		StoreType:     req.StoreType,
+		TerminalID:    req.TerminalID,
 		Items: []model.OrderItem{
 			{
 				ProductID:    1,
 				ProductName:  "Chitato",
-				ProductPrice: total,
+				ProductPrice: req.Total,
 				Qty:           1,
-				Subtotal:      total,
+				Subtotal:      req.Total,
 			},
 		},
 	}
@@ -76,17 +80,15 @@ func TestOrderRepository_FindByIDWithItems(t *testing.T) {
 
 	repo := NewOrderRepository(db)
 
-	seedOrder(
-		t,
-		db,
-		"ORDER-001",
-		"CASH",
-		false,
-		false,
-		"RETAIL",
-		"POS-001",
-		10000,
-	)
+	seedOrder(t, db, seedOrderRequest{
+		ID:            "ORDER-001",
+		PaymentMethod: "CASH",
+		IsVoided:      false,
+		IsSettled:     false,
+		StoreType:     "RETAIL",
+		TerminalID:    "POS-001",
+		Total:         10000,
+	})
 
 	order, err := repo.FindByIDWithItems("ORDER-001")
 
@@ -109,29 +111,25 @@ func TestOrderRepository_FindAll_FilterStoreType(t *testing.T) {
 
 	repo := NewOrderRepository(db)
 
-	seedOrder(
-		t,
-		db,
-		"ORDER-001",
-		"CASH",
-		false,
-		false,
-		"RETAIL",
-		"POS-001",
-		10000,
-	)
+	seedOrder(t, db, seedOrderRequest{
+		ID:            "ORDER-001",
+		PaymentMethod: "CASH",
+		IsVoided:      false,
+		IsSettled:     false,
+		StoreType:     "RETAIL",
+		TerminalID:    "POS-001",
+		Total:         10000,
+	})
 
-	seedOrder(
-		t,
-		db,
-		"ORDER-002",
-		"CARD",
-		false,
-		false,
-		"FNB",
-		"POS-002",
-		20000,
-	)
+	seedOrder(t, db, seedOrderRequest{
+		ID:            "ORDER-002",
+		PaymentMethod: "CARD",
+		IsVoided:      false,
+		IsSettled:     false,
+		StoreType:     "FNB",
+		TerminalID:    "POS-002",
+		Total:         20000,
+	})
 
 	orders, err := repo.FindAll(
 		"RETAIL",
@@ -160,41 +158,35 @@ func TestOrderRepository_FindUnsettledSummary(t *testing.T) {
 
 	repo := NewOrderRepository(db)
 
-	seedOrder(
-		t,
-		db,
-		"ORDER-001",
-		"CASH",
-		false,
-		false,
-		"RETAIL",
-		"POS-001",
-		10000,
-	)
+	seedOrder(t, db, seedOrderRequest{
+		ID:            "ORDER-001",
+		PaymentMethod: "CASH",
+		IsVoided:      false,
+		IsSettled:     false,
+		StoreType:     "RETAIL",
+		TerminalID:    "POS-001",
+		Total:         10000,
+	})
 
-	seedOrder(
-		t,
-		db,
-		"ORDER-002",
-		"CARD",
-		false,
-		false,
-		"RETAIL",
-		"POS-001",
-		20000,
-	)
+	seedOrder(t, db, seedOrderRequest{
+		ID:            "ORDER-002",
+		PaymentMethod: "CARD",
+		IsVoided:      false,
+		IsSettled:     false,
+		StoreType:     "RETAIL",
+		TerminalID:    "POS-001",
+		Total:         20000,
+	})
 
-	seedOrder(
-		t,
-		db,
-		"ORDER-003",
-		"CASH",
-		true,
-		false,
-		"RETAIL",
-		"POS-001",
-		30000,
-	)
+	seedOrder(t, db, seedOrderRequest{
+		ID:            "ORDER-003",
+		PaymentMethod: "CASH",
+		IsVoided:      true,
+		IsSettled:     false,
+		StoreType:     "RETAIL",
+		TerminalID:    "POS-001",
+		Total:         30000,
+	})
 
 	count, total, summary, err := repo.FindUnsettledSummary(
 		"RETAIL",
@@ -224,41 +216,35 @@ func TestOrderRepository_FindUnsettledOrders(t *testing.T) {
 
 	repo := NewOrderRepository(db)
 
-	seedOrder(
-		t,
-		db,
-		"ORDER-001",
-		"CASH",
-		false,
-		false,
-		"RETAIL",
-		"POS-001",
-		10000,
-	)
+	seedOrder(t, db, seedOrderRequest{
+		ID:            "ORDER-001",
+		PaymentMethod: "CASH",
+		IsVoided:      false,
+		IsSettled:     false,
+		StoreType:     "RETAIL",
+		TerminalID:    "POS-001",
+		Total:         10000,
+	})
 
-	seedOrder(
-		t,
-		db,
-		"ORDER-002",
-		"CASH",
-		true,
-		false,
-		"RETAIL",
-		"POS-001",
-		10000,
-	)
+	seedOrder(t, db, seedOrderRequest{
+		ID:            "ORDER-002",
+		PaymentMethod: "CASH",
+		IsVoided:      true,
+		IsSettled:     false,
+		StoreType:     "RETAIL",
+		TerminalID:    "POS-001",
+		Total:         10000,
+	})
 
-	seedOrder(
-		t,
-		db,
-		"ORDER-003",
-		"CASH",
-		false,
-		true,
-		"RETAIL",
-		"POS-001",
-		10000,
-	)
+	seedOrder(t, db, seedOrderRequest{
+		ID:            "ORDER-003",
+		PaymentMethod: "CASH",
+		IsVoided:      false,
+		IsSettled:     true,
+		StoreType:     "RETAIL",
+		TerminalID:    "POS-001",
+		Total:         10000,
+	})
 
 	orders, err := repo.FindUnsettledOrders(
 		"RETAIL",
@@ -283,17 +269,15 @@ func TestOrderRepository_MarkSettled(t *testing.T) {
 
 	repo := NewOrderRepository(db)
 
-	seedOrder(
-		t,
-		db,
-		"ORDER-001",
-		"CASH",
-		false,
-		false,
-		"RETAIL",
-		"POS-001",
-		10000,
-	)
+	seedOrder(t, db, seedOrderRequest{
+		ID:            "ORDER-001",
+		PaymentMethod: "CASH",
+		IsVoided:      false,
+		IsSettled:     false,
+		StoreType:     "RETAIL",
+		TerminalID:    "POS-001",
+		Total:         10000,
+	})
 
 	err := repo.MarkSettled([]string{"ORDER-001"})
 

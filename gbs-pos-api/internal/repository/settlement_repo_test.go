@@ -12,6 +12,15 @@ import (
 	"gorm.io/gorm"
 )
 
+type seedSettlementRequest struct {
+	ID         string
+	StoreType  string
+	Total      float64
+	Timestamp  int64
+	TerminalID string
+	Status     string
+}
+
 func setupSettlementRepoTestDB(t *testing.T) *gorm.DB {
 
 	db, err := gorm.Open(
@@ -31,23 +40,20 @@ func setupSettlementRepoTestDB(t *testing.T) *gorm.DB {
 func seedSettlement(
 	t *testing.T,
 	db *gorm.DB,
-	id string,
-	storeType string,
-	total float64,
-	timestamp int64,
+	req seedSettlementRequest,
 ) {
 
 	settlement := model.Settlement{
-		ID:          id,
-		Timestamp:   timestamp,
+		ID:          req.ID,
+		Timestamp:   req.Timestamp,
 		BatchCount:  1,
-		TotalAmount: total,
+		TotalAmount: req.Total,
 		CardTotal:   0,
 		QRISTotal:   0,
-		CashTotal:   total,
-		Status:      "SUCCESS",
-		StoreType:   storeType,
-		TerminalID:  "POS-001",
+		CashTotal:   req.Total,
+		Status:      req.Status,
+		StoreType:   req.StoreType,
+		TerminalID:  req.TerminalID,
 	}
 
 	err := db.Create(&settlement).Error
@@ -61,14 +67,14 @@ func TestSettlementRepository_FindByID(t *testing.T) {
 
 	repo := NewSettlementRepository(db)
 
-	seedSettlement(
-		t,
-		db,
-		"SETTLEMENT-001",
-		"RETAIL",
-		100000,
-		time.Now().UnixMilli(),
-	)
+	seedSettlement(t, db, seedSettlementRequest{
+		ID:         "SETTLEMENT-001",
+		StoreType:  "RETAIL",
+		Total:      100000,
+		Timestamp:  time.Now().UnixMilli(),
+		TerminalID: "POS-001",
+		Status:     "SUCCESS",
+	})
 
 	result, err := repo.FindByID("SETTLEMENT-001")
 
@@ -95,23 +101,23 @@ func TestSettlementRepository_FindAll_FilterStoreType(t *testing.T) {
 
 	now := time.Now().UnixMilli()
 
-	seedSettlement(
-		t,
-		db,
-		"SETTLEMENT-001",
-		"RETAIL",
-		100000,
-		now,
-	)
+	seedSettlement(t, db, seedSettlementRequest{
+		ID:         "SETTLEMENT-001",
+		StoreType:  "RETAIL",
+		Total:      100000,
+		Timestamp:  now,
+		TerminalID: "POS-001",
+		Status:     "SUCCESS",
+	})
 
-	seedSettlement(
-		t,
-		db,
-		"SETTLEMENT-002",
-		"FNB",
-		200000,
-		now+1,
-	)
+	seedSettlement(t, db, seedSettlementRequest{
+		ID:         "SETTLEMENT-002",
+		StoreType:  "FNB",
+		Total:      200000,
+		Timestamp:  now + 1,
+		TerminalID: "POS-001",
+		Status:     "SUCCESS",
+	})
 
 	result, err := repo.FindAll(
 		0,
@@ -137,23 +143,23 @@ func TestSettlementRepository_FindAll_Limit(t *testing.T) {
 
 	now := time.Now().UnixMilli()
 
-	seedSettlement(
-		t,
-		db,
-		"SETTLEMENT-001",
-		"RETAIL",
-		100000,
-		now,
-	)
+	seedSettlement(t, db, seedSettlementRequest{
+		ID:         "SETTLEMENT-001",
+		StoreType:  "RETAIL",
+		Total:      100000,
+		Timestamp:  now,
+		TerminalID: "POS-001",
+		Status:     "SUCCESS",
+	})
 
-	seedSettlement(
-		t,
-		db,
-		"SETTLEMENT-002",
-		"RETAIL",
-		200000,
-		now+1,
-	)
+	seedSettlement(t, db, seedSettlementRequest{
+		ID:         "SETTLEMENT-002",
+		StoreType:  "RETAIL",
+		Total:      200000,
+		Timestamp:  now + 1,
+		TerminalID: "POS-001",
+		Status:     "SUCCESS",
+	})
 
 	result, err := repo.FindAll(
 		1,
