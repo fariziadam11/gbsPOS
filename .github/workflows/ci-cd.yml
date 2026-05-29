@@ -1,0 +1,356 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  POS_IMAGE_NAME: ${{ github.repository }}/gbs-pos-api
+  CMS_IMAGE_NAME: ${{ github.repository }}/gbs-cms-api
+
+jobs:
+  # ==================== LINT & TEST ====================
+  lint-and-test:
+    name: Lint & Test
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_DB: gbs_pos_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+      
+      - name: 🔧 Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.26'
+          cache: true
+      
+      - name: 📦 Download dependencies
+        run: |
+          cd gbs-pos-api && go mod download
+          cd ../gbs-cms-api && go mod download
+          cd ../gbs-common && go mod download
+      
+      - name: 🔍 Run golangci-lint (POS API)
+        uses: golangci/golangci-lint-action@v4
+        with:
+          version: latest
+          working-directory: gbs-pos-api
+          args: --timeout=5m
+      
+      - name: 🔍 Run golangci-lint (CMS API)
+        uses: golangci/golangci-lint-action@v4
+        with:
+          version: latest
+          working-directory: gbs-cms-api
+          args: --timeout=5m
+      
+      - name: 🧪 Run tests (POS API)
+        env:
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/gbs_pos_test?sslmode=disable
+          JWT_SECRET: test-secret-key-minimum-32-characters-long
+        run: |
+          cd gbs-pos-api
+          go test -v -race -coverprofile=coverage.out -covermode=atomic ./...
+      
+      - name: 🧪 Run tests (CMS API)
+        env:
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/gbs_pos_test?sslmode=disable
+          JWT_SECRET: test-secret-key-minimum-32-characters-long
+        run: |
+          cd gbs-cms-api
+          go test -v -race -coverprofile=coverage.out -covermode=atomic ./...
+      
+      - name: 📊 Upload coverage to Codecov (POS API)
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./gbs-pos-api/coverage.out
+          flags: pos-api
+          name: pos-api-coverage
+      
+      - name: 📊 Upload coverage to Codecov (CMS API)
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./gbs-cms-api/coverage.out
+          flags: cms-api
+          name: cms-api-coverage
+
+  # ==================== SECURITY SCAN ====================
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    needs: lint-and-test
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+      
+      - name: 🔒 Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+      
+      - name: 📤 Upload Trivy results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: 'trivy-results.sarif'
+      
+      - name: 🔍 Run gosec security scanner (POS API)
+        uses: securego/gosec@master
+        with:
+          args: '-no-fail -fmt sarif -out gosec-pos.sarif ./gbs-pos-api/...'
+      
+      - name: 🔍 Run gosec security scanner (CMS API)
+        uses: securego/gosec@master
+        with:
+          args: '-no-fail -fmt sarif -out gosec-cms.sarif ./gbs-cms-api/...'
+
+  # ==================== BUILD DOCKER IMAGES ====================
+  build-images:
+    name: Build Docker Images
+    runs-on: ubuntu-latest
+    needs: [lint-and-test, security-scan]
+    if: github.event_name == 'push'
+    
+    permissions:
+      contents: read
+      packages: write
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+      
+      - name: 🔧 Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      
+      - name: 🔐 Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: 📝 Extract metadata (POS API)
+        id: meta-pos
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.POS_IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+      
+      - name: 📝 Extract metadata (CMS API)
+        id: meta-cms
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.CMS_IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+      
+      - name: 🏗️ Build and push POS API image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./gbs-pos-api/Dockerfile
+          push: true
+          tags: ${{ steps.meta-pos.outputs.tags }}
+          labels: ${{ steps.meta-pos.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          platforms: linux/amd64,linux/arm64
+      
+      - name: 🏗️ Build and push CMS API image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./gbs-cms-api/Dockerfile
+          push: true
+          tags: ${{ steps.meta-cms.outputs.tags }}
+          labels: ${{ steps.meta-cms.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          platforms: linux/amd64,linux/arm64
+      
+      - name: 🔒 Run Trivy on POS API image
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ env.REGISTRY }}/${{ env.POS_IMAGE_NAME }}:${{ github.sha }}
+          format: 'sarif'
+          output: 'trivy-pos-image.sarif'
+      
+      - name: 🔒 Run Trivy on CMS API image
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ env.REGISTRY }}/${{ env.CMS_IMAGE_NAME }}:${{ github.sha }}
+          format: 'sarif'
+          output: 'trivy-cms-image.sarif'
+
+  # ==================== DEPLOY TO STAGING ====================
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: build-images
+    if: github.ref == 'refs/heads/develop'
+    environment:
+      name: staging
+      url: https://staging-api.gbs-pos.com
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+      
+      - name: 🔧 Setup SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.STAGING_SSH_KEY }}
+      
+      - name: 🚀 Deploy to staging server
+        env:
+          STAGING_HOST: ${{ secrets.STAGING_HOST }}
+          STAGING_USER: ${{ secrets.STAGING_USER }}
+        run: |
+          ssh -o StrictHostKeyChecking=no $STAGING_USER@$STAGING_HOST << 'EOF'
+            cd /opt/gbs-pos-cms-api
+            git pull origin develop
+            docker-compose pull
+            docker-compose up -d --force-recreate
+            docker system prune -af
+          EOF
+      
+      - name: ✅ Health check
+        run: |
+          sleep 10
+          curl -f https://staging-api.gbs-pos.com/health || exit 1
+
+  # ==================== DEPLOY TO PRODUCTION ====================
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: build-images
+    if: github.ref == 'refs/heads/main'
+    environment:
+      name: production
+      url: https://api.gbs-pos.com
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+      
+      - name: 🔧 Setup SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.PRODUCTION_SSH_KEY }}
+      
+      - name: 💾 Backup database
+        env:
+          PROD_HOST: ${{ secrets.PRODUCTION_HOST }}
+          PROD_USER: ${{ secrets.PRODUCTION_USER }}
+        run: |
+          ssh -o StrictHostKeyChecking=no $PROD_USER@$PROD_HOST << 'EOF'
+            docker exec gbs-pos-cms-api-postgres-1 pg_dump -U postgres gbs_pos > /backup/gbs_pos_$(date +%Y%m%d_%H%M%S).sql
+          EOF
+      
+      - name: 🚀 Deploy to production server
+        env:
+          PROD_HOST: ${{ secrets.PRODUCTION_HOST }}
+          PROD_USER: ${{ secrets.PRODUCTION_USER }}
+        run: |
+          ssh -o StrictHostKeyChecking=no $PROD_USER@$PROD_HOST << 'EOF'
+            cd /opt/gbs-pos-cms-api
+            git pull origin main
+            docker-compose pull
+            docker-compose up -d --force-recreate
+            docker system prune -af
+          EOF
+      
+      - name: ✅ Health check
+        run: |
+          sleep 15
+          curl -f https://api.gbs-pos.com/health || exit 1
+      
+      - name: 📢 Notify deployment success
+        uses: 8398a7/action-slack@v3
+        if: success()
+        with:
+          status: custom
+          custom_payload: |
+            {
+              text: "✅ Production deployment successful!",
+              attachments: [{
+                color: 'good',
+                text: `Deployed commit: ${{ github.sha }}\nBy: ${{ github.actor }}`
+              }]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
+      
+      - name: 📢 Notify deployment failure
+        uses: 8398a7/action-slack@v3
+        if: failure()
+        with:
+          status: custom
+          custom_payload: |
+            {
+              text: "❌ Production deployment failed!",
+              attachments: [{
+                color: 'danger',
+                text: `Failed commit: ${{ github.sha }}\nBy: ${{ github.actor }}`
+              }]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
+
+  # ==================== ROLLBACK ====================
+  rollback:
+    name: Rollback Production
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch'
+    environment:
+      name: production
+    
+    steps:
+      - name: 🔄 Rollback to previous version
+        env:
+          PROD_HOST: ${{ secrets.PRODUCTION_HOST }}
+          PROD_USER: ${{ secrets.PRODUCTION_USER }}
+        run: |
+          ssh -o StrictHostKeyChecking=no $PROD_USER@$PROD_HOST << 'EOF'
+            cd /opt/gbs-pos-cms-api
+            git reset --hard HEAD~1
+            docker-compose up -d --force-recreate
+          EOF
+      
+      - name: ✅ Health check after rollback
+        run: |
+          sleep 15
+          curl -f https://api.gbs-pos.com/health || exit 1
