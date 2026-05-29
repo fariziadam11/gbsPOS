@@ -11,7 +11,6 @@ import (
 	"gbs-cms-api/internal/config"
 	"gbs-cms-api/internal/database"
 	"gbs-cms-api/internal/handler"
-	"gbs-cms-api/internal/model"
 	"gbs-cms-api/internal/repository"
 	"gbs-cms-api/internal/service"
 	"gbs-common/middleware"
@@ -19,7 +18,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 	"github.com/rs/zerolog"
-	"gorm.io/gorm"
 )
 
 func main() {
@@ -39,21 +37,6 @@ func main() {
 	if err != nil {
 		log.Fatal("failed to connect database: ", err)
 	}
-
-	if cfg.MigrationsPath != "" {
-		if err := database.RunMigrations(cfg.DatabaseURL, cfg.MigrationsPath); err != nil {
-			log.Fatal("failed to run migrations: ", err)
-		}
-	} else {
-		if err := database.Migrate(db,
-			// &model.Ad{},
-			// &model.AdPlayLog{},
-		); err != nil {
-			log.Fatal("failed to migrate database: ", err)
-		}
-	}
-
-	// seedData(db)
 
 	adRepo := repository.NewAdRepository(db)
 	playLogRepo := repository.NewAdPlayLogRepository(db)
@@ -125,30 +108,4 @@ func main() {
 		log.Fatal("forced shutdown: ", err)
 	}
 	log.Println("CMS API stopped")
-}
-
-func seedData(db *gorm.DB) {
-	var count int64
-	db.Model(&model.User{}).Count(&count)
-	if count > 0 {
-		return
-	}
-	log.Println("CMS seeding data...")
-	users := []model.User{
-		{
-			Username:     "admin",
-			PasswordHash: "$2a$10$uIjrPVsZtsoK01VHa6VC8e0t3O62BpTnF/YomtOLAN0BF087eAah2",
-			Name:         "Admin User",
-			Role:         "ADMIN",
-		},
-		{
-			Username:     "cashier",
-			PasswordHash: "$2a$10$7OgCWELW2gl7lL/dAmzFkeJVf540NN4ZboNCJYawE6to/b.Z5s/G2",
-			Name:         "Cashier User",
-			Role:         "CASHIER",
-		},
-	}
-	for _, u := range users {
-		db.Create(&u)
-	}
 }

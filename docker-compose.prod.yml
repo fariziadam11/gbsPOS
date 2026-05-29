@@ -31,6 +31,7 @@ services:
       DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/gbs_pos?sslmode=disable
       JWT_SECRET: ${JWT_SECRET}
       JWT_EXPIRY_HOURS: 24
+      MIGRATIONS_PATH: /app/migrations
       LOG_LEVEL: info
     volumes:
       - pos-uploads:/app/uploads
@@ -65,6 +66,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      pos-api:
+        condition: service_started
     networks:
       - gbs
     healthcheck:

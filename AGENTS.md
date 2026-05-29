@@ -33,14 +33,14 @@ The `.env` file is automatically loaded at startup via `github.com/joho/godotenv
 **Critical env vars:**
 - `JWT_SECRET` — mandatory, must be ≥32 characters (validated at startup)
 - `DATABASE_URL` — PostgreSQL connection string
-- `MIGRATIONS_PATH` — if set, uses `golang-migrate/migrate/v4`; if empty, uses GORM `AutoMigrate` (dev/test default)
+- `MIGRATIONS_PATH` — (POS API only) path to SQL migrations; default auto-detects `migrations/` at repo root. Always uses `golang-migrate/v4` on startup.
 - `UPLOAD_DIR` — CMS only, local filesystem path for uploaded videos
 
 **Docker:**
 ```bash
 docker-compose up -d   # starts postgres, pos-api (:8080), cms-api (:8081)
 ```
-Docker Compose injects `MIGRATIONS_PATH=/root/migrations` so both APIs use SQL migrations in production.
+Docker Compose sets `MIGRATIONS_PATH=/app/migrations` on **pos-api** only; CMS starts after POS has applied migrations.
 
 ## Database
 
@@ -91,9 +91,9 @@ Contents:
 
 ## Important Gotchas
 
-- `AutoMigrate` is **only for dev/test**. Production uses `MIGRATIONS_PATH` + `golang-migrate`.
+- Schema changes are **SQL only** via `golang-migrate` (`migrations/` at repo root). GORM `AutoMigrate` is **tests only** (`test_helper.go`).
 - `gbs-common` has its own `go.mod`. Its dependency versions may differ from the API modules. Tidy all three after changes.
-- `Dockerfile` in each API module copies `./migrations` into the image; SQL migrations should live there.
+- `gbs-pos-api/Dockerfile` copies repo-root `migrations/` into the image at `/app/migrations`.
 - The `Ad.StoreTypes` field uses `gorm:"serializer:json"` (stored as JSON text), not PostgreSQL arrays. Query with `store_types LIKE '%RETAIL%'`.
 - `MaxMultipartMemory = 32 << 20` is set on the Gin router. The CMS upload handler separately enforces a 50MB file limit.
 
@@ -104,4 +104,4 @@ Contents:
 - Production uses `docker-compose.prod.yml` with secrets via `.env`, restart policies, and health checks.
 - Images are built and pushed to GitHub Container Registry (`ghcr.io`) via GitHub Actions on every push to `main`.
 - The `.env` file is auto-loaded by `godotenv` at startup; never commit `.env` to Git.
-- CMS API does **not** have its own migrations directory; POS API migrations create all tables (`users`, `products`, `orders`, `settlements`, `ads`, `ad_play_logs`).
+- Shared SQL lives in `migrations/` (POS + CMS tables). Only **pos-api** runs migrate; CMS connects to the same DB.

@@ -11,7 +11,8 @@ type Config struct {
 	Port           string `env:"PORT"             envDefault:"8080"`
 	Env            string `env:"ENV"              envDefault:"development"`
 	DatabaseURL    string `env:"DATABASE_URL"     envDefault:"postgres://gbspos:gbspos_secret@localhost:5432/gbs_pos?sslmode=disable"`
-	MigrationsPath string `env:"MIGRATIONS_PATH"  envDefault:""`
+	// MigrationsPath: directory with SQL files (repo root migrations/). Empty = auto-detect.
+	MigrationsPath string `env:"MIGRATIONS_PATH" envDefault:""`
 	JWTSecret      string `env:"JWT_SECRET"`
 	JWTExpiryHours int    `env:"JWT_EXPIRY_HOURS" envDefault:"24"`
 	LogLevel       string `env:"LOG_LEVEL"        envDefault:"debug"`

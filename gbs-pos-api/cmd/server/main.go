@@ -11,7 +11,6 @@ import (
 	"gbs-pos-api/internal/config"
 	"gbs-pos-api/internal/database"
 	"gbs-pos-api/internal/handler"
-	"gbs-pos-api/internal/model"
 	"gbs-pos-api/internal/repository"
 	"gbs-pos-api/internal/router"
 	"gbs-pos-api/internal/service"
@@ -39,20 +38,8 @@ func main() {
 		log.Fatal("failed to connect database: ", err)
 	}
 
-	if cfg.MigrationsPath != "" {
-		if err := database.RunMigrations(cfg.DatabaseURL, cfg.MigrationsPath); err != nil {
-			log.Fatal("failed to run migrations: ", err)
-		}
-	} else {
-		if err := database.Migrate(db,
-			&model.User{},
-			&model.Product{},
-			&model.Order{},
-			&model.OrderItem{},
-			&model.Settlement{},
-		); err != nil {
-			log.Fatal("failed to migrate database: ", err)
-		}
+	if err := database.RunMigrations(cfg.DatabaseURL, cfg.MigrationsPath); err != nil {
+		log.Fatal("failed to run migrations: ", err)
 	}
 
 	database.Seed(db)

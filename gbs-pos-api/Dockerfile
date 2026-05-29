@@ -1,6 +1,5 @@
 FROM golang:1.26-alpine AS builder
 
-# Copy shared module so replace directive resolves
 COPY gbs-common /gbs-common
 
 WORKDIR /app
@@ -15,7 +14,8 @@ RUN apk --no-cache add ca-certificates tzdata
 
 WORKDIR /app
 COPY --from=builder /gbs-pos-api ./gbs-pos-api
-COPY --from=builder /app/migrations ./migrations
+COPY migrations ./migrations
 
 EXPOSE 8080
+ENV MIGRATIONS_PATH=/app/migrations
 CMD ["./gbs-pos-api"]

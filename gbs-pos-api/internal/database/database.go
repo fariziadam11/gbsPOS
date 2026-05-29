@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/golang-migrate/migrate/v4"
@@ -54,23 +55,43 @@ func Connect(databaseURL string, logLevel string) (*gorm.DB, error) {
 	return db, nil
 }
 
+// ResolveMigrationsPath finds the migrations directory (absolute path for file:// source).
+func ResolveMigrationsPath(path string) (string, error) {
+	candidates := []string{path}
+	if path == "" {
+		candidates = []string{"migrations", "../migrations", "/app/migrations"}
+	}
+	for _, p := range candidates {
+		if p == "" {
+			continue
+		}
+		abs, err := filepath.Abs(p)
+		if err != nil {
+			continue
+		}
+		info, err := os.Stat(abs)
+		if err == nil && info.IsDir() {
+			return filepath.ToSlash(abs), nil
+		}
+	}
+	return "", fmt.Errorf("migrations directory not found (MIGRATIONS_PATH=%q)", path)
+}
+
 func RunMigrations(databaseURL string, migrationsPath string) error {
-	if migrationsPath == "" {
-		return fmt.Errorf("migrations path not set")
+	dir, err := ResolveMigrationsPath(migrationsPath)
+	if err != nil {
+		return err
 	}
 	m, err := migrate.New(
-		"file://"+migrationsPath,
+		"file://"+dir,
 		databaseURL,
 	)
 	if err != nil {
 		return fmt.Errorf("failed to create migration instance: %w", err)
 	}
+	defer m.Close()
 	if err := m.Up(); err != nil && err != migrate.ErrNoChange {
 		return fmt.Errorf("failed to run migrations: %w", err)
 	}
 	return nil
-}
-
-func Migrate(db *gorm.DB, models ...interface{}) error {
-	return db.AutoMigrate(models...)
 }
