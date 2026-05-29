@@ -10,12 +10,12 @@ $sshPubKeyPath = "$env:USERPROFILE\.ssh\gbs-deploy.pub"
 
 # Check if keys exist
 if (-not (Test-Path $sshKeyPath)) {
-    Write-Host "❌ SSH keys not found!" -ForegroundColor Red
+    Write-Host "[ERROR] SSH keys not found!" -ForegroundColor Red
     Write-Host "Please run: ssh-keygen -t ed25519 -C 'github-actions-gbs-deploy' -f $sshKeyPath" -ForegroundColor Yellow
     exit 1
 }
 
-Write-Host "✅ SSH keys found!`n" -ForegroundColor Green
+Write-Host "[OK] SSH keys found!`n" -ForegroundColor Green
 
 # Function to copy to clipboard and display
 function Copy-AndDisplay {
@@ -25,14 +25,14 @@ function Copy-AndDisplay {
         [string]$SecretName
     )
     
-    Write-Host "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" -ForegroundColor Cyan
-    Write-Host "📋 $Title" -ForegroundColor Yellow
-    Write-Host "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" -ForegroundColor Cyan
+    Write-Host "`n========================================" -ForegroundColor Cyan
+    Write-Host " $Title" -ForegroundColor Yellow
+    Write-Host "========================================" -ForegroundColor Cyan
     Write-Host "`nSecret Name: " -NoNewline
     Write-Host "$SecretName" -ForegroundColor Green
     Write-Host "`nValue (copied to clipboard):" -ForegroundColor Gray
     Write-Host $Content -ForegroundColor DarkGray
-    Write-Host "`n✅ Copied to clipboard! Paste in GitHub." -ForegroundColor Green
+    Write-Host "`n[OK] Copied to clipboard! Paste in GitHub." -ForegroundColor Green
     Write-Host "`nPress any key to continue..." -ForegroundColor Yellow
     $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
     Write-Host "`n"
@@ -71,11 +71,11 @@ while ($true) {
         "3" {
             $publicKey = Get-Content $sshPubKeyPath -Raw
             $publicKey | Set-Clipboard
-            Write-Host "`n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" -ForegroundColor Cyan
-            Write-Host "📋 SSH Public Key (for servers)" -ForegroundColor Yellow
-            Write-Host "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" -ForegroundColor Cyan
+            Write-Host "`n========================================" -ForegroundColor Cyan
+            Write-Host " SSH Public Key (for servers)" -ForegroundColor Yellow
+            Write-Host "========================================" -ForegroundColor Cyan
             Write-Host "`n$publicKey" -ForegroundColor Green
-            Write-Host "`n✅ Copied to clipboard!" -ForegroundColor Green
+            Write-Host "`n[OK] Copied to clipboard!" -ForegroundColor Green
             Write-Host "`nAdd this to ~/.ssh/authorized_keys on your servers" -ForegroundColor Yellow
             Write-Host "`nPress any key to continue..." -ForegroundColor Yellow
             $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
@@ -86,11 +86,11 @@ while ($true) {
             [Security.Cryptography.RNGCryptoServiceProvider]::Create().GetBytes($bytes)
             $password = [Convert]::ToBase64String($bytes)
             $password | Set-Clipboard
-            Write-Host "`n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" -ForegroundColor Cyan
-            Write-Host "🔐 Secure Password Generated" -ForegroundColor Yellow
-            Write-Host "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" -ForegroundColor Cyan
+            Write-Host "`n========================================" -ForegroundColor Cyan
+            Write-Host " Secure Password Generated" -ForegroundColor Yellow
+            Write-Host "========================================" -ForegroundColor Cyan
             Write-Host "`n$password" -ForegroundColor Green
-            Write-Host "`n✅ Copied to clipboard!" -ForegroundColor Green
+            Write-Host "`n[OK] Copied to clipboard!" -ForegroundColor Green
             Write-Host "`nUse this for POSTGRES_PASSWORD in .env.production" -ForegroundColor Yellow
             Write-Host "`nPress any key to continue..." -ForegroundColor Yellow
             $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
@@ -101,11 +101,11 @@ while ($true) {
             [Security.Cryptography.RNGCryptoServiceProvider]::Create().GetBytes($bytes)
             $jwtSecret = [BitConverter]::ToString($bytes).Replace("-", "").ToLower()
             $jwtSecret | Set-Clipboard
-            Write-Host "`n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" -ForegroundColor Cyan
-            Write-Host "🔑 JWT Secret Generated" -ForegroundColor Yellow
-            Write-Host "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" -ForegroundColor Cyan
+            Write-Host "`n========================================" -ForegroundColor Cyan
+            Write-Host " JWT Secret Generated" -ForegroundColor Yellow
+            Write-Host "========================================" -ForegroundColor Cyan
             Write-Host "`n$jwtSecret" -ForegroundColor Green
-            Write-Host "`n✅ Copied to clipboard!" -ForegroundColor Green
+            Write-Host "`n[OK] Copied to clipboard!" -ForegroundColor Green
             Write-Host "`nUse this for JWT_SECRET in .env.production" -ForegroundColor Yellow
             Write-Host "`nPress any key to continue..." -ForegroundColor Yellow
             $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
@@ -113,13 +113,13 @@ while ($true) {
         "6" {
             Write-Host "`nOpening GitHub Secrets page..." -ForegroundColor Yellow
             Start-Process "https://github.com/fariziadam11/gbs-pos-cms-api/settings/secrets/actions"
-            Write-Host "✅ Browser opened!" -ForegroundColor Green
+            Write-Host "[OK] Browser opened!" -ForegroundColor Green
             Start-Sleep -Seconds 2
         }
         "7" {
-            Write-Host "`n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" -ForegroundColor Cyan
-            Write-Host "📋 All GitHub Secrets Template" -ForegroundColor Yellow
-            Write-Host "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" -ForegroundColor Cyan
+            Write-Host "`n========================================" -ForegroundColor Cyan
+            Write-Host " All GitHub Secrets Template" -ForegroundColor Yellow
+            Write-Host "========================================" -ForegroundColor Cyan
             Write-Host "`nAdd these secrets in GitHub:" -ForegroundColor White
             Write-Host "`n1. STAGING_SSH_KEY" -ForegroundColor Green
             Write-Host "   Value: [Use option 1 to copy]" -ForegroundColor Gray
@@ -144,11 +144,11 @@ while ($true) {
             $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
         }
         "0" {
-            Write-Host "`n✅ Done! Good luck with your deployment! 🚀`n" -ForegroundColor Green
+            Write-Host "`n[OK] Done! Good luck with your deployment!`n" -ForegroundColor Green
             exit 0
         }
         default {
-            Write-Host "`n❌ Invalid option. Please try again." -ForegroundColor Red
+            Write-Host "`n[ERROR] Invalid option. Please try again." -ForegroundColor Red
             Start-Sleep -Seconds 2
         }
     }
