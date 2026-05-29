@@ -17,6 +17,7 @@ services:
                 condition: service_healthy
         volumes:
             - pos-uploads:/uploads/pos
+            - ./migrations:/app/migrations:ro
         restart: unless-stopped
 
     cms-api:
