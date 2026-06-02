@@ -50,7 +50,7 @@ type Order struct {
 	VoidReason         string      `gorm:"size:255" json:"voidReason"`
 	VoidedBy           string      `gorm:"size:50" json:"voidedBy"`
 	VoidedAt           *time.Time  `json:"voidedAt"`
-	CustomerID         *int        `json:"customerId"`
+	CustomerID         *int        `gorm:"index" json:"customerId"`
 	LoyaltyPointsEarned int        `gorm:"not null;default:0" json:"loyaltyPointsEarned"`
 	CreatedAt          time.Time   `json:"createdAt"`
 	UpdatedAt          time.Time   `json:"updatedAt"`
@@ -90,7 +90,6 @@ type Customer struct {
 	LoyaltyPoints int       `gorm:"not null;default:0" json:"loyaltyPoints"`
 	CreatedAt     time.Time `                           json:"createdAt"`
 	UpdatedAt     time.Time `                           json:"updatedAt"`
-	Orders        []Order   `gorm:"foreignKey:CustomerID" json:"orders,omitempty"`
 }
 
 type StockMovement struct {
