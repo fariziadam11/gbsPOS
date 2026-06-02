@@ -42,6 +42,7 @@ type CreateOrderRequest struct {
 	AcqTid        string   `json:"acqTid"`
 	PosMessageID  string   `json:"posMessageId"`
 	BankName      string   `json:"bankName"`
+	CustomerID    *int     `json:"customerId"`
 }
 
 type VoidOrderRequest struct {

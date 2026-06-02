@@ -12,11 +12,21 @@ import (
 )
 
 type OrderService struct {
-	repo *repository.OrderRepository
+	repo            *repository.OrderRepository
+	productService  *ProductService
+	customerService *CustomerService
 }
 
-func NewOrderService(repo *repository.OrderRepository) *OrderService {
-	return &OrderService{repo: repo}
+func NewOrderService(
+	repo *repository.OrderRepository,
+	productService *ProductService,
+	customerService *CustomerService,
+) *OrderService {
+	return &OrderService{
+		repo:            repo,
+		productService:  productService,
+		customerService: customerService,
+	}
 }
 
 func (s *OrderService) List(
@@ -53,14 +63,40 @@ func (s *OrderService) Create(order *model.Order) (*model.Order, bool, error) {
 		}
 		return fullOrder, true, nil
 	}
-	if err := s.repo.Create(order); err != nil {
+
+	// Calculate loyalty points: 1% of total (rounded down)
+	loyaltyPoints := int(order.Total / 100)
+	if loyaltyPoints < 1 {
+		loyaltyPoints = 0
+	}
+	order.LoyaltyPointsEarned = loyaltyPoints
+
+	// Deduct stock in transaction
+	if err := s.repo.Transaction(func(tx *gorm.DB) error {
+		txRepo := s.repo.WithTx(tx)
+		if err := txRepo.Create(order); err != nil {
+			return err
+		}
+		for _, item := range order.Items {
+			if err := s.productService.DeductStock(tx, item.ProductID, item.Qty, order.ID); err != nil {
+				return err
+			}
+		}
+		return nil
+	}); err != nil {
 		return nil, false, err
 	}
+
+	// Add loyalty points to customer (outside transaction to avoid lock contention)
+	if order.CustomerID != nil && loyaltyPoints > 0 {
+		_ = s.customerService.AddLoyaltyPoints(uint(*order.CustomerID), loyaltyPoints)
+	}
+
 	return order, false, nil
 }
 
 func (s *OrderService) Void(id, reason, voidedBy string) (*model.Order, error) {
-	order, err := s.repo.FindByID(id)
+	order, err := s.repo.FindByIDWithItems(id)
 	if err != nil {
 		return nil, fmt.Errorf("ORDER_NOT_FOUND")
 	}
@@ -70,14 +106,34 @@ func (s *OrderService) Void(id, reason, voidedBy string) (*model.Order, error) {
 	if order.IsSettled {
 		return nil, fmt.Errorf("ORDER_ALREADY_SETTLED")
 	}
+
 	now := time.Now()
 	order.IsVoided = true
 	order.VoidReason = reason
 	order.VoidedBy = voidedBy
 	order.VoidedAt = &now
-	if err := s.repo.UpdateVoid(order); err != nil {
+
+	// Restore stock in transaction
+	if err := s.repo.Transaction(func(tx *gorm.DB) error {
+		txRepo := s.repo.WithTx(tx)
+		if err := txRepo.UpdateVoid(order); err != nil {
+			return err
+		}
+		for _, item := range order.Items {
+			if err := s.productService.RestoreStock(tx, item.ProductID, item.Qty, order.ID); err != nil {
+				return err
+			}
+		}
+		return nil
+	}); err != nil {
 		return nil, err
 	}
+
+	// Deduct loyalty points earned from this order
+	if order.CustomerID != nil && order.LoyaltyPointsEarned > 0 {
+		_ = s.customerService.AddLoyaltyPoints(uint(*order.CustomerID), -order.LoyaltyPointsEarned)
+	}
+
 	// Reload with items for consistent response format
 	return s.repo.FindByIDWithItems(id)
 }

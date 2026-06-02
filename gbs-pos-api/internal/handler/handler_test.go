@@ -45,15 +45,21 @@ func setupHandlerTest(
 		},
 	)
 
+	// Seed products with stock for order creation tests
+	db.Create(&model.Product{ID: 1, Name: "Chitato", Price: 10000, Category: "Snacks", StoreType: "RETAIL", StockQuantity: 100, LowStockThreshold: 10})
+
 	userRepo := repository.NewUserRepository(db)
 	orderRepo := repository.NewOrderRepository(db)
 	settlementRepo := repository.NewSettlementRepository(db)
 	productRepo := repository.NewProductRepository(db)
+	stockMovementRepo := repository.NewStockMovementRepository(db)
+	customerRepo := repository.NewCustomerRepository(db)
 
 	authSvc := service.NewAuthService(userRepo, jwtSecret, jwtExpiry)
-	orderSvc := service.NewOrderService(orderRepo)
+	productSvc := service.NewProductService(productRepo, stockMovementRepo)
+	customerSvc := service.NewCustomerService(customerRepo)
+	orderSvc := service.NewOrderService(orderRepo, productSvc, customerSvc)
 	settlementSvc := service.NewSettlementService(orderRepo, settlementRepo)
-	productSvc := service.NewProductService(productRepo)
 
 	authH := NewAuthHandler(authSvc)
 	orderH := NewOrderHandler(orderSvc, settlementSvc)
@@ -216,7 +222,8 @@ func TestOrderHandler_Void_AdminSuccess(t *testing.T) {
 	result, _ := authSvc.Login("admin", "admin123")
 	token := result.Token
 
-	// Create order
+	// Seed product and create order
+	db.Create(&model.Product{ID: 99, Name: "Test Product", Price: 10000, Category: "Test", StoreType: "RETAIL", StockQuantity: 100, LowStockThreshold: 10})
 	db.Create(
 		&model.Order{
 			ID:            "ORDER-VOID",
@@ -225,6 +232,9 @@ func TestOrderHandler_Void_AdminSuccess(t *testing.T) {
 			Timestamp:     1716023456789,
 			IsVoided:      false,
 			IsSettled:     false,
+			Items: []model.OrderItem{
+				{ProductID: 99, ProductName: "Test Product", ProductPrice: 10000, Qty: 1, Subtotal: 10000},
+			},
 		},
 	)
 

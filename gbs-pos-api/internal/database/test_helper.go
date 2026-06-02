@@ -18,6 +18,8 @@ func NewTestDB() (*gorm.DB, error) {
 		&model.Order{},
 		&model.OrderItem{},
 		&model.Settlement{},
+		&model.Customer{},
+		&model.StockMovement{},
 	); err != nil {
 		return nil, err
 	}

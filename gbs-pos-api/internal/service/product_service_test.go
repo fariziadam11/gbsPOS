@@ -17,12 +17,13 @@ func setupProductTest(t *testing.T) (*ProductService, *gorm.DB) {
 	require.NoError(t, err)
 
 	db.Create(
-		&model.Product{Name: "Chitato", Price: 11500, Category: "Snacks", StoreType: "RETAIL"},
+		&model.Product{Name: "Chitato", Price: 11500, Category: "Snacks", StoreType: "RETAIL", StockQuantity: 100, LowStockThreshold: 10},
 	)
-	db.Create(&model.Product{Name: "Nasi Goreng", Price: 25000, Category: "Food", StoreType: "FNB"})
+	db.Create(&model.Product{Name: "Nasi Goreng", Price: 25000, Category: "Food", StoreType: "FNB", StockQuantity: 50, LowStockThreshold: 5})
 
 	repo := repository.NewProductRepository(db)
-	return NewProductService(repo), db
+	movementRepo := repository.NewStockMovementRepository(db)
+	return NewProductService(repo, movementRepo), db
 }
 
 func TestProductService_List(t *testing.T) {

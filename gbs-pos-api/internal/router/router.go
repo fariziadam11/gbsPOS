@@ -56,6 +56,7 @@ type Handlers struct {
 	Product    *handler.ProductHandler
 	Order      *handler.OrderHandler
 	Settlement *handler.SettlementHandler
+	Customer   *handler.CustomerHandler
 }
 
 func Setup(
@@ -87,6 +88,7 @@ func Setup(
 	setupProductRoutes(auth, h.Product)
 	setupOrderRoutes(auth, h.Order)
 	setupSettlementRoutes(auth, h.Settlement)
+	setupCustomerRoutes(auth, h.Customer)
 
 	return r
 }

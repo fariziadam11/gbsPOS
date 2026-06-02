@@ -17,8 +17,17 @@ func setupOrderTest(t *testing.T) (*OrderService, *gorm.DB) {
 	db, err := database.NewTestDB()
 	require.NoError(t, err)
 
+	// Seed products with stock for stock deduction tests
+	db.Create(&model.Product{ID: 1, Name: "Chitato", Price: 10000, Category: "Snacks", StoreType: "RETAIL", StockQuantity: 100, LowStockThreshold: 10})
+
 	repo := repository.NewOrderRepository(db)
-	return NewOrderService(repo), db
+	productRepo := repository.NewProductRepository(db)
+	movementRepo := repository.NewStockMovementRepository(db)
+	customerRepo := repository.NewCustomerRepository(db)
+
+	productSvc := NewProductService(productRepo, movementRepo)
+	customerSvc := NewCustomerService(customerRepo)
+	return NewOrderService(repo, productSvc, customerSvc), db
 }
 
 func createTestOrder(db *gorm.DB, id string, paymentMethod string, isVoided, isSettled bool) {

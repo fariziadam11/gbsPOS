@@ -50,6 +50,8 @@ func main() {
 			&model.Order{},
 			&model.OrderItem{},
 			&model.Settlement{},
+			&model.Customer{},
+			&model.StockMovement{},
 		); err != nil {
 			log.Fatal("failed to migrate database: ", err)
 		}
@@ -61,16 +63,20 @@ func main() {
 	productRepo := repository.NewProductRepository(db)
 	orderRepo := repository.NewOrderRepository(db)
 	settlementRepo := repository.NewSettlementRepository(db)
+	customerRepo := repository.NewCustomerRepository(db)
+	stockMovementRepo := repository.NewStockMovementRepository(db)
 
 	authService := service.NewAuthService(userRepo, cfg.JWTSecret, cfg.JWTExpiryHours)
-	productService := service.NewProductService(productRepo)
-	orderService := service.NewOrderService(orderRepo)
+	productService := service.NewProductService(productRepo, stockMovementRepo)
+	customerService := service.NewCustomerService(customerRepo)
+	orderService := service.NewOrderService(orderRepo, productService, customerService)
 	settlementService := service.NewSettlementService(orderRepo, settlementRepo)
 
 	authHandler := handler.NewAuthHandler(authService)
 	productHandler := handler.NewProductHandler(productService)
 	orderHandler := handler.NewOrderHandler(orderService, settlementService)
 	settlementHandler := handler.NewSettlementHandler(settlementService)
+	customerHandler := handler.NewCustomerHandler(customerService)
 
 	if cfg.Env == "production" {
 		gin.SetMode(gin.ReleaseMode)
@@ -83,6 +89,7 @@ func main() {
 			Product:    productHandler,
 			Order:      orderHandler,
 			Settlement: settlementHandler,
+			Customer:   customerHandler,
 		},
 	)
 

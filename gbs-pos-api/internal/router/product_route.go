@@ -13,6 +13,7 @@ func setupProductRoutes(
 ) {
 
 	rg.GET("/products", productHandler.List)
+	rg.GET("/products/low-stock", productHandler.GetLowStock)
 
 	rg.POST(
 		"/products",
@@ -31,4 +32,12 @@ func setupProductRoutes(
 		middleware.RequireRole("ADMIN"),
 		productHandler.Delete,
 	)
+
+	rg.POST(
+		"/products/:id/stock",
+		middleware.RequireRole("ADMIN"),
+		productHandler.AdjustStock,
+	)
+
+	rg.GET("/products/:id/stock-history", productHandler.GetStockHistory)
 }
