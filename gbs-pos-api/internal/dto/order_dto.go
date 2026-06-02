@@ -43,6 +43,8 @@ type CreateOrderRequest struct {
 	PosMessageID  string   `json:"posMessageId"`
 	BankName      string   `json:"bankName"`
 	CustomerID    *int     `json:"customerId"`
+	CustomerPhone string   `json:"customerPhone"`
+	CustomerName  string   `json:"customerName"`
 }
 
 type VoidOrderRequest struct {

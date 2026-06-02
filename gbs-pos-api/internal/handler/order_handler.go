@@ -114,6 +114,8 @@ func (h *OrderHandler) Create(c *gin.Context) {
 		PosMessageID:  req.PosMessageID,
 		BankName:      req.BankName,
 		CustomerID:    req.CustomerID,
+		CustomerPhone: req.CustomerPhone,
+		CustomerName:  req.CustomerName,
 	}
 	if err := service.ValidateOrder(newOrder); err != nil {
 		c.JSON(http.StatusUnprocessableEntity, response.ValidationError(err.Error(), nil))

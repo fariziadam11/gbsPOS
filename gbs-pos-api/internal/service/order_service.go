@@ -64,6 +64,28 @@ func (s *OrderService) Create(order *model.Order) (*model.Order, bool, error) {
 		return fullOrder, true, nil
 	}
 
+	// Resolve customer by phone if no CustomerID provided
+	if order.CustomerID == nil && order.CustomerPhone != "" {
+		customer, err := s.customerService.GetByPhone(order.CustomerPhone)
+		if err != nil {
+			// Customer not found — create new one
+			newCustomer := &model.Customer{
+				Name:  order.CustomerName,
+				Phone: order.CustomerPhone,
+			}
+			if newCustomer.Name == "" {
+				newCustomer.Name = "Pelanggan " + order.CustomerPhone
+			}
+			if err := s.customerService.Create(newCustomer); err == nil {
+				cid := int(newCustomer.ID)
+				order.CustomerID = &cid
+			}
+		} else {
+			cid := int(customer.ID)
+			order.CustomerID = &cid
+		}
+	}
+
 	// Calculate loyalty points: 1% of total (rounded down)
 	loyaltyPoints := int(order.Total / 100)
 	if loyaltyPoints < 1 {

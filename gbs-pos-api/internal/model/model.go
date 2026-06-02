@@ -51,6 +51,8 @@ type Order struct {
 	VoidedBy           string      `gorm:"size:50" json:"voidedBy"`
 	VoidedAt           *time.Time  `json:"voidedAt"`
 	CustomerID         *int        `gorm:"index" json:"customerId"`
+	CustomerPhone      string      `gorm:"size:50" json:"customerPhone"`
+	CustomerName       string      `gorm:"size:255" json:"customerName"`
 	LoyaltyPointsEarned int        `gorm:"not null;default:0" json:"loyaltyPointsEarned"`
 	CreatedAt          time.Time   `json:"createdAt"`
 	UpdatedAt          time.Time   `json:"updatedAt"`
