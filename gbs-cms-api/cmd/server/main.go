@@ -46,8 +46,7 @@ func main() {
 		}
 	} else {
 		if err := database.Migrate(db,
-			// &model.Ad{},
-			// &model.AdPlayLog{},
+			&model.Setting{},
 		); err != nil {
 			log.Fatal("failed to migrate database: ", err)
 		}
@@ -58,12 +57,17 @@ func main() {
 	adRepo := repository.NewAdRepository(db)
 	playLogRepo := repository.NewAdPlayLogRepository(db)
 	userRepo := repository.NewUserRepository(db)
+	settingsRepo := repository.NewSettingsRepository(db)
 
 	authService := service.NewAuthService(userRepo, cfg.JWTSecret, cfg.JWTExpiryHours)
 	cmsService := service.NewCMSService(adRepo, playLogRepo, cfg.UploadDir)
+	settingsService := service.NewSettingsService(settingsRepo)
+	userManagementService := service.NewUserService(userRepo)
 
 	authHandler := handler.NewAuthHandler(authService)
 	cmsHandler := handler.NewCMSHandler(cmsService)
+	settingsHandler := handler.NewSettingsHandler(settingsService)
+	userHandler := handler.NewUserHandler(userManagementService)
 
 	if cfg.Env == "production" {
 		gin.SetMode(gin.ReleaseMode)
@@ -95,6 +99,15 @@ func main() {
 			auth.GET("/ads/active", cmsHandler.ActivePlaylist)
 			auth.GET("/ads/download/:id", cmsHandler.DownloadAd)
 			auth.POST("/ads/:id/play", cmsHandler.LogPlay)
+
+			auth.GET("/settings", middleware.RequireRole("ADMIN"), settingsHandler.GetAll)
+			auth.PUT("/settings", middleware.RequireRole("ADMIN"), settingsHandler.Update)
+
+			auth.GET("/users", middleware.RequireRole("ADMIN"), userHandler.List)
+			auth.GET("/users/:id", middleware.RequireRole("ADMIN"), userHandler.Get)
+			auth.POST("/users", middleware.RequireRole("ADMIN"), userHandler.Create)
+			auth.PUT("/users/:id", middleware.RequireRole("ADMIN"), userHandler.Update)
+			auth.DELETE("/users/:id", middleware.RequireRole("ADMIN"), userHandler.Delete)
 		}
 	}
 

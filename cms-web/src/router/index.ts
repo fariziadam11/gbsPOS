@@ -29,6 +29,36 @@ const router = createRouter({
       meta: { requiresAuth: true, requiresAdmin: true },
     },
     {
+      path: '/products',
+      name: 'products',
+      component: () => import('../views/ProductsView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/orders',
+      name: 'orders',
+      component: () => import('../views/OrdersView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/customers',
+      name: 'customers',
+      component: () => import('../views/CustomersView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/users',
+      name: 'users',
+      component: () => import('../views/UsersView.vue'),
+      meta: { requiresAuth: true, requiresAdmin: true },
+    },
+    {
+      path: '/settings',
+      name: 'settings',
+      component: () => import('../views/SettingsView.vue'),
+      meta: { requiresAuth: true, requiresAdmin: true },
+    },
+    {
       path: '/:pathMatch(.*)*',
       redirect: '/',
     },

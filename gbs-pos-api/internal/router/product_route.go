@@ -40,4 +40,16 @@ func setupProductRoutes(
 	)
 
 	rg.GET("/products/:id/stock-history", productHandler.GetStockHistory)
+
+	rg.POST(
+		"/products/import",
+		middleware.RequireRole("ADMIN"),
+		productHandler.ImportCSV,
+	)
+
+	rg.GET(
+		"/products/export",
+		middleware.RequireRole("ADMIN"),
+		productHandler.ExportCSV,
+	)
 }

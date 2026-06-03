@@ -154,3 +154,33 @@ func (h *ProductHandler) Delete(c *gin.Context) {
 	}
 	c.Status(http.StatusNoContent)
 }
+
+func (h *ProductHandler) ImportCSV(c *gin.Context) {
+	file, header, err := c.Request.FormFile("file")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, response.Error("VALIDATION_ERROR", "File is required"))
+		return
+	}
+	defer file.Close()
+
+	storeType := c.DefaultPostForm("storeType", "")
+
+	result, err := h.productService.ImportCSV(file, header.Filename, storeType)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, response.Error("IMPORT_ERROR", err.Error()))
+		return
+	}
+	c.JSON(http.StatusOK, response.Success(result))
+}
+
+func (h *ProductHandler) ExportCSV(c *gin.Context) {
+	storeType := c.Query("storeType")
+
+	c.Header("Content-Type", "text/csv; charset=utf-8")
+	c.Header("Content-Disposition", "attachment; filename=products_export.csv")
+
+	if err := h.productService.ExportCSV(c.Writer, storeType); err != nil {
+		c.JSON(http.StatusInternalServerError, response.Error("EXPORT_ERROR", err.Error()))
+		return
+	}
+}
