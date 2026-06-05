@@ -101,3 +101,178 @@ export interface ToggleAdResponse {
   isActive: boolean;
   updatedAt: string;
 }
+
+// Product types
+export interface Product {
+  id: number;
+  name: string;
+  price: number;
+  category: string;
+  imageUrl: string;
+  storeType: string;
+  stockQuantity: number;
+  lowStockThreshold: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateProductRequest {
+  name: string;
+  price: number;
+  category: string;
+  imageUrl?: string;
+  storeType: string;
+  stockQuantity?: number;
+  lowStockThreshold?: number;
+}
+
+export interface UpdateProductRequest {
+  name?: string;
+  price?: number;
+  category?: string;
+  imageUrl?: string;
+  storeType?: string;
+  stockQuantity?: number;
+  lowStockThreshold?: number;
+}
+
+export interface ImportResult {
+  success: number;
+  failed: number;
+  errors: string[];
+}
+
+// Order types
+export interface OrderItem {
+  id: number;
+  productId: number;
+  productName: string;
+  productPrice: number;
+  qty: number;
+  subtotal: number;
+}
+
+export interface Order {
+  id: string;
+  items: OrderItem[];
+  subtotal: number;
+  tax: number;
+  total: number;
+  paymentMethod: string;
+  cashReceived: number | null;
+  changeAmount: number | null;
+  timestamp: number;
+  isVoided: boolean;
+  isSettled: boolean;
+  transactionId: string | null;
+  approvalCode: string | null;
+  entryMode: string | null;
+  maskedAccount: string | null;
+  acqMid: string | null;
+  acqTid: string | null;
+  posMessageId: string | null;
+  bankName: string | null;
+  storeType: string;
+  terminalId: string | null;
+  voidReason: string | null;
+  voidedBy: string | null;
+  voidedAt: string | null;
+  customerId: number | null;
+  customerPhone: string;
+  customerName: string;
+  loyaltyPointsEarned: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Customer types
+export interface Customer {
+  id: number;
+  name: string;
+  phone: string;
+  email: string | null;
+  address: string | null;
+  loyaltyPoints: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CustomerDetail {
+  customer: Customer;
+  orderHistory: Order[];
+  totalSpent: number;
+  totalOrders: number;
+}
+
+export interface CreateCustomerRequest {
+  name: string;
+  phone: string;
+  email?: string;
+  address?: string;
+}
+
+export interface UpdateCustomerRequest {
+  name?: string;
+  phone?: string;
+  email?: string;
+  address?: string;
+}
+
+// Dashboard types
+export interface DashboardSummary {
+  totalOrders: number;
+  totalRevenue: number;
+  avgOrderValue: number;
+  cashTotal: number;
+  cardTotal: number;
+  qrisTotal: number;
+  voidedCount: number;
+}
+
+export interface RevenuePoint {
+  date: string;
+  revenue: number;
+  orders: number;
+}
+
+export interface TopProduct {
+  productId: number;
+  productName: string;
+  totalSold: number;
+  revenue: number;
+}
+
+// Settings types
+export interface SettingsResponse {
+  settings: Record<string, string>;
+}
+
+export interface UpdateSettingsRequest {
+  settings: Record<string, string>;
+}
+
+// User management types
+export interface CreateUserRequest {
+  username: string;
+  password: string;
+  name: string;
+  role: string;
+  gender?: string;
+}
+
+export interface UpdateUserRequest {
+  name?: string;
+  role?: string;
+  password?: string;
+  gender?: string;
+}
+
+export interface UserListItem {
+  id: number;
+  username: string;
+  name: string;
+  role: string;
+  gender: string;
+  createdAt: string;
+  updatedAt: string;
+}

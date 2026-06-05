@@ -33,3 +33,23 @@ func (r *UserRepository) FindByID(id uint) (*model.User, error) {
 	}
 	return &user, nil
 }
+
+func (r *UserRepository) FindAll() ([]model.User, error) {
+	var users []model.User
+	if err := r.db.Order("created_at DESC").Find(&users).Error; err != nil {
+		return nil, err
+	}
+	return users, nil
+}
+
+func (r *UserRepository) Create(user *model.User) error {
+	return r.db.Create(user).Error
+}
+
+func (r *UserRepository) Update(user *model.User) error {
+	return r.db.Save(user).Error
+}
+
+func (r *UserRepository) Delete(id uint) error {
+	return r.db.Delete(&model.User{}, id).Error
+}

@@ -48,16 +48,24 @@ func main() {
 	productRepo := repository.NewProductRepository(db)
 	orderRepo := repository.NewOrderRepository(db)
 	settlementRepo := repository.NewSettlementRepository(db)
+	customerRepo := repository.NewCustomerRepository(db)
+	stockMovementRepo := repository.NewStockMovementRepository(db)
+
+	dashboardRepo := repository.NewDashboardRepository(db)
 
 	authService := service.NewAuthService(userRepo, cfg.JWTSecret, cfg.JWTExpiryHours)
-	productService := service.NewProductService(productRepo)
-	orderService := service.NewOrderService(orderRepo)
+	productService := service.NewProductService(productRepo, stockMovementRepo)
+	customerService := service.NewCustomerService(customerRepo)
+	orderService := service.NewOrderService(orderRepo, productService, customerService)
 	settlementService := service.NewSettlementService(orderRepo, settlementRepo)
+	dashboardService := service.NewDashboardService(dashboardRepo)
 
 	authHandler := handler.NewAuthHandler(authService)
 	productHandler := handler.NewProductHandler(productService)
 	orderHandler := handler.NewOrderHandler(orderService, settlementService)
 	settlementHandler := handler.NewSettlementHandler(settlementService)
+	customerHandler := handler.NewCustomerHandler(customerService)
+	dashboardHandler := handler.NewDashboardHandler(dashboardService)
 
 	if cfg.Env == "production" {
 		gin.SetMode(gin.ReleaseMode)
@@ -70,6 +78,8 @@ func main() {
 			Product:    productHandler,
 			Order:      orderHandler,
 			Settlement: settlementHandler,
+			Customer:   customerHandler,
+			Dashboard:  dashboardHandler,
 		},
 	)
 
