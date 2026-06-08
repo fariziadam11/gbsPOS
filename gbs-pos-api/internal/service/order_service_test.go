@@ -24,10 +24,12 @@ func setupOrderTest(t *testing.T) (*OrderService, *gorm.DB) {
 	productRepo := repository.NewProductRepository(db)
 	movementRepo := repository.NewStockMovementRepository(db)
 	customerRepo := repository.NewCustomerRepository(db)
+	variantRepo := repository.NewProductVariantRepository(db)
 
 	productSvc := NewProductService(productRepo, movementRepo)
 	customerSvc := NewCustomerService(customerRepo)
-	return NewOrderService(repo, productSvc, customerSvc), db
+	variantSvc := NewProductVariantService(variantRepo)
+	return NewOrderService(repo, productSvc, customerSvc, variantSvc), db
 }
 
 func createTestOrder(db *gorm.DB, id string, paymentMethod string, isVoided, isSettled bool) {

@@ -58,7 +58,7 @@ func setupHandlerTest(
 	authSvc := service.NewAuthService(userRepo, jwtSecret, jwtExpiry)
 	productSvc := service.NewProductService(productRepo, stockMovementRepo)
 	customerSvc := service.NewCustomerService(customerRepo)
-	orderSvc := service.NewOrderService(orderRepo, productSvc, customerSvc)
+	orderSvc := service.NewOrderService(orderRepo, productSvc, customerSvc, service.NewProductVariantService(repository.NewProductVariantRepository(db)))
 	settlementSvc := service.NewSettlementService(orderRepo, settlementRepo)
 
 	authH := NewAuthHandler(authSvc)

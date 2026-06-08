@@ -47,11 +47,12 @@ func main() {
 		if err := database.Migrate(db,
 			&model.User{},
 			&model.Product{},
+			&model.Customer{},
+			&model.StockMovement{},
+			&model.ProductVariant{},
 			&model.Order{},
 			&model.OrderItem{},
 			&model.Settlement{},
-			&model.Customer{},
-			&model.StockMovement{},
 		); err != nil {
 			log.Fatal("failed to migrate database: ", err)
 		}
@@ -65,13 +66,15 @@ func main() {
 	settlementRepo := repository.NewSettlementRepository(db)
 	customerRepo := repository.NewCustomerRepository(db)
 	stockMovementRepo := repository.NewStockMovementRepository(db)
+	variantRepo := repository.NewProductVariantRepository(db)
 
 	dashboardRepo := repository.NewDashboardRepository(db)
 
 	authService := service.NewAuthService(userRepo, cfg.JWTSecret, cfg.JWTExpiryHours)
 	productService := service.NewProductService(productRepo, stockMovementRepo)
 	customerService := service.NewCustomerService(customerRepo)
-	orderService := service.NewOrderService(orderRepo, productService, customerService)
+	variantService := service.NewProductVariantService(variantRepo)
+	orderService := service.NewOrderService(orderRepo, productService, customerService, variantService)
 	settlementService := service.NewSettlementService(orderRepo, settlementRepo)
 	dashboardService := service.NewDashboardService(dashboardRepo)
 
@@ -81,6 +84,7 @@ func main() {
 	settlementHandler := handler.NewSettlementHandler(settlementService)
 	customerHandler := handler.NewCustomerHandler(customerService)
 	dashboardHandler := handler.NewDashboardHandler(dashboardService)
+	variantHandler := handler.NewProductVariantHandler(variantService)
 
 	if cfg.Env == "production" {
 		gin.SetMode(gin.ReleaseMode)
@@ -89,12 +93,13 @@ func main() {
 	r := router.Setup(
 		cfg,
 		router.Handlers{
-			Auth:       authHandler,
-			Product:    productHandler,
-			Order:      orderHandler,
-			Settlement: settlementHandler,
-			Customer:   customerHandler,
-			Dashboard:  dashboardHandler,
+			Auth:           authHandler,
+			Product:        productHandler,
+			Order:          orderHandler,
+			Settlement:     settlementHandler,
+			Customer:       customerHandler,
+			Dashboard:      dashboardHandler,
+			ProductVariant: variantHandler,
 		},
 	)
 

@@ -24,6 +24,9 @@ type CreateOrderRequest struct {
 		ProductPrice float64 `json:"productPrice" binding:"required"`
 		Qty          int     `json:"qty" binding:"required"`
 		Subtotal     float64 `json:"subtotal" binding:"required"`
+		VariantID    *int    `json:"variantId"`
+		VariantName  string  `json:"variantName"`
+		SKU          string  `json:"sku"`
 	} `json:"items" binding:"required"`
 	Subtotal      float64  `json:"subtotal" binding:"required"`
 	Tax           float64  `json:"tax" binding:"required"`
@@ -45,6 +48,8 @@ type CreateOrderRequest struct {
 	CustomerID    *int     `json:"customerId"`
 	CustomerPhone string   `json:"customerPhone"`
 	CustomerName  string   `json:"customerName"`
+	DiscountType  string   `json:"discountType"`
+	DiscountValue *float64 `json:"discountValue"`
 }
 
 type VoidOrderRequest struct {

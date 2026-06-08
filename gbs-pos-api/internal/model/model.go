@@ -54,7 +54,10 @@ type Order struct {
 	CustomerPhone      string      `gorm:"size:50" json:"customerPhone"`
 	CustomerName       string      `gorm:"size:255" json:"customerName"`
 	LoyaltyPointsEarned int        `gorm:"not null;default:0" json:"loyaltyPointsEarned"`
-	CreatedAt          time.Time   `json:"createdAt"`
+	DiscountType        string     `gorm:"size:20" json:"discountType"`
+	DiscountValue       *float64   `gorm:"type:decimal(12,2)" json:"discountValue"`
+	DiscountAmount      *float64   `gorm:"type:decimal(12,2)" json:"discountAmount"`
+	CreatedAt           time.Time  `json:"createdAt"`
 	UpdatedAt          time.Time   `json:"updatedAt"`
 	Items              []OrderItem `gorm:"foreignKey:OrderID;constraint:OnDelete:CASCADE" json:"items"`
 }
@@ -67,6 +70,9 @@ type OrderItem struct {
 	ProductPrice float64 `gorm:"type:decimal(12,2);not null" json:"productPrice"`
 	Qty          int     `gorm:"not null;check:qty > 0"      json:"qty"`
 	Subtotal     float64 `gorm:"type:decimal(12,2);not null" json:"subtotal"`
+	VariantID    *int    `json:"variantId"`
+	VariantName  string  `gorm:"size:255" json:"variantName"`
+	SKU          string  `gorm:"size:100" json:"sku"`
 }
 
 type Settlement struct {
@@ -103,4 +109,19 @@ type StockMovement struct {
 	ReferenceID string    `gorm:"size:100"                     json:"referenceId"`
 	CreatedBy   string    `gorm:"size:100"                     json:"createdBy"`
 	CreatedAt   time.Time `                                    json:"createdAt"`
+}
+
+type ProductVariant struct {
+	ID                 int                    `gorm:"primaryKey"                            json:"id"`
+	ProductID          int                    `gorm:"not null;index"                        json:"productId"`
+	SKU                string                 `gorm:"size:100"                               json:"sku"`
+	Name               string                 `gorm:"size:255;not null"                      json:"name"`
+	Attributes         map[string]interface{} `gorm:"serializer:json;not null"              json:"attributes"`
+	Price              *float64               `gorm:"type:decimal(12,2)"                     json:"price"`
+	StockQuantity      int                    `gorm:"not null;default:0"                     json:"stockQuantity"`
+	LowStockThreshold  *int                   `                                               json:"lowStockThreshold"`
+	IsActive           bool                   `gorm:"not null;default:true"                  json:"isActive"`
+	SortOrder          int                    `gorm:"not null;default:0"                     json:"sortOrder"`
+	CreatedAt          time.Time              `                                               json:"createdAt"`
+	UpdatedAt          time.Time              `                                               json:"updatedAt"`
 }

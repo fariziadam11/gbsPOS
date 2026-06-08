@@ -52,12 +52,13 @@ func Setup_(
 
 
 type Handlers struct {
-	Auth       *handler.AuthHandler
-	Product    *handler.ProductHandler
-	Order      *handler.OrderHandler
-	Settlement *handler.SettlementHandler
-	Customer   *handler.CustomerHandler
-	Dashboard  *handler.DashboardHandler
+	Auth           *handler.AuthHandler
+	Product        *handler.ProductHandler
+	Order          *handler.OrderHandler
+	Settlement     *handler.SettlementHandler
+	Customer       *handler.CustomerHandler
+	Dashboard      *handler.DashboardHandler
+	ProductVariant *handler.ProductVariantHandler
 }
 
 func Setup(
@@ -91,6 +92,7 @@ func Setup(
 	setupSettlementRoutes(auth, h.Settlement)
 	setupCustomerRoutes(auth, h.Customer)
 	setupDashboardRoutes(auth, h.Dashboard)
+	setupVariantRoutes(auth, h.ProductVariant)
 
 	return r
 }
