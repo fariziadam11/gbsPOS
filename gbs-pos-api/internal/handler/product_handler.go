@@ -79,13 +79,36 @@ func (h *ProductHandler) List(c *gin.Context) {
 	storeType := c.Query("storeType")
 	category := c.Query("category")
 	lastSync, _ := strconv.ParseInt(c.Query("lastSync"), 10, 64)
-	products, err := h.productService.List(storeType, category, lastSync)
+	products, err := h.productService.ListWithDiscounts(storeType, category, lastSync)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, response.Error("INTERNAL_SERVER_ERROR", err.Error()))
 		return
 	}
 	c.Header("X-Last-Sync", strconv.FormatInt(time.Now().UnixMilli(), 10))
 	c.JSON(http.StatusOK, response.Success(products))
+}
+
+func (h *ProductHandler) Get(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := strconv.ParseUint(idStr, 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, response.Error("VALIDATION_ERROR", "Invalid product ID"))
+		return
+	}
+
+	product, err := h.productService.GetWithDiscount(uint(id))
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			c.JSON(
+				http.StatusNotFound,
+				response.Error("PRODUCT_NOT_FOUND", "Product with ID "+idStr+" not found"),
+			)
+			return
+		}
+		c.JSON(http.StatusInternalServerError, response.Error("INTERNAL_SERVER_ERROR", err.Error()))
+		return
+	}
+	c.JSON(http.StatusOK, response.Success(product))
 }
 
 func (h *ProductHandler) Create(c *gin.Context) {

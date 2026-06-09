@@ -50,10 +50,10 @@ func Setup_(
 	return r
 }
 
-
 type Handlers struct {
 	Auth       *handler.AuthHandler
 	Product    *handler.ProductHandler
+	Discount   *handler.DiscountHandler
 	Order      *handler.OrderHandler
 	Settlement *handler.SettlementHandler
 	Customer   *handler.CustomerHandler
@@ -75,7 +75,7 @@ func Setup(
 
 	r.GET("/health", func(c *gin.Context) {
 		c.String(http.StatusOK, "ok")
-	})	
+	})
 
 	v1 := r.Group("/v1")
 
@@ -87,6 +87,7 @@ func Setup(
 	)
 
 	setupProductRoutes(auth, h.Product)
+	setupDiscountRoutes(auth, h.Discount)
 	setupOrderRoutes(auth, h.Order)
 	setupSettlementRoutes(auth, h.Settlement)
 	setupCustomerRoutes(auth, h.Customer)

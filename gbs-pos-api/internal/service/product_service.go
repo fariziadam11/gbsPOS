@@ -15,12 +15,17 @@ import (
 )
 
 type ProductService struct {
-	repo         *repository.ProductRepository
-	movementRepo *repository.StockMovementRepository
+	repo            *repository.ProductRepository
+	movementRepo    *repository.StockMovementRepository
+	discountService *DiscountService
 }
 
 func NewProductService(repo *repository.ProductRepository, movementRepo *repository.StockMovementRepository) *ProductService {
 	return &ProductService{repo: repo, movementRepo: movementRepo}
+}
+
+func (s *ProductService) SetDiscountService(discountService *DiscountService) {
+	s.discountService = discountService
 }
 
 func (s *ProductService) List(storeType, category string, lastSync int64) ([]model.Product, error) {
@@ -29,6 +34,43 @@ func (s *ProductService) List(storeType, category string, lastSync int64) ([]mod
 
 func (s *ProductService) Get(id uint) (*model.Product, error) {
 	return s.repo.FindByID(id)
+}
+
+func (s *ProductService) ListWithDiscounts(storeType, category string, lastSync int64) ([]dto.ProductResponse, error) {
+	products, err := s.List(storeType, category, lastSync)
+	if err != nil {
+		return nil, err
+	}
+
+	activeDiscounts, err := s.getActiveDiscountMap(products)
+	if err != nil {
+		return nil, err
+	}
+
+	responses := make([]dto.ProductResponse, 0, len(products))
+	for i := range products {
+		responses = append(responses, s.toProductResponse(&products[i], activeDiscounts[products[i].ID]))
+	}
+	return responses, nil
+}
+
+func (s *ProductService) GetWithDiscount(id uint) (*dto.ProductResponse, error) {
+	product, err := s.Get(id)
+	if err != nil {
+		return nil, err
+	}
+
+	var discount *model.Discount
+	if s.discountService != nil {
+		activeDiscounts, err := s.discountService.GetActiveDiscountsByProductIDs([]uint{product.ID})
+		if err != nil {
+			return nil, err
+		}
+		discount = activeDiscounts[product.ID]
+	}
+
+	response := s.toProductResponse(product, discount)
+	return &response, nil
 }
 
 func (s *ProductService) Create(product *model.Product) error {
@@ -94,11 +136,11 @@ func (s *ProductService) AdjustStock(productID uint, adjustmentType string, quan
 	}
 
 	movement := &model.StockMovement{
-		ProductID:   int(productID),
-		Type:        adjustmentType,
-		Quantity:    quantity,
-		Reason:      reason,
-		CreatedBy:   user,
+		ProductID: int(productID),
+		Type:      adjustmentType,
+		Quantity:  quantity,
+		Reason:    reason,
+		CreatedBy: user,
 	}
 	return s.movementRepo.Create(movement)
 }
@@ -235,6 +277,56 @@ func (s *ProductService) ExportCSV(w io.Writer, storeType string) error {
 
 	writer.Flush()
 	return writer.Error()
+}
+
+func (s *ProductService) getActiveDiscountMap(
+	products []model.Product,
+) (map[uint]*model.Discount, error) {
+	activeDiscounts := make(map[uint]*model.Discount)
+	if s.discountService == nil || len(products) == 0 {
+		return activeDiscounts, nil
+	}
+
+	productIDs := make([]uint, 0, len(products))
+	for i := range products {
+		productIDs = append(productIDs, products[i].ID)
+	}
+	return s.discountService.GetActiveDiscountsByProductIDs(productIDs)
+}
+
+func (s *ProductService) toProductResponse(
+	product *model.Product,
+	discount *model.Discount,
+) dto.ProductResponse {
+	finalPrice := product.Price
+	var discountResponse *dto.ProductDiscountResponse
+
+	if discount != nil && s.discountService != nil &&
+		s.discountService.GetEffectiveStatus(discount) == DiscountStatusActive {
+		finalPrice = s.discountService.ApplyDiscount(product.Price, discount)
+		discountResponse = &dto.ProductDiscountResponse{
+			ID:     discount.ID,
+			Name:   discount.Name,
+			Type:   discount.Type,
+			Value:  discount.Value,
+			Status: s.discountService.GetEffectiveStatus(discount),
+		}
+	}
+
+	return dto.ProductResponse{
+		ID:                product.ID,
+		Name:              product.Name,
+		Price:             product.Price,
+		Category:          product.Category,
+		ImageURL:          product.ImageURL,
+		StoreType:         product.StoreType,
+		StockQuantity:     product.StockQuantity,
+		LowStockThreshold: product.LowStockThreshold,
+		Discount:          discountResponse,
+		FinalPrice:        finalPrice,
+		CreatedAt:         product.CreatedAt,
+		UpdatedAt:         product.UpdatedAt,
+	}
 }
 
 func parseCSVRow(row []string, colMap map[string]int, defaultStoreType string) (*model.Product, string) {

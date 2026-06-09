@@ -52,4 +52,6 @@ func setupProductRoutes(
 		middleware.RequireRole("ADMIN"),
 		productHandler.ExportCSV,
 	)
+
+	rg.GET("/products/:id", productHandler.Get)
 }

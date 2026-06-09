@@ -46,6 +46,7 @@ func main() {
 
 	userRepo := repository.NewUserRepository(db)
 	productRepo := repository.NewProductRepository(db)
+	discountRepo := repository.NewDiscountRepository(db)
 	orderRepo := repository.NewOrderRepository(db)
 	settlementRepo := repository.NewSettlementRepository(db)
 	customerRepo := repository.NewCustomerRepository(db)
@@ -55,6 +56,8 @@ func main() {
 
 	authService := service.NewAuthService(userRepo, cfg.JWTSecret, cfg.JWTExpiryHours)
 	productService := service.NewProductService(productRepo, stockMovementRepo)
+	discountService := service.NewDiscountService(discountRepo, productRepo)
+	productService.SetDiscountService(discountService)
 	customerService := service.NewCustomerService(customerRepo)
 	orderService := service.NewOrderService(orderRepo, productService, customerService)
 	settlementService := service.NewSettlementService(orderRepo, settlementRepo)
@@ -62,6 +65,7 @@ func main() {
 
 	authHandler := handler.NewAuthHandler(authService)
 	productHandler := handler.NewProductHandler(productService)
+	discountHandler := handler.NewDiscountHandler(discountService)
 	orderHandler := handler.NewOrderHandler(orderService, settlementService)
 	settlementHandler := handler.NewSettlementHandler(settlementService)
 	customerHandler := handler.NewCustomerHandler(customerService)
@@ -76,6 +80,7 @@ func main() {
 		router.Handlers{
 			Auth:       authHandler,
 			Product:    productHandler,
+			Discount:   discountHandler,
 			Order:      orderHandler,
 			Settlement: settlementHandler,
 			Customer:   customerHandler,

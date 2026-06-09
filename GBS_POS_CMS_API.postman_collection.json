@@ -28,13 +28,8 @@
                 },
                 "url": {
                   "raw": "{{pos_base_url}}/v1/login",
-                  "host": [
-                    "{{pos_base_url}}"
-                  ],
-                  "path": [
-                    "v1",
-                    "login"
-                  ]
+                  "host": ["{{pos_base_url}}"],
+                  "path": ["v1", "login"]
                 },
                 "description": "Authenticate and get JWT token. The token is automatically saved to `pos_token` variable."
               },
@@ -57,6 +52,99 @@
           ]
         },
         {
+          "name": "Discounts",
+          "items": [
+            {
+              "name": "Create Discount",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{pos_token}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n \"productId\": 1,\n  \"name\": \"Discount 1\",\n  \"type\": \"PERCENTAGE\",\n  \"value\": 10,\n  \"startDate\": \"2026-05-01\",\n  \"endDate\": \"2026-12-21\"\n}"
+                },
+                "url": {
+                  "raw": "{{pos_base_url}}/v1/discounts",
+                  "host": ["{{pos_base_url}}"],
+                  "path": ["v1", "discounts"]
+                },
+                "description": "Create a new discount. ADMIN role only. Returns 201 Created."
+              }
+            },
+            {
+              "name": "Get Discount",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{pos_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{pos_base_url}}/v1/discounts/1",
+                  "host": ["{{pos_base_url}}"],
+                  "path": ["v1", "discounts", "1"]
+                },
+                "description": "Get a discount by ID. ADMIN role only. Returns 200 OK."
+              }
+            },
+            {
+              "name": "Update Discount",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{pos_token}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n \"productId\": 1,\n  \"name\": \"Discount 1\",\n  \"type\": \"PERCENTAGE\",\n  \"value\": 10,\n  \"startDate\": \"2026-05-01\",\n  \"endDate\": \"2026-12-21\"\n}"
+                },
+                "url": {
+                  "raw": "{{pos_base_url}}/v1/discounts/1",
+                  "host": ["{{pos_base_url}}"],
+                  "path": ["v1", "discounts", "1"]
+                },
+                "description": "Update a discount. ADMIN role only. Returns 200 OK."
+              }
+            },
+            {
+              "name": "Delete Discount",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{pos_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{pos_base_url}}/v1/discounts/1",
+                  "host": ["{{pos_base_url}}"],
+                  "path": ["v1", "discounts", "1"]
+                },
+                "description": "Delete a discount. ADMIN role only. Returns 204 No Content."
+              }
+            }
+          ]
+        },
+        {
           "name": "Products",
           "item": [
             {
@@ -71,13 +159,8 @@
                 ],
                 "url": {
                   "raw": "{{pos_base_url}}/v1/products?storeType=RETAIL&lastSync=0",
-                  "host": [
-                    "{{pos_base_url}}"
-                  ],
-                  "path": [
-                    "v1",
-                    "products"
-                  ],
+                  "host": ["{{pos_base_url}}"],
+                  "path": ["v1", "products"],
                   "query": [
                     {
                       "key": "storeType",
@@ -112,13 +195,8 @@
                 },
                 "url": {
                   "raw": "{{pos_base_url}}/v1/products",
-                  "host": [
-                    "{{pos_base_url}}"
-                  ],
-                  "path": [
-                    "v1",
-                    "products"
-                  ]
+                  "host": ["{{pos_base_url}}"],
+                  "path": ["v1", "products"]
                 },
                 "description": "Create a new product. ADMIN role only. Returns 201 Created."
               }
@@ -143,14 +221,8 @@
                 },
                 "url": {
                   "raw": "{{pos_base_url}}/v1/products/1",
-                  "host": [
-                    "{{pos_base_url}}"
-                  ],
-                  "path": [
-                    "v1",
-                    "products",
-                    "1"
-                  ]
+                  "host": ["{{pos_base_url}}"],
+                  "path": ["v1", "products", "1"]
                 },
                 "description": "Update an existing product. ADMIN role only. Partial updates supported."
               }
@@ -167,14 +239,8 @@
                 ],
                 "url": {
                   "raw": "{{pos_base_url}}/v1/products/1",
-                  "host": [
-                    "{{pos_base_url}}"
-                  ],
-                  "path": [
-                    "v1",
-                    "products",
-                    "1"
-                  ]
+                  "host": ["{{pos_base_url}}"],
+                  "path": ["v1", "products", "1"]
                 },
                 "description": "Delete a product. ADMIN role only. Returns 204 No Content."
               }
@@ -196,13 +262,8 @@
                 ],
                 "url": {
                   "raw": "{{pos_base_url}}/v1/orders?storeType=RETAIL&isVoided=false&isSettled=false",
-                  "host": [
-                    "{{pos_base_url}}"
-                  ],
-                  "path": [
-                    "v1",
-                    "orders"
-                  ],
+                  "host": ["{{pos_base_url}}"],
+                  "path": ["v1", "orders"],
                   "query": [
                     {
                       "key": "storeType",
@@ -233,14 +294,8 @@
                 ],
                 "url": {
                   "raw": "{{pos_base_url}}/v1/orders/A1B2C3D4",
-                  "host": [
-                    "{{pos_base_url}}"
-                  ],
-                  "path": [
-                    "v1",
-                    "orders",
-                    "A1B2C3D4"
-                  ]
+                  "host": ["{{pos_base_url}}"],
+                  "path": ["v1", "orders", "A1B2C3D4"]
                 },
                 "description": "Get single order by ID."
               }
@@ -265,13 +320,8 @@
                 },
                 "url": {
                   "raw": "{{pos_base_url}}/v1/orders",
-                  "host": [
-                    "{{pos_base_url}}"
-                  ],
-                  "path": [
-                    "v1",
-                    "orders"
-                  ]
+                  "host": ["{{pos_base_url}}"],
+                  "path": ["v1", "orders"]
                 },
                 "description": "Create an order (idempotent). Returns 201 on first create, 200 with idempotent:true on duplicate."
               }
@@ -296,14 +346,8 @@
                 },
                 "url": {
                   "raw": "{{pos_base_url}}/v1/sync/orders",
-                  "host": [
-                    "{{pos_base_url}}"
-                  ],
-                  "path": [
-                    "v1",
-                    "sync",
-                    "orders"
-                  ]
+                  "host": ["{{pos_base_url}}"],
+                  "path": ["v1", "sync", "orders"]
                 },
                 "description": "Bulk sync orders from offline queue."
               }
@@ -328,15 +372,8 @@
                 },
                 "url": {
                   "raw": "{{pos_base_url}}/v1/orders/A1B2C3D4/void",
-                  "host": [
-                    "{{pos_base_url}}"
-                  ],
-                  "path": [
-                    "v1",
-                    "orders",
-                    "A1B2C3D4",
-                    "void"
-                  ]
+                  "host": ["{{pos_base_url}}"],
+                  "path": ["v1", "orders", "A1B2C3D4", "void"]
                 },
                 "description": "Void an order. ADMIN role only. Cannot void settled or already-voided orders."
               }
@@ -353,15 +390,8 @@
                 ],
                 "url": {
                   "raw": "{{pos_base_url}}/v1/orders/unsettled/summary?storeType=RETAIL&terminalId=POS-001",
-                  "host": [
-                    "{{pos_base_url}}"
-                  ],
-                  "path": [
-                    "v1",
-                    "orders",
-                    "unsettled",
-                    "summary"
-                  ],
+                  "host": ["{{pos_base_url}}"],
+                  "path": ["v1", "orders", "unsettled", "summary"],
                   "query": [
                     {
                       "key": "storeType",
@@ -396,14 +426,8 @@
                 },
                 "url": {
                   "raw": "{{pos_base_url}}/v1/orders/settle",
-                  "host": [
-                    "{{pos_base_url}}"
-                  ],
-                  "path": [
-                    "v1",
-                    "orders",
-                    "settle"
-                  ]
+                  "host": ["{{pos_base_url}}"],
+                  "path": ["v1", "orders", "settle"]
                 },
                 "description": "Run settlement batch. ADMIN role only. Atomically closes all unsettled, non-voided orders."
               }
@@ -425,13 +449,8 @@
                 ],
                 "url": {
                   "raw": "{{pos_base_url}}/v1/settlements?limit=5&storeType=RETAIL",
-                  "host": [
-                    "{{pos_base_url}}"
-                  ],
-                  "path": [
-                    "v1",
-                    "settlements"
-                  ],
+                  "host": ["{{pos_base_url}}"],
+                  "path": ["v1", "settlements"],
                   "query": [
                     {
                       "key": "limit",
@@ -458,14 +477,8 @@
                 ],
                 "url": {
                   "raw": "{{pos_base_url}}/v1/settlements/SETTLE-1716023456789",
-                  "host": [
-                    "{{pos_base_url}}"
-                  ],
-                  "path": [
-                    "v1",
-                    "settlements",
-                    "SETTLE-1716023456789"
-                  ]
+                  "host": ["{{pos_base_url}}"],
+                  "path": ["v1", "settlements", "SETTLE-1716023456789"]
                 },
                 "description": "Get settlement detail by ID."
               }
@@ -496,13 +509,8 @@
                 },
                 "url": {
                   "raw": "{{cms_base_url}}/v1/login",
-                  "host": [
-                    "{{cms_base_url}}"
-                  ],
-                  "path": [
-                    "v1",
-                    "login"
-                  ]
+                  "host": ["{{cms_base_url}}"],
+                  "path": ["v1", "login"]
                 },
                 "description": "Authenticate and get JWT token for CMS. Token saved to `cms_token`."
               },
@@ -584,14 +592,8 @@
                 },
                 "url": {
                   "raw": "{{cms_base_url}}/v1/ads/upload",
-                  "host": [
-                    "{{cms_base_url}}"
-                  ],
-                  "path": [
-                    "v1",
-                    "ads",
-                    "upload"
-                  ]
+                  "host": ["{{cms_base_url}}"],
+                  "path": ["v1", "ads", "upload"]
                 },
                 "description": "Upload a video ad (multipart/form-data). Max 50MB. ADMIN only."
               }
@@ -608,13 +610,8 @@
                 ],
                 "url": {
                   "raw": "{{cms_base_url}}/v1/ads?page=1&limit=20",
-                  "host": [
-                    "{{cms_base_url}}"
-                  ],
-                  "path": [
-                    "v1",
-                    "ads"
-                  ],
+                  "host": ["{{cms_base_url}}"],
+                  "path": ["v1", "ads"],
                   "query": [
                     {
                       "key": "page",
@@ -641,14 +638,8 @@
                 ],
                 "url": {
                   "raw": "{{cms_base_url}}/v1/ads/1",
-                  "host": [
-                    "{{cms_base_url}}"
-                  ],
-                  "path": [
-                    "v1",
-                    "ads",
-                    "1"
-                  ]
+                  "host": ["{{cms_base_url}}"],
+                  "path": ["v1", "ads", "1"]
                 },
                 "description": "Get ad detail by ID. ADMIN only."
               }
@@ -673,14 +664,8 @@
                 },
                 "url": {
                   "raw": "{{cms_base_url}}/v1/ads/1",
-                  "host": [
-                    "{{cms_base_url}}"
-                  ],
-                  "path": [
-                    "v1",
-                    "ads",
-                    "1"
-                  ]
+                  "host": ["{{cms_base_url}}"],
+                  "path": ["v1", "ads", "1"]
                 },
                 "description": "Update ad metadata. ADMIN only."
               }
@@ -697,14 +682,8 @@
                 ],
                 "url": {
                   "raw": "{{cms_base_url}}/v1/ads/1",
-                  "host": [
-                    "{{cms_base_url}}"
-                  ],
-                  "path": [
-                    "v1",
-                    "ads",
-                    "1"
-                  ]
+                  "host": ["{{cms_base_url}}"],
+                  "path": ["v1", "ads", "1"]
                 },
                 "description": "Delete ad and its file. ADMIN only. Returns 204."
               }
@@ -721,15 +700,8 @@
                 ],
                 "url": {
                   "raw": "{{cms_base_url}}/v1/ads/1/toggle",
-                  "host": [
-                    "{{cms_base_url}}"
-                  ],
-                  "path": [
-                    "v1",
-                    "ads",
-                    "1",
-                    "toggle"
-                  ]
+                  "host": ["{{cms_base_url}}"],
+                  "path": ["v1", "ads", "1", "toggle"]
                 },
                 "description": "Toggle ad isActive status. ADMIN only."
               }
@@ -746,14 +718,8 @@
                 ],
                 "url": {
                   "raw": "{{cms_base_url}}/v1/ads/active?storeType=RETAIL",
-                  "host": [
-                    "{{cms_base_url}}"
-                  ],
-                  "path": [
-                    "v1",
-                    "ads",
-                    "active"
-                  ],
+                  "host": ["{{cms_base_url}}"],
+                  "path": ["v1", "ads", "active"],
                   "query": [
                     {
                       "key": "storeType",
@@ -776,15 +742,8 @@
                 ],
                 "url": {
                   "raw": "{{cms_base_url}}/v1/ads/download/1",
-                  "host": [
-                    "{{cms_base_url}}"
-                  ],
-                  "path": [
-                    "v1",
-                    "ads",
-                    "download",
-                    "1"
-                  ]
+                  "host": ["{{cms_base_url}}"],
+                  "path": ["v1", "ads", "download", "1"]
                 },
                 "description": "Download video file (binary stream). Called by Android POS."
               }
@@ -809,15 +768,8 @@
                 },
                 "url": {
                   "raw": "{{cms_base_url}}/v1/ads/1/play",
-                  "host": [
-                    "{{cms_base_url}}"
-                  ],
-                  "path": [
-                    "v1",
-                    "ads",
-                    "1",
-                    "play"
-                  ]
+                  "host": ["{{cms_base_url}}"],
+                  "path": ["v1", "ads", "1", "play"]
                 },
                 "description": "Log that an ad was played (optional analytics)."
               }

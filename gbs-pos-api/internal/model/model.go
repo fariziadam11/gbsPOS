@@ -26,37 +26,51 @@ type Product struct {
 	UpdatedAt         time.Time `                                   json:"updatedAt"`
 }
 
+type Discount struct {
+	ID        uint      `gorm:"primaryKey"                   json:"id"`
+	ProductID uint      `gorm:"not null;index"               json:"productId"`
+	Product   Product   `gorm:"foreignKey:ProductID;constraint:OnDelete:CASCADE" json:"-"`
+	Name      string    `gorm:"size:200;not null"            json:"name"`
+	Type      string    `gorm:"size:20;not null;index"       json:"type"` // PERCENTAGE, FIXED
+	Value     float64   `gorm:"type:decimal(12,2);not null"  json:"value"`
+	StartDate time.Time `gorm:"not null;index"              json:"startDate"`
+	EndDate   time.Time `gorm:"not null;index"              json:"endDate"`
+	Status    string    `gorm:"size:20;not null;index"       json:"status"` // PENDING, ACTIVE, EXPIRED, STOPPED, CANCELLED
+	CreatedAt time.Time `                                    json:"createdAt"`
+	UpdatedAt time.Time `                                    json:"updatedAt"`
+}
+
 type Order struct {
-	ID                 string      `gorm:"primaryKey;size:32" json:"id"`
-	Subtotal           float64     `gorm:"type:decimal(12,2);not null" json:"subtotal"`
-	Tax                float64     `gorm:"type:decimal(12,2);not null" json:"tax"`
-	Total              float64     `gorm:"type:decimal(12,2);not null" json:"total"`
-	PaymentMethod      string      `gorm:"size:20;not null" json:"paymentMethod"`
-	CashReceived       *float64    `gorm:"type:decimal(12,2)" json:"cashReceived"`
-	ChangeAmount       *float64    `gorm:"type:decimal(12,2)" json:"changeAmount"`
-	Timestamp          int64       `gorm:"not null" json:"timestamp"`
-	IsVoided           bool        `gorm:"not null;default:false" json:"isVoided"`
-	IsSettled          bool        `gorm:"not null;default:false" json:"isSettled"`
-	TransactionID      string      `gorm:"size:100" json:"transactionId"`
-	ApprovalCode       string      `gorm:"size:50" json:"approvalCode"`
-	EntryMode          string      `gorm:"size:20" json:"entryMode"`
-	MaskedAccount      string      `gorm:"size:50" json:"maskedAccount"`
-	AcqMid             string      `gorm:"size:50" json:"acqMid"`
-	AcqTid             string      `gorm:"size:50" json:"acqTid"`
-	PosMessageID       string      `gorm:"size:100" json:"posMessageId"`
-	BankName           string      `gorm:"size:50" json:"bankName"`
-	StoreType          string      `gorm:"size:20" json:"storeType"`
-	TerminalID         string      `gorm:"size:32" json:"terminalId"`
-	VoidReason         string      `gorm:"size:255" json:"voidReason"`
-	VoidedBy           string      `gorm:"size:50" json:"voidedBy"`
-	VoidedAt           *time.Time  `json:"voidedAt"`
-	CustomerID         *int        `gorm:"index" json:"customerId"`
-	CustomerPhone      string      `gorm:"size:50" json:"customerPhone"`
-	CustomerName       string      `gorm:"size:255" json:"customerName"`
-	LoyaltyPointsEarned int        `gorm:"not null;default:0" json:"loyaltyPointsEarned"`
-	CreatedAt          time.Time   `json:"createdAt"`
-	UpdatedAt          time.Time   `json:"updatedAt"`
-	Items              []OrderItem `gorm:"foreignKey:OrderID;constraint:OnDelete:CASCADE" json:"items"`
+	ID                  string      `gorm:"primaryKey;size:32" json:"id"`
+	Subtotal            float64     `gorm:"type:decimal(12,2);not null" json:"subtotal"`
+	Tax                 float64     `gorm:"type:decimal(12,2);not null" json:"tax"`
+	Total               float64     `gorm:"type:decimal(12,2);not null" json:"total"`
+	PaymentMethod       string      `gorm:"size:20;not null" json:"paymentMethod"`
+	CashReceived        *float64    `gorm:"type:decimal(12,2)" json:"cashReceived"`
+	ChangeAmount        *float64    `gorm:"type:decimal(12,2)" json:"changeAmount"`
+	Timestamp           int64       `gorm:"not null" json:"timestamp"`
+	IsVoided            bool        `gorm:"not null;default:false" json:"isVoided"`
+	IsSettled           bool        `gorm:"not null;default:false" json:"isSettled"`
+	TransactionID       string      `gorm:"size:100" json:"transactionId"`
+	ApprovalCode        string      `gorm:"size:50" json:"approvalCode"`
+	EntryMode           string      `gorm:"size:20" json:"entryMode"`
+	MaskedAccount       string      `gorm:"size:50" json:"maskedAccount"`
+	AcqMid              string      `gorm:"size:50" json:"acqMid"`
+	AcqTid              string      `gorm:"size:50" json:"acqTid"`
+	PosMessageID        string      `gorm:"size:100" json:"posMessageId"`
+	BankName            string      `gorm:"size:50" json:"bankName"`
+	StoreType           string      `gorm:"size:20" json:"storeType"`
+	TerminalID          string      `gorm:"size:32" json:"terminalId"`
+	VoidReason          string      `gorm:"size:255" json:"voidReason"`
+	VoidedBy            string      `gorm:"size:50" json:"voidedBy"`
+	VoidedAt            *time.Time  `json:"voidedAt"`
+	CustomerID          *int        `gorm:"index" json:"customerId"`
+	CustomerPhone       string      `gorm:"size:50" json:"customerPhone"`
+	CustomerName        string      `gorm:"size:255" json:"customerName"`
+	LoyaltyPointsEarned int         `gorm:"not null;default:0" json:"loyaltyPointsEarned"`
+	CreatedAt           time.Time   `json:"createdAt"`
+	UpdatedAt           time.Time   `json:"updatedAt"`
+	Items               []OrderItem `gorm:"foreignKey:OrderID;constraint:OnDelete:CASCADE" json:"items"`
 }
 
 type OrderItem struct {

@@ -15,6 +15,7 @@ func NewTestDB() (*gorm.DB, error) {
 	if err := db.AutoMigrate(
 		&model.User{},
 		&model.Product{},
+		&model.Discount{},
 		&model.Order{},
 		&model.OrderItem{},
 		&model.Settlement{},
