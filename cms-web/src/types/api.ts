@@ -112,8 +112,18 @@ export interface Product {
   storeType: string;
   stockQuantity: number;
   lowStockThreshold: number;
+  discount?: ProductDiscount | null;
+  finalPrice?: number;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface ProductDiscount {
+  id: number;
+  name: string;
+  type: DiscountType;
+  value: number;
+  status: DiscountStatus;
 }
 
 export interface CreateProductRequest {
@@ -140,6 +150,43 @@ export interface ImportResult {
   success: number;
   failed: number;
   errors: string[];
+}
+
+// Discount types
+export type DiscountType = 'PERCENTAGE' | 'FIXED';
+
+export type DiscountStatus = 'PENDING' | 'ACTIVE' | 'EXPIRED' | 'STOPPED' | 'CANCELLED';
+
+export interface Discount {
+  id: number;
+  productId: number;
+  name: string;
+  type: DiscountType;
+  value: number;
+  startDate: string;
+  endDate: string;
+  status: DiscountStatus;
+  effectiveStatus: DiscountStatus;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateDiscountRequest {
+  productId: number;
+  name: string;
+  type: DiscountType;
+  value: number;
+  startDate: string;
+  endDate: string;
+}
+
+export interface UpdateDiscountRequest {
+  productId?: number;
+  name?: string;
+  type?: DiscountType;
+  value?: number;
+  startDate?: string;
+  endDate?: string;
 }
 
 // Order types

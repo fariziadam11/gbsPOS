@@ -10,13 +10,15 @@ import Select from 'primevue/select'
 import Tag from 'primevue/tag'
 import ConfirmDialog from 'primevue/confirmdialog'
 import FileUpload from 'primevue/fileupload'
+import DatePicker from 'primevue/datepicker'
 import { useConfirm } from 'primevue/useconfirm'
 import { useToast } from 'primevue/usetoast'
 import { useAuthStore } from '../stores/auth'
 import { useProducts, useCreateProduct, useUpdateProduct, useDeleteProduct, useImportProducts } from '../composables/useProducts'
+import { useDiscounts, useCreateDiscount, useUpdateDiscount, useDeleteDiscount } from '../composables/useDiscounts'
 import { getExportUrl } from '../api/products'
 import { getErrorMessage } from '../api/client'
-import type { Product, CreateProductRequest } from '../types/api'
+import type { Product, CreateProductRequest, Discount, DiscountStatus, DiscountType } from '../types/api'
 
 const authStore = useAuthStore()
 const confirm = useConfirm()
@@ -28,6 +30,13 @@ const { mutate: createProduct } = useCreateProduct()
 const { mutate: updateProduct } = useUpdateProduct()
 const { mutate: deleteProduct } = useDeleteProduct()
 const { mutate: importProducts } = useImportProducts()
+
+const selectedDiscountProduct = ref<Product | null>(null)
+const selectedDiscountProductId = computed(() => selectedDiscountProduct.value?.id ?? null)
+const { data: discounts, isLoading: isDiscountsLoading } = useDiscounts(selectedDiscountProductId)
+const { mutate: createDiscount } = useCreateDiscount()
+const { mutate: updateDiscount } = useUpdateDiscount()
+const { mutate: deleteDiscount } = useDeleteDiscount()
 
 const showDialog = ref(false)
 const editingProduct = ref<Product | null>(null)
@@ -43,8 +52,37 @@ const form = ref<CreateProductRequest>({
 const dialogTitle = ref('Add Product')
 const submitting = ref(false)
 
+type DiscountForm = {
+  name: string;
+  type: DiscountType;
+  value: number;
+  startDate: Date | null;
+  endDate: Date | null;
+  finalPrice: number;
+}
+
+const showDiscountDialog = ref(false)
+const showDiscountFormDialog = ref(false)
+const editingDiscount = ref<Discount | null>(null)
+const discountSubmitting = ref(false)
+const discountForm = ref<DiscountForm>({
+  name: '',
+  type: 'PERCENTAGE',
+  value: 0,
+  startDate: null,
+  endDate: null,
+  finalPrice: 0,
+})
+const discountDialogTitle = computed(() => {
+  if (!selectedDiscountProduct.value) return 'Product Discounts'
+  return `Product Discounts - ${selectedDiscountProduct.value.name}`
+})
+const discountFormTitle = computed(() => (editingDiscount.value ? 'Edit Discount' : 'Add Discount'))
+const selectedProductPrice = computed(() => selectedDiscountProduct.value?.price ?? 0)
+
 const storeTypes = ['RETAIL', 'FNB', 'OUTFIT']
 const categories = ['Food', 'Beverages', 'Electronics', 'Groceries']
+const discountTypes: DiscountType[] = ['PERCENTAGE', 'FIXED']
 
 function openCreate() {
   editingProduct.value = null
@@ -74,6 +112,38 @@ function openEdit(product: Product) {
     lowStockThreshold: product.lowStockThreshold,
   }
   showDialog.value = true
+}
+
+function openDiscountManagement(product: Product) {
+  selectedDiscountProduct.value = product
+  showDiscountDialog.value = true
+}
+
+function openCreateDiscount() {
+  if (!selectedDiscountProduct.value) return
+  editingDiscount.value = null
+  discountForm.value = {
+    name: '',
+    type: 'PERCENTAGE',
+    value: 0,
+    startDate: null,
+    endDate: null,
+    finalPrice: selectedProductPrice.value,
+  }
+  showDiscountFormDialog.value = true
+}
+
+function openEditDiscount(discount: Discount) {
+  editingDiscount.value = discount
+  discountForm.value = {
+    name: discount.name,
+    type: discount.type,
+    value: discount.value,
+    startDate: new Date(discount.startDate),
+    endDate: new Date(discount.endDate),
+    finalPrice: calculateFinalPrice(discount.type, discount.value),
+  }
+  showDiscountFormDialog.value = true
 }
 
 function save() {
@@ -121,8 +191,140 @@ function confirmDelete(product: Product) {
   })
 }
 
+function saveDiscount() {
+  if (!selectedDiscountProduct.value) return
+  const startDate = discountForm.value.startDate
+  const endDate = discountForm.value.endDate
+  if (!discountForm.value.name || !startDate || !endDate) {
+    toast.add({ severity: 'warn', summary: 'Validation', detail: 'Name, start date, and end date are required', life: 3000 })
+    return
+  }
+  if (discountForm.value.value <= 0) {
+    toast.add({ severity: 'warn', summary: 'Validation', detail: 'Discount value must be greater than 0', life: 3000 })
+    return
+  }
+
+  const payload = {
+    productId: selectedDiscountProduct.value.id,
+    name: discountForm.value.name,
+    type: discountForm.value.type,
+    value: discountForm.value.value,
+    startDate: dateToDateStr(startDate),
+    endDate: dateToDateStr(endDate),
+  }
+
+  discountSubmitting.value = true
+  if (editingDiscount.value) {
+    updateDiscount({ id: editingDiscount.value.id, data: payload }, {
+      onSuccess: () => {
+        toast.add({ severity: 'success', summary: 'Updated', detail: 'Discount updated successfully', life: 3000 })
+        showDiscountFormDialog.value = false
+      },
+      onError: (err) => toast.add({ severity: 'error', summary: 'Error', detail: getErrorMessage(err), life: 5000 }),
+      onSettled: () => { discountSubmitting.value = false },
+    })
+  } else {
+    createDiscount(payload, {
+      onSuccess: () => {
+        toast.add({ severity: 'success', summary: 'Created', detail: 'Discount created successfully', life: 3000 })
+        showDiscountFormDialog.value = false
+      },
+      onError: (err) => toast.add({ severity: 'error', summary: 'Error', detail: getErrorMessage(err), life: 5000 }),
+      onSettled: () => { discountSubmitting.value = false },
+    })
+  }
+}
+
+function confirmDeleteDiscount(discount: Discount) {
+  confirm.require({
+    message: `Delete "${discount.name}"?`,
+    header: 'Confirm Delete',
+    icon: 'pi pi-exclamation-triangle',
+    rejectLabel: 'Cancel',
+    rejectProps: { severity: 'secondary', outlined: true },
+    acceptLabel: 'Delete',
+    acceptProps: { severity: 'danger' },
+    accept: () => {
+      deleteDiscount(discount.id, {
+        onSuccess: () => toast.add({ severity: 'success', summary: 'Deleted', detail: 'Discount deleted', life: 3000 }),
+        onError: (err) => toast.add({ severity: 'error', summary: 'Error', detail: getErrorMessage(err), life: 5000 }),
+      })
+    },
+  })
+}
+
 function formatCurrency(value: number): string {
   return `Rp ${value.toLocaleString('id-ID')}`
+}
+
+function formatDate(value: string): string {
+  return new Date(value).toLocaleDateString('id-ID')
+}
+
+function dateToDateStr(date: Date): string {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+function calculateFinalPrice(type: DiscountType, value: number): number {
+  const price = selectedProductPrice.value
+  const finalPrice = type === 'PERCENTAGE'
+    ? price - (price * value / 100)
+    : price - value
+  return clampPrice(finalPrice)
+}
+
+function clampPrice(value: number): number {
+  return Math.min(selectedProductPrice.value, Math.max(0, value || 0))
+}
+
+function onDiscountTypeChange(type: DiscountType) {
+  discountForm.value.type = type
+  discountForm.value.value = 0
+  discountForm.value.finalPrice = selectedProductPrice.value
+}
+
+function onDiscountValueChange(value: number | null) {
+  const price = selectedProductPrice.value
+  const normalizedValue = value ?? 0
+  discountForm.value.value = discountForm.value.type === 'PERCENTAGE'
+    ? Math.min(100, Math.max(0, normalizedValue))
+    : Math.min(price, Math.max(0, normalizedValue))
+  discountForm.value.finalPrice = calculateFinalPrice(discountForm.value.type, discountForm.value.value)
+}
+
+function onFinalPriceChange(value: number | null) {
+  const price = selectedProductPrice.value
+  const finalPrice = clampPrice(value ?? 0)
+  discountForm.value.finalPrice = finalPrice
+  if (discountForm.value.type === 'PERCENTAGE') {
+    discountForm.value.value = price > 0 ? ((price - finalPrice) / price) * 100 : 0
+    return
+  }
+  discountForm.value.value = price - finalPrice
+}
+
+function formatDiscountValue(discount: Discount): string {
+  if (discount.type === 'PERCENTAGE') return `${discount.value}%`
+  return formatCurrency(discount.value)
+}
+
+function getStatusSeverity(status: DiscountStatus): string {
+  switch (status) {
+    case 'ACTIVE':
+      return 'success'
+    case 'PENDING':
+      return 'warn'
+    case 'EXPIRED':
+      return 'secondary'
+    case 'STOPPED':
+    case 'CANCELLED':
+      return 'danger'
+    default:
+      return 'info'
+  }
 }
 
 function getStockSeverity(product: Product): string {
@@ -204,11 +406,12 @@ const exportUrl = computed(() => {
             </div>
           </template>
         </Column>
-        <Column v-if="authStore.isAdmin" header="Actions" style="width: 120px">
+        <Column v-if="authStore.isAdmin" header="Actions" style="width: 150px">
           <template #body="{ data }">
             <div class="actions">
-              <Button icon="pi pi-pencil" text rounded size="small" title="Edit" @click="openEdit(data)" />
-              <Button icon="pi pi-trash" text rounded size="small" severity="danger" title="Delete" @click="confirmDelete(data)" />
+              <Button icon="pi pi-tag" text rounded size="small" title="Manage Discount" @click="openDiscountManagement(data)" />
+              <Button icon="pi pi-pencil" text rounded size="small" title="Edit Product" @click="openEdit(data)" />
+              <Button icon="pi pi-trash" text rounded size="small" severity="danger" title="Delete Product" @click="confirmDelete(data)" />
             </div>
           </template>
         </Column>
@@ -253,6 +456,138 @@ const exportUrl = computed(() => {
       <template #footer>
         <Button label="Cancel" severity="secondary" outlined @click="showDialog = false" />
         <Button label="Save" :loading="submitting" @click="save" />
+      </template>
+    </Dialog>
+
+    <!-- Discount Management Dialog -->
+    <Dialog v-model:visible="showDiscountDialog" :header="discountDialogTitle" :modal="true" :style="{ width: '900px' }">
+      <div class="discount-dialog">
+        <div class="discount-toolbar">
+          <div v-if="selectedDiscountProduct" class="product-price">
+            <span>Product Price</span>
+            <strong>{{ formatCurrency(selectedDiscountProduct.price) }}</strong>
+          </div>
+          <Button label="Add Discount" icon="pi pi-plus" @click="openCreateDiscount" />
+        </div>
+
+        <DataTable :value="discounts || []" :loading="isDiscountsLoading" tableStyle="min-width: 48rem" stripedRows size="small">
+          <Column field="name" header="Name" />
+          <Column field="type" header="Type" style="width: 130px">
+            <template #body="{ data }">
+              <Tag :value="data.type" severity="info" />
+            </template>
+          </Column>
+          <Column header="Value" style="width: 130px">
+            <template #body="{ data }">{{ formatDiscountValue(data) }}</template>
+          </Column>
+          <Column header="Start Date" style="width: 130px">
+            <template #body="{ data }">{{ formatDate(data.startDate) }}</template>
+          </Column>
+          <Column header="End Date" style="width: 130px">
+            <template #body="{ data }">{{ formatDate(data.endDate) }}</template>
+          </Column>
+          <Column header="Effective Status" style="width: 150px">
+            <template #body="{ data }">
+              <Tag :value="data.effectiveStatus" :severity="getStatusSeverity(data.effectiveStatus)" />
+            </template>
+          </Column>
+          <Column header="Actions" style="width: 100px">
+            <template #body="{ data }">
+              <div class="actions">
+                <Button icon="pi pi-pencil" text rounded size="small" title="Edit" @click="openEditDiscount(data)" />
+                <Button icon="pi pi-trash" text rounded size="small" severity="danger" title="Delete" @click="confirmDeleteDiscount(data)" />
+              </div>
+            </template>
+          </Column>
+          <template #empty>
+            <div class="empty-state">No discounts found.</div>
+          </template>
+        </DataTable>
+      </div>
+    </Dialog>
+
+    <!-- Discount Form Dialog -->
+    <Dialog v-model:visible="showDiscountFormDialog" :header="discountFormTitle" :modal="true" :style="{ width: '520px' }">
+      <div class="form-grid">
+        <div class="form-field">
+          <label>Name *</label>
+          <InputText v-model="discountForm.name" fluid />
+        </div>
+        <div class="form-field">
+          <label>Type *</label>
+          <Select v-model="discountForm.type" :options="discountTypes" fluid @change="onDiscountTypeChange($event.value)" />
+        </div>
+        <div class="form-row">
+          <div class="form-field">
+            <label>Start Date *</label>
+            <DatePicker v-model="discountForm.startDate" dateFormat="yy-mm-dd" showIcon fluid />
+          </div>
+          <div class="form-field">
+            <label>End Date *</label>
+            <DatePicker v-model="discountForm.endDate" dateFormat="yy-mm-dd" showIcon fluid />
+          </div>
+        </div>
+        <div class="form-field">
+          <label>Product Price</label>
+          <InputNumber :modelValue="selectedProductPrice" mode="currency" currency="IDR" disabled fluid />
+        </div>
+        <template v-if="discountForm.type === 'PERCENTAGE'">
+          <div class="form-field">
+            <label>Discount Percentage</label>
+            <InputNumber
+              :modelValue="discountForm.value"
+              suffix="%"
+              :min="0"
+              :max="100"
+              :minFractionDigits="0"
+              :maxFractionDigits="2"
+              fluid
+              @update:modelValue="onDiscountValueChange"
+            />
+          </div>
+          <div class="form-field">
+            <label>Final Price</label>
+            <InputNumber
+              :modelValue="discountForm.finalPrice"
+              mode="currency"
+              currency="IDR"
+              :min="0"
+              :max="selectedProductPrice"
+              fluid
+              @update:modelValue="onFinalPriceChange"
+            />
+          </div>
+        </template>
+        <template v-else>
+          <div class="form-field">
+            <label>Discount Amount</label>
+            <InputNumber
+              :modelValue="discountForm.value"
+              mode="currency"
+              currency="IDR"
+              :min="0"
+              :max="selectedProductPrice"
+              fluid
+              @update:modelValue="onDiscountValueChange"
+            />
+          </div>
+          <div class="form-field">
+            <label>Final Price</label>
+            <InputNumber
+              :modelValue="discountForm.finalPrice"
+              mode="currency"
+              currency="IDR"
+              :min="0"
+              :max="selectedProductPrice"
+              fluid
+              @update:modelValue="onFinalPriceChange"
+            />
+          </div>
+        </template>
+      </div>
+      <template #footer>
+        <Button label="Cancel" severity="secondary" outlined @click="showDiscountFormDialog = false" />
+        <Button label="Save" :loading="discountSubmitting" @click="saveDiscount" />
       </template>
     </Dialog>
 
@@ -317,6 +652,11 @@ const exportUrl = computed(() => {
   flex-direction: column;
   gap: 16px;
 }
+.form-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
 .form-field {
   display: flex;
   flex-direction: column;
@@ -326,5 +666,37 @@ const exportUrl = computed(() => {
   font-size: 14px;
   font-weight: 500;
   color: var(--p-text-color);
+}
+.discount-dialog {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.discount-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.product-price {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  color: var(--p-text-secondary-color);
+  font-size: 13px;
+}
+.product-price strong {
+  color: var(--p-text-color);
+  font-size: 16px;
+}
+@media (max-width: 640px) {
+  .header-actions,
+  .discount-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .form-row {
+    grid-template-columns: 1fr;
+  }
 }
 </style>
