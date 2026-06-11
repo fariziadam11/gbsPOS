@@ -1,56 +1,56 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import DataTable from 'primevue/datatable'
-import Column from 'primevue/column'
-import Button from 'primevue/button'
-import Dialog from 'primevue/dialog'
-import InputText from 'primevue/inputtext'
-import InputNumber from 'primevue/inputnumber'
-import Select from 'primevue/select'
-import Tag from 'primevue/tag'
-import ConfirmDialog from 'primevue/confirmdialog'
-import FileUpload from 'primevue/fileupload'
-import DatePicker from 'primevue/datepicker'
-import { useConfirm } from 'primevue/useconfirm'
-import { useToast } from 'primevue/usetoast'
-import { useAuthStore } from '../stores/auth'
-import { useProducts, useCreateProduct, useUpdateProduct, useDeleteProduct, useImportProducts } from '../composables/useProducts'
-import { useDiscounts, useCreateDiscount, useUpdateDiscount, useDeleteDiscount } from '../composables/useDiscounts'
-import { getExportUrl } from '../api/products'
-import { getErrorMessage } from '../api/client'
-import type { Product, CreateProductRequest, Discount, DiscountStatus, DiscountType } from '../types/api'
+import { ref, computed } from "vue";
+import DataTable from "primevue/datatable";
+import Column from "primevue/column";
+import Button from "primevue/button";
+import Dialog from "primevue/dialog";
+import InputText from "primevue/inputtext";
+import InputNumber from "primevue/inputnumber";
+import Select from "primevue/select";
+import Tag from "primevue/tag";
+import ConfirmDialog from "primevue/confirmdialog";
+import FileUpload from "primevue/fileupload";
+import DatePicker from "primevue/datepicker";
+import { useConfirm } from "primevue/useconfirm";
+import { useToast } from "primevue/usetoast";
+import { useAuthStore } from "../stores/auth";
+import { useProducts, useCreateProduct, useUpdateProduct, useDeleteProduct, useImportProducts } from "../composables/useProducts";
+import { useDiscounts, useCreateDiscount, useUpdateDiscount, useDeleteDiscount } from "../composables/useDiscounts";
+import { getExportUrl } from "../api/products";
+import { getErrorMessage } from "../api/client";
+import type { Product, CreateProductRequest, Discount, DiscountStatus, DiscountType } from "../types/api";
 
-const authStore = useAuthStore()
-const confirm = useConfirm()
-const toast = useToast()
+const authStore = useAuthStore();
+const confirm = useConfirm();
+const toast = useToast();
 
-const storeType = ref<string | undefined>(undefined)
-const { data: products, isLoading } = useProducts(storeType)
-const { mutate: createProduct } = useCreateProduct()
-const { mutate: updateProduct } = useUpdateProduct()
-const { mutate: deleteProduct } = useDeleteProduct()
-const { mutate: importProducts } = useImportProducts()
+const storeType = ref<string | undefined>(undefined);
+const { data: products, isLoading } = useProducts(storeType);
+const { mutate: createProduct } = useCreateProduct();
+const { mutate: updateProduct } = useUpdateProduct();
+const { mutate: deleteProduct } = useDeleteProduct();
+const { mutate: importProducts } = useImportProducts();
 
-const selectedDiscountProduct = ref<Product | null>(null)
-const selectedDiscountProductId = computed(() => selectedDiscountProduct.value?.id ?? null)
-const { data: discounts, isLoading: isDiscountsLoading } = useDiscounts(selectedDiscountProductId)
-const { mutate: createDiscount } = useCreateDiscount()
-const { mutate: updateDiscount } = useUpdateDiscount()
-const { mutate: deleteDiscount } = useDeleteDiscount()
+const selectedDiscountProduct = ref<Product | null>(null);
+const selectedDiscountProductId = computed(() => selectedDiscountProduct.value?.id ?? null);
+const { data: discounts, isLoading: isDiscountsLoading } = useDiscounts(selectedDiscountProductId);
+const { mutate: createDiscount } = useCreateDiscount();
+const { mutate: updateDiscount } = useUpdateDiscount();
+const { mutate: deleteDiscount } = useDeleteDiscount();
 
-const showDialog = ref(false)
-const editingProduct = ref<Product | null>(null)
+const showDialog = ref(false);
+const editingProduct = ref<Product | null>(null);
 const form = ref<CreateProductRequest>({
-  name: '',
+  name: "",
   price: 0,
-  category: '',
-  imageUrl: '',
-  storeType: '',
+  category: "",
+  imageUrl: "",
+  storeType: "",
   stockQuantity: 0,
   lowStockThreshold: 10,
-})
-const dialogTitle = ref('Add Product')
-const submitting = ref(false)
+});
+const dialogTitle = ref("Add Product");
+const submitting = ref(false);
 
 type DiscountForm = {
   name: string;
@@ -59,49 +59,49 @@ type DiscountForm = {
   startDate: Date | null;
   endDate: Date | null;
   finalPrice: number;
-}
+};
 
-const showDiscountDialog = ref(false)
-const showDiscountFormDialog = ref(false)
-const editingDiscount = ref<Discount | null>(null)
-const discountSubmitting = ref(false)
+const showDiscountDialog = ref(false);
+const showDiscountFormDialog = ref(false);
+const editingDiscount = ref<Discount | null>(null);
+const discountSubmitting = ref(false);
 const discountForm = ref<DiscountForm>({
-  name: '',
-  type: 'PERCENTAGE',
+  name: "",
+  type: "PERCENTAGE",
   value: 0,
   startDate: null,
   endDate: null,
   finalPrice: 0,
-})
+});
 const discountDialogTitle = computed(() => {
-  if (!selectedDiscountProduct.value) return 'Product Discounts'
-  return `Product Discounts - ${selectedDiscountProduct.value.name}`
-})
-const discountFormTitle = computed(() => (editingDiscount.value ? 'Edit Discount' : 'Add Discount'))
-const selectedProductPrice = computed(() => selectedDiscountProduct.value?.price ?? 0)
+  if (!selectedDiscountProduct.value) return "Product Discounts";
+  return `Product Discounts - ${selectedDiscountProduct.value.name}`;
+});
+const discountFormTitle = computed(() => (editingDiscount.value ? "Edit Discount" : "Add Discount"));
+const selectedProductPrice = computed(() => selectedDiscountProduct.value?.price ?? 0);
 
-const storeTypes = ['RETAIL', 'FNB', 'OUTFIT']
-const categories = ['Food', 'Beverages', 'Electronics', 'Groceries']
-const discountTypes: DiscountType[] = ['PERCENTAGE', 'FIXED']
+const storeTypes = ["RETAIL", "FNB", "OUTFIT"];
+const categories = ["Food", "Beverages", "Electronics", "Groceries"];
+const discountTypes: DiscountType[] = ["PERCENTAGE", "FIXED"];
 
 function openCreate() {
-  editingProduct.value = null
-  dialogTitle.value = 'Add Product'
+  editingProduct.value = null;
+  dialogTitle.value = "Add Product";
   form.value = {
-    name: '',
+    name: "",
     price: 0,
-    category: '',
-    imageUrl: '',
-    storeType: storeType.value || 'RETAIL',
+    category: "",
+    imageUrl: "",
+    storeType: storeType.value || "RETAIL",
     stockQuantity: 0,
     lowStockThreshold: 10,
-  }
-  showDialog.value = true
+  };
+  showDialog.value = true;
 }
 
 function openEdit(product: Product) {
-  editingProduct.value = product
-  dialogTitle.value = 'Edit Product'
+  editingProduct.value = product;
+  dialogTitle.value = "Edit Product";
   form.value = {
     name: product.name,
     price: product.price,
@@ -110,31 +110,31 @@ function openEdit(product: Product) {
     storeType: product.storeType,
     stockQuantity: product.stockQuantity,
     lowStockThreshold: product.lowStockThreshold,
-  }
-  showDialog.value = true
+  };
+  showDialog.value = true;
 }
 
 function openDiscountManagement(product: Product) {
-  selectedDiscountProduct.value = product
-  showDiscountDialog.value = true
+  selectedDiscountProduct.value = product;
+  showDiscountDialog.value = true;
 }
 
 function openCreateDiscount() {
-  if (!selectedDiscountProduct.value) return
-  editingDiscount.value = null
+  if (!selectedDiscountProduct.value) return;
+  editingDiscount.value = null;
   discountForm.value = {
-    name: '',
-    type: 'PERCENTAGE',
+    name: "",
+    type: "PERCENTAGE",
     value: 0,
     startDate: null,
     endDate: null,
     finalPrice: selectedProductPrice.value,
-  }
-  showDiscountFormDialog.value = true
+  };
+  showDiscountFormDialog.value = true;
 }
 
 function openEditDiscount(discount: Discount) {
-  editingDiscount.value = discount
+  editingDiscount.value = discount;
   discountForm.value = {
     name: discount.name,
     type: discount.type,
@@ -142,66 +142,73 @@ function openEditDiscount(discount: Discount) {
     startDate: new Date(discount.startDate),
     endDate: new Date(discount.endDate),
     finalPrice: calculateFinalPrice(discount.type, discount.value),
-  }
-  showDiscountFormDialog.value = true
+  };
+  showDiscountFormDialog.value = true;
 }
 
 function save() {
   if (!form.value.name || !form.value.category) {
-    toast.add({ severity: 'warn', summary: 'Validation', detail: 'Name and category are required', life: 3000 })
-    return
+    toast.add({ severity: "warn", summary: "Validation", detail: "Name and category are required", life: 3000 });
+    return;
   }
-  submitting.value = true
+  submitting.value = true;
   if (editingProduct.value) {
-    updateProduct({ id: editingProduct.value.id, data: form.value }, {
-      onSuccess: () => {
-        toast.add({ severity: 'success', summary: 'Updated', detail: 'Product updated successfully', life: 3000 })
-        showDialog.value = false
+    updateProduct(
+      { id: editingProduct.value.id, data: form.value },
+      {
+        onSuccess: () => {
+          toast.add({ severity: "success", summary: "Updated", detail: "Product updated successfully", life: 3000 });
+          showDialog.value = false;
+        },
+        onError: (err) => toast.add({ severity: "error", summary: "Error", detail: getErrorMessage(err), life: 5000 }),
+        onSettled: () => {
+          submitting.value = false;
+        },
       },
-      onError: (err) => toast.add({ severity: 'error', summary: 'Error', detail: getErrorMessage(err), life: 5000 }),
-      onSettled: () => { submitting.value = false },
-    })
+    );
   } else {
     createProduct(form.value as CreateProductRequest, {
       onSuccess: () => {
-        toast.add({ severity: 'success', summary: 'Created', detail: 'Product created successfully', life: 3000 })
-        showDialog.value = false
+        toast.add({ severity: "success", summary: "Created", detail: "Product created successfully", life: 3000 });
+        showDialog.value = false;
       },
-      onError: (err) => toast.add({ severity: 'error', summary: 'Error', detail: getErrorMessage(err), life: 5000 }),
-      onSettled: () => { submitting.value = false },
-    })
+      onError: (err) => toast.add({ severity: "error", summary: "Error", detail: getErrorMessage(err), life: 5000 }),
+      onSettled: () => {
+        submitting.value = false;
+      },
+    });
   }
 }
 
 function confirmDelete(product: Product) {
   confirm.require({
     message: `Delete "${product.name}"?`,
-    header: 'Confirm Delete',
-    icon: 'pi pi-exclamation-triangle',
-    rejectLabel: 'Cancel',
-    rejectProps: { severity: 'secondary', outlined: true },
-    acceptLabel: 'Delete',
-    acceptProps: { severity: 'danger' },
+    header: "Confirm Delete",
+    icon: "pi pi-exclamation-triangle",
+    rejectLabel: "Cancel",
+    rejectProps: { severity: "secondary", outlined: true },
+    acceptLabel: "Delete",
+    acceptProps: { severity: "danger" },
     accept: () => {
       deleteProduct(product.id, {
-        onSuccess: () => toast.add({ severity: 'success', summary: 'Deleted', detail: 'Product deleted', life: 3000 }),
-        onError: (err) => toast.add({ severity: 'error', summary: 'Error', detail: getErrorMessage(err), life: 5000 }),
-      })
+        onSuccess: () => toast.add({ severity: "success", summary: "Deleted", detail: "Product deleted", life: 3000 }),
+        onError: (err) => toast.add({ severity: "error", summary: "Error", detail: getErrorMessage(err), life: 5000 }),
+      });
     },
-  })
+  });
 }
 
 function saveDiscount() {
-  if (!selectedDiscountProduct.value) return
-  const startDate = discountForm.value.startDate
-  const endDate = discountForm.value.endDate
+  if (!selectedDiscountProduct.value) return;
+  const startDate = discountForm.value.startDate;
+  const endDate = discountForm.value.endDate;
   if (!discountForm.value.name || !startDate || !endDate) {
-    toast.add({ severity: 'warn', summary: 'Validation', detail: 'Name, start date, and end date are required', life: 3000 })
-    return
+    toast.add({ severity: "warn", summary: "Validation", detail: "Name, start date, and end date are required", life: 3000 });
+    return;
   }
   if (discountForm.value.value <= 0) {
-    toast.add({ severity: 'warn', summary: 'Validation', detail: 'Discount value must be greater than 0', life: 3000 })
-    return
+    toast.add({ severity: "warn", summary: "Validation", detail: "Discount value must be greater than 0", life: 3000 });
+    return;
   }
 
   const payload = {
@@ -211,157 +218,163 @@ function saveDiscount() {
     value: discountForm.value.value,
     startDate: dateToDateStr(startDate),
     endDate: dateToDateStr(endDate),
-  }
+  };
 
-  discountSubmitting.value = true
+  discountSubmitting.value = true;
   if (editingDiscount.value) {
-    updateDiscount({ id: editingDiscount.value.id, data: payload }, {
-      onSuccess: () => {
-        toast.add({ severity: 'success', summary: 'Updated', detail: 'Discount updated successfully', life: 3000 })
-        showDiscountFormDialog.value = false
+    updateDiscount(
+      { id: editingDiscount.value.id, data: payload },
+      {
+        onSuccess: () => {
+          toast.add({ severity: "success", summary: "Updated", detail: "Discount updated successfully", life: 3000 });
+          showDiscountFormDialog.value = false;
+        },
+        onError: (err) => toast.add({ severity: "error", summary: "Error", detail: getErrorMessage(err), life: 5000 }),
+        onSettled: () => {
+          discountSubmitting.value = false;
+        },
       },
-      onError: (err) => toast.add({ severity: 'error', summary: 'Error', detail: getErrorMessage(err), life: 5000 }),
-      onSettled: () => { discountSubmitting.value = false },
-    })
+    );
   } else {
     createDiscount(payload, {
       onSuccess: () => {
-        toast.add({ severity: 'success', summary: 'Created', detail: 'Discount created successfully', life: 3000 })
-        showDiscountFormDialog.value = false
+        toast.add({ severity: "success", summary: "Created", detail: "Discount created successfully", life: 3000 });
+        showDiscountFormDialog.value = false;
       },
-      onError: (err) => toast.add({ severity: 'error', summary: 'Error', detail: getErrorMessage(err), life: 5000 }),
-      onSettled: () => { discountSubmitting.value = false },
-    })
+      onError: (err) => toast.add({ severity: "error", summary: "Error", detail: getErrorMessage(err), life: 5000 }),
+      onSettled: () => {
+        discountSubmitting.value = false;
+      },
+    });
   }
 }
 
 function confirmDeleteDiscount(discount: Discount) {
   confirm.require({
     message: `Delete "${discount.name}"?`,
-    header: 'Confirm Delete',
-    icon: 'pi pi-exclamation-triangle',
-    rejectLabel: 'Cancel',
-    rejectProps: { severity: 'secondary', outlined: true },
-    acceptLabel: 'Delete',
-    acceptProps: { severity: 'danger' },
+    header: "Confirm Delete",
+    icon: "pi pi-exclamation-triangle",
+    rejectLabel: "Cancel",
+    rejectProps: { severity: "secondary", outlined: true },
+    acceptLabel: "Delete",
+    acceptProps: { severity: "danger" },
     accept: () => {
       deleteDiscount(discount.id, {
-        onSuccess: () => toast.add({ severity: 'success', summary: 'Deleted', detail: 'Discount deleted', life: 3000 }),
-        onError: (err) => toast.add({ severity: 'error', summary: 'Error', detail: getErrorMessage(err), life: 5000 }),
-      })
+        onSuccess: () => toast.add({ severity: "success", summary: "Deleted", detail: "Discount deleted", life: 3000 }),
+        onError: (err) => toast.add({ severity: "error", summary: "Error", detail: getErrorMessage(err), life: 5000 }),
+      });
     },
-  })
+  });
 }
 
 function formatCurrency(value: number): string {
-  return `Rp ${value.toLocaleString('id-ID')}`
+  return `Rp ${value.toLocaleString("id-ID")}`;
 }
 
 function formatDate(value: string): string {
-  return new Date(value).toLocaleDateString('id-ID')
+  return new Date(value).toLocaleDateString("id-ID");
 }
 
 function dateToDateStr(date: Date): string {
-  const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
-  return `${year}-${month}-${day}`
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
 
 function calculateFinalPrice(type: DiscountType, value: number): number {
-  const price = selectedProductPrice.value
-  const finalPrice = type === 'PERCENTAGE'
-    ? price - (price * value / 100)
-    : price - value
-  return clampPrice(finalPrice)
+  const price = selectedProductPrice.value;
+  const finalPrice = type === "PERCENTAGE" ? price - (price * value) / 100 : price - value;
+  return clampPrice(finalPrice);
 }
 
 function clampPrice(value: number): number {
-  return Math.min(selectedProductPrice.value, Math.max(0, value || 0))
+  return Math.min(selectedProductPrice.value, Math.max(0, value || 0));
 }
 
 function onDiscountTypeChange(type: DiscountType) {
-  discountForm.value.type = type
-  discountForm.value.value = 0
-  discountForm.value.finalPrice = selectedProductPrice.value
+  discountForm.value.type = type;
+  discountForm.value.value = 0;
+  discountForm.value.finalPrice = selectedProductPrice.value;
 }
 
 function onDiscountValueChange(value: number | null) {
-  const price = selectedProductPrice.value
-  const normalizedValue = value ?? 0
-  discountForm.value.value = discountForm.value.type === 'PERCENTAGE'
-    ? Math.min(100, Math.max(0, normalizedValue))
-    : Math.min(price, Math.max(0, normalizedValue))
-  discountForm.value.finalPrice = calculateFinalPrice(discountForm.value.type, discountForm.value.value)
+  const price = selectedProductPrice.value;
+  const normalizedValue = value ?? 0;
+  discountForm.value.value = discountForm.value.type === "PERCENTAGE" ? Math.min(100, Math.max(0, normalizedValue)) : Math.min(price, Math.max(0, normalizedValue));
+  discountForm.value.finalPrice = calculateFinalPrice(discountForm.value.type, discountForm.value.value);
 }
 
 function onFinalPriceChange(value: number | null) {
-  const price = selectedProductPrice.value
-  const finalPrice = clampPrice(value ?? 0)
-  discountForm.value.finalPrice = finalPrice
-  if (discountForm.value.type === 'PERCENTAGE') {
-    discountForm.value.value = price > 0 ? ((price - finalPrice) / price) * 100 : 0
-    return
+  const price = selectedProductPrice.value;
+  const finalPrice = clampPrice(value ?? 0);
+  discountForm.value.finalPrice = finalPrice;
+  if (discountForm.value.type === "PERCENTAGE") {
+    discountForm.value.value = price > 0 ? ((price - finalPrice) / price) * 100 : 0;
+    return;
   }
-  discountForm.value.value = price - finalPrice
+  discountForm.value.value = price - finalPrice;
 }
 
 function formatDiscountValue(discount: Discount): string {
-  if (discount.type === 'PERCENTAGE') return `${discount.value}%`
-  return formatCurrency(discount.value)
+  if (discount.type === "PERCENTAGE") return `${discount.value}%`;
+  return formatCurrency(discount.value);
 }
 
 function getStatusSeverity(status: DiscountStatus): string {
   switch (status) {
-    case 'ACTIVE':
-      return 'success'
-    case 'PENDING':
-      return 'warn'
-    case 'EXPIRED':
-      return 'secondary'
-    case 'STOPPED':
-    case 'CANCELLED':
-      return 'danger'
+    case "ACTIVE":
+      return "success";
+    case "PENDING":
+      return "warn";
+    case "EXPIRED":
+      return "secondary";
+    case "STOPPED":
+    case "CANCELLED":
+      return "danger";
     default:
-      return 'info'
+      return "info";
   }
 }
 
 function getStockSeverity(product: Product): string {
-  if (product.stockQuantity <= 0) return 'danger'
-  if (product.stockQuantity <= product.lowStockThreshold) return 'warn'
-  return 'success'
+  if (product.stockQuantity <= 0) return "danger";
+  if (product.stockQuantity <= product.lowStockThreshold) return "warn";
+  return "success";
 }
 
 function getStockLabel(product: Product): string {
-  if (product.stockQuantity <= 0) return 'Out'
-  if (product.stockQuantity <= product.lowStockThreshold) return 'Low'
-  return 'OK'
+  if (product.stockQuantity <= 0) return "Out";
+  if (product.stockQuantity <= product.lowStockThreshold) return "Low";
+  return "OK";
 }
 
 function onImport(event: any) {
-  const file = event.files?.[0] as File
-  if (!file) return
-  importProducts({ file, storeType: storeType.value }, {
-    onSuccess: (data) => {
-      const result = data.data
-      toast.add({
-        severity: result.failed > 0 ? 'warn' : 'success',
-        summary: 'Import Complete',
-        detail: `Success: ${result.success}, Failed: ${result.failed}`,
-        life: 5000,
-      })
+  const file = event.files?.[0] as File;
+  if (!file) return;
+  importProducts(
+    { file, storeType: storeType.value },
+    {
+      onSuccess: (data) => {
+        const result = data.data;
+        toast.add({
+          severity: result.failed > 0 ? "warn" : "success",
+          summary: "Import Complete",
+          detail: `Success: ${result.success}, Failed: ${result.failed}`,
+          life: 5000,
+        });
+      },
+      onError: (err) => toast.add({ severity: "error", summary: "Import Error", detail: getErrorMessage(err), life: 5000 }),
     },
-    onError: (err) => toast.add({ severity: 'error', summary: 'Import Error', detail: getErrorMessage(err), life: 5000 }),
-  })
+  );
 }
 
-const baseExportUrl = getExportUrl()
+const baseExportUrl = getExportUrl();
 const exportUrl = computed(() => {
-  let url = baseExportUrl
-  if (storeType.value) url += `&storeType=${storeType.value}`
-  return url
-})
+  let url = baseExportUrl;
+  if (storeType.value) url += `&storeType=${storeType.value}`;
+  return url;
+});
 </script>
 
 <template>
@@ -388,6 +401,31 @@ const exportUrl = computed(() => {
         <Column header="Price" sortable style="width: 120px">
           <template #body="{ data }">{{ formatCurrency(data.price) }}</template>
         </Column>
+        <Column header="Discount" style="width: 180px">
+          <template #body="{ data }">
+            <div v-if="data.discount">
+              <template v-if="data.discount.status === 'ACTIVE'">
+                <Tag :value="data.discount.discountType === 'PERCENTAGE' ? `${data.discount.discountValue}% OFF` : `${formatCurrency(data.discount.discountValue)} OFF`" severity="success" />
+
+                <div class="discount-price">
+                  <small class="original-price">
+                    {{ formatCurrency(data.price) }}
+                  </small>
+
+                  <div class="final-price">
+                    {{ formatCurrency(data.finalPrice) }}
+                  </div>
+                </div>
+              </template>
+
+              <template v-else>
+                <Tag :value="data.discount.status" severity="secondary" />
+              </template>
+            </div>
+
+            <Tag v-else value="No Discount" severity="contrast" />
+          </template>
+        </Column>
         <Column field="category" header="Category" sortable style="width: 120px">
           <template #body="{ data }">
             <Tag :value="data.category" severity="info" />
@@ -402,7 +440,7 @@ const exportUrl = computed(() => {
           <template #body="{ data }">
             <div class="stock-cell">
               <span>{{ data.stockQuantity }}</span>
-              <Tag :value="getStockLabel(data)" :severity="getStockSeverity(data)" style="font-size: 11px;" />
+              <Tag :value="getStockLabel(data)" :severity="getStockSeverity(data)" style="font-size: 11px" />
             </div>
           </template>
         </Column>
@@ -534,54 +572,21 @@ const exportUrl = computed(() => {
         <template v-if="discountForm.type === 'PERCENTAGE'">
           <div class="form-field">
             <label>Discount Percentage</label>
-            <InputNumber
-              :modelValue="discountForm.value"
-              suffix="%"
-              :min="0"
-              :max="100"
-              :minFractionDigits="0"
-              :maxFractionDigits="2"
-              fluid
-              @update:modelValue="onDiscountValueChange"
-            />
+            <InputNumber :modelValue="discountForm.value" suffix="%" :min="0" :max="100" :minFractionDigits="0" :maxFractionDigits="2" fluid @update:modelValue="onDiscountValueChange" />
           </div>
           <div class="form-field">
             <label>Final Price</label>
-            <InputNumber
-              :modelValue="discountForm.finalPrice"
-              mode="currency"
-              currency="IDR"
-              :min="0"
-              :max="selectedProductPrice"
-              fluid
-              @update:modelValue="onFinalPriceChange"
-            />
+            <InputNumber :modelValue="discountForm.finalPrice" mode="currency" currency="IDR" :min="0" :max="selectedProductPrice" fluid @update:modelValue="onFinalPriceChange" />
           </div>
         </template>
         <template v-else>
           <div class="form-field">
             <label>Discount Amount</label>
-            <InputNumber
-              :modelValue="discountForm.value"
-              mode="currency"
-              currency="IDR"
-              :min="0"
-              :max="selectedProductPrice"
-              fluid
-              @update:modelValue="onDiscountValueChange"
-            />
+            <InputNumber :modelValue="discountForm.value" mode="currency" currency="IDR" :min="0" :max="selectedProductPrice" fluid @update:modelValue="onDiscountValueChange" />
           </div>
           <div class="form-field">
             <label>Final Price</label>
-            <InputNumber
-              :modelValue="discountForm.finalPrice"
-              mode="currency"
-              currency="IDR"
-              :min="0"
-              :max="selectedProductPrice"
-              fluid
-              @update:modelValue="onFinalPriceChange"
-            />
+            <InputNumber :modelValue="discountForm.finalPrice" mode="currency" currency="IDR" :min="0" :max="selectedProductPrice" fluid @update:modelValue="onFinalPriceChange" />
           </div>
         </template>
       </div>
@@ -689,6 +694,21 @@ const exportUrl = computed(() => {
   color: var(--p-text-color);
   font-size: 16px;
 }
+
+.discount-price {
+  margin-top: 4px;
+}
+
+.original-price {
+  display: block;
+  text-decoration: line-through;
+  opacity: 0.6;
+}
+
+.final-price {
+  font-weight: 600;
+}
+
 @media (max-width: 640px) {
   .header-actions,
   .discount-toolbar {
