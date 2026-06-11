@@ -8,6 +8,12 @@ import InputText from "primevue/inputtext";
 import InputNumber from "primevue/inputnumber";
 import Select from "primevue/select";
 import Tag from "primevue/tag";
+import Tabs from "primevue/tabs";
+import TabList from "primevue/tablist";
+import Tab from "primevue/tab";
+import TabPanels from "primevue/tabpanels";
+import TabPanel from "primevue/tabpanel";
+import Chip from "primevue/chip";
 import ConfirmDialog from "primevue/confirmdialog";
 import FileUpload from "primevue/fileupload";
 import DatePicker from "primevue/datepicker";
@@ -16,10 +22,10 @@ import { useToast } from "primevue/usetoast";
 import { useAuthStore } from "../stores/auth";
 import { useProducts, useCreateProduct, useUpdateProduct, useDeleteProduct, useImportProducts } from "../composables/useProducts";
 import { useDiscounts, useCreateDiscount, useUpdateDiscount, useDeleteDiscount } from "../composables/useDiscounts";
-import { getExportUrl } from "../api/products";
+import { getExportUrl, getVariants, createVariant, updateVariant, deleteVariant } from "../api/products";
+import type { VariantItem, CreateVariantReq } from "../api/products";
 import { getErrorMessage } from "../api/client";
 import type { Product, CreateProductRequest, Discount, DiscountStatus, DiscountType } from "../types/api";
-
 const authStore = useAuthStore();
 const confirm = useConfirm();
 const toast = useToast();
@@ -51,7 +57,16 @@ const form = ref<CreateProductRequest>({
 });
 const dialogTitle = ref("Add Product");
 const submitting = ref(false);
+const activeTab = ref("0");
 
+const variants = ref<VariantItem[]>([]);
+const variantLoading = ref(false);
+const showVariantDialog = ref(false);
+const editingVariant = ref<VariantItem | null>(null);
+const variantForm = ref<CreateVariantReq>({ name: "", attributes: {}, stockQuantity: 0 });
+const attrKey = ref("");
+const attrValue = ref("");
+const variantSubmitting = ref(false);
 type DiscountForm = {
   name: string;
   type: DiscountType;
@@ -84,9 +99,19 @@ const storeTypes = ["RETAIL", "FNB", "OUTFIT"];
 const categories = ["Food", "Beverages", "Electronics", "Groceries"];
 const discountTypes: DiscountType[] = ["PERCENTAGE", "FIXED"];
 
+async function loadVariants(productId: number) {
+  variantLoading.value = true
+  try {
+    const res = await getVariants(productId)
+    variants.value = res.success ? res.data : []
+  } catch { variants.value = [] }
+  variantLoading.value = false
+}
+
 function openCreate() {
   editingProduct.value = null;
   dialogTitle.value = "Add Product";
+  activeTab.value = "0";
   form.value = {
     name: "",
     price: 0,
@@ -96,12 +121,14 @@ function openCreate() {
     stockQuantity: 0,
     lowStockThreshold: 10,
   };
+  variants.value = [];
   showDialog.value = true;
 }
 
 function openEdit(product: Product) {
   editingProduct.value = product;
   dialogTitle.value = "Edit Product";
+  activeTab.value = "0";
   form.value = {
     name: product.name,
     price: product.price,
@@ -111,6 +138,7 @@ function openEdit(product: Product) {
     stockQuantity: product.stockQuantity,
     lowStockThreshold: product.lowStockThreshold,
   };
+  loadVariants(product.id);
   showDialog.value = true;
 }
 
@@ -145,15 +173,13 @@ function openEditDiscount(discount: Discount) {
   };
   showDiscountFormDialog.value = true;
 }
-
 function save() {
   if (!form.value.name || !form.value.category) {
     toast.add({ severity: "warn", summary: "Validation", detail: "Name and category are required", life: 3000 });
     return;
   }
   submitting.value = true;
-  if (editingProduct.value) {
-    updateProduct(
+  if (editingProduct.value) {    updateProduct(
       { id: editingProduct.value.id, data: form.value },
       {
         onSuccess: () => {
@@ -342,11 +368,85 @@ function getStockSeverity(product: Product): string {
   if (product.stockQuantity <= product.lowStockThreshold) return "warn";
   return "success";
 }
-
 function getStockLabel(product: Product): string {
   if (product.stockQuantity <= 0) return "Out";
   if (product.stockQuantity <= product.lowStockThreshold) return "Low";
   return "OK";
+}
+
+function addAttribute() {
+  if (attrKey.value.trim() && attrValue.value.trim()) {
+    variantForm.value.attributes = { ...variantForm.value.attributes, [attrKey.value.trim()]: attrValue.value.trim() };
+    attrKey.value = "";
+    attrValue.value = "";
+  }
+}
+
+function removeAttribute(key: string) {
+  const attrs = { ...variantForm.value.attributes };
+  delete attrs[key];
+  variantForm.value.attributes = attrs;
+}
+
+function openVariantCreate() {
+  editingVariant.value = null;
+  variantForm.value = { name: "", attributes: {}, stockQuantity: 0 };
+  showVariantDialog.value = true;
+}
+
+function openVariantEdit(v: VariantItem) {
+  editingVariant.value = v;
+  variantForm.value = {
+    sku: v.sku,
+    name: v.name,
+    attributes: { ...v.attributes },
+    price: v.price,
+    stockQuantity: v.stockQuantity,
+    lowStockThreshold: v.lowStockThreshold,
+    sortOrder: v.sortOrder,
+  };
+  showVariantDialog.value = true;
+}
+
+function saveVariant() {
+  if (!variantForm.value.name) {
+    toast.add({ severity: "warn", summary: "Validation", detail: "Name required", life: 3000 });
+    return;
+  }
+  if (!editingProduct.value) return;
+  variantSubmitting.value = true;
+  const pid = editingProduct.value.id;
+  const onDone = () => {
+    variantSubmitting.value = false;
+    showVariantDialog.value = false;
+    loadVariants(pid);
+  };
+  const onErr = (err: unknown) => {
+    toast.add({ severity: "error", summary: "Error", detail: getErrorMessage(err), life: 5000 });
+    variantSubmitting.value = false;
+  };
+  if (editingVariant.value) {
+    updateVariant(editingVariant.value.id, variantForm.value).then(onDone).catch(onErr);
+  } else {
+    createVariant(pid, variantForm.value).then(onDone).catch(onErr);
+  }
+}
+
+function confirmDeleteVariant(v: VariantItem) {
+  confirm.require({
+    message: `Delete variant "${v.name}"?`,
+    header: "Confirm Delete",
+    icon: "pi pi-exclamation-triangle",
+    rejectLabel: "Cancel",
+    rejectProps: { severity: "secondary", outlined: true },
+    acceptLabel: "Delete",
+    acceptProps: { severity: "danger" },
+    accept: () =>
+      deleteVariant(v.id).then(() => {
+        toast.add({ severity: "success", summary: "Deleted", detail: "Variant deleted", life: 3000 });
+        if (editingProduct.value) loadVariants(editingProduct.value.id);
+      }),
+  });
 }
 
 function onImport(event: any) {
@@ -380,23 +480,17 @@ const exportUrl = computed(() => {
 <template>
   <div class="products-page">
     <div class="page-header">
-      <div>
-        <h1 class="page-title">Products</h1>
-        <p class="page-subtitle">Manage product catalog and inventory</p>
-      </div>
+      <div><h1 class="page-title">Products</h1><p class="page-subtitle">Manage product catalog and inventory</p></div>
       <div class="header-actions">
-        <Select v-model="storeType" :options="storeTypes" showClear placeholder="All Stores" style="width: 140px" />
+        <Select v-model="storeType" :options="storeTypes" showClear placeholder="All Stores" style="width:140px" />
         <FileUpload mode="basic" accept=".csv" :maxFileSize="10000000" customUpload :auto="true" @uploader="onImport" chooseLabel="Import CSV" />
-        <a :href="exportUrl" class="export-link">
-          <Button label="Export CSV" icon="pi pi-download" text severity="secondary" />
-        </a>
+        <a :href="exportUrl" class="export-link"><Button label="Export CSV" icon="pi pi-download" text severity="secondary" /></a>
         <Button v-if="authStore.isAdmin" label="Add Product" icon="pi pi-plus" @click="openCreate" />
       </div>
     </div>
-
     <div class="card">
-      <DataTable :value="products || []" :loading="isLoading" tableStyle="min-width: 60rem" stripedRows size="small" paginator :rows="20" :rowsPerPageOptions="[10, 20, 50]">
-        <Column field="id" header="ID" sortable style="width: 60px" />
+      <DataTable :value="products || []" :loading="isLoading" tableStyle="min-width:60rem" stripedRows size="small" paginator :rows="20" :rowsPerPageOptions="[10,20,50]">
+        <Column field="id" header="ID" sortable style="width:60px" />
         <Column field="name" header="Name" sortable />
         <Column header="Price" sortable style="width: 120px">
           <template #body="{ data }">{{ formatCurrency(data.price) }}</template>
@@ -459,37 +553,45 @@ const exportUrl = computed(() => {
       </DataTable>
     </div>
 
-    <!-- Product Form Dialog -->
-    <Dialog v-model:visible="showDialog" :header="dialogTitle" :modal="true" :style="{ width: '500px' }">
-      <div class="form-grid">
-        <div class="form-field">
-          <label>Name *</label>
-          <InputText v-model="form.name" fluid />
-        </div>
-        <div class="form-field">
-          <label>Price *</label>
-          <InputNumber v-model="form.price" mode="currency" currency="IDR" :min="0" fluid />
-        </div>
-        <div class="form-field">
-          <label>Category *</label>
-          <Select v-model="form.category" :options="categories" editable fluid />
-        </div>
-        <div class="form-field">
-          <label>Store Type</label>
-          <Select v-model="form.storeType" :options="storeTypes" fluid />
-        </div>
-        <div class="form-field">
-          <label>Image URL</label>
-          <InputText v-model="form.imageUrl" fluid />
-        </div>
-        <div class="form-field">
-          <label>Stock Quantity</label>
-          <InputNumber v-model="form.stockQuantity" :min="0" fluid />
-        </div>
-        <div class="form-field">
-          <label>Low Stock Threshold</label>
-          <InputNumber v-model="form.lowStockThreshold" :min="0" fluid />
-        </div>
+    <!-- Product + Variants Dialog -->
+    <Dialog v-model:visible="showDialog" :header="dialogTitle" :modal="true" :style="{ width: editingProduct ? '700px' : '500px' }">
+      <Tabs v-if="editingProduct" v-model:value="activeTab">
+        <TabList><Tab value="0">Product</Tab><Tab value="1">Variants ({{ variants.length }})</Tab></TabList>
+        <TabPanels>
+          <TabPanel value="0">
+            <div class="form-grid">
+              <div class="form-field"><label>Name *</label><InputText v-model="form.name" fluid /></div>
+              <div class="form-field"><label>Price *</label><InputNumber v-model="form.price" mode="currency" currency="IDR" :min="0" fluid /></div>
+              <div class="form-field"><label>Category *</label><Select v-model="form.category" :options="categories" editable fluid /></div>
+              <div class="form-field"><label>Store Type</label><Select v-model="form.storeType" :options="storeTypes" fluid /></div>
+              <div class="form-field"><label>Image URL</label><InputText v-model="form.imageUrl" fluid /></div>
+              <div class="form-field"><label>Stock Quantity</label><InputNumber v-model="form.stockQuantity" :min="0" fluid /></div>
+              <div class="form-field"><label>Low Stock Threshold</label><InputNumber v-model="form.lowStockThreshold" :min="0" fluid /></div>
+            </div>
+          </TabPanel>
+          <TabPanel value="1">
+            <div style="margin-bottom:12px">
+              <Button label="Add Variant" icon="pi pi-plus" size="small" @click="openVariantCreate" />
+            </div>
+            <DataTable :value="variants" :loading="variantLoading" size="small" stripedRows>
+              <Column field="name" header="Name" />
+              <Column field="sku" header="SKU" style="width:100px" />
+              <Column header="Attributes" style="width:150px"><template #body="{data}"><Chip v-for="(v,k) in data.attributes" :key="k" :label="`${k}:${v}`" style="margin:2px" /></template></Column>
+              <Column header="Price" style="width:100px"><template #body="{data}">{{ data.price ? formatCurrency(data.price) : '-' }}</template></Column>
+              <Column field="stockQuantity" header="Stock" style="width:70px" />
+              <Column header="Actions" style="width:100px"><template #body="{data}"><div class="actions"><Button icon="pi pi-pencil" text rounded size="small" @click="openVariantEdit(data)" /><Button icon="pi pi-trash" text rounded size="small" severity="danger" @click="confirmDeleteVariant(data)" /></div></template></Column>
+            </DataTable>
+          </TabPanel>
+        </TabPanels>
+      </Tabs>
+      <div v-else class="form-grid">
+        <div class="form-field"><label>Name *</label><InputText v-model="form.name" fluid /></div>
+        <div class="form-field"><label>Price *</label><InputNumber v-model="form.price" mode="currency" currency="IDR" :min="0" fluid /></div>
+        <div class="form-field"><label>Category *</label><Select v-model="form.category" :options="categories" editable fluid /></div>
+        <div class="form-field"><label>Store Type</label><Select v-model="form.storeType" :options="storeTypes" fluid /></div>
+        <div class="form-field"><label>Image URL</label><InputText v-model="form.imageUrl" fluid /></div>
+        <div class="form-field"><label>Stock Quantity</label><InputNumber v-model="form.stockQuantity" :min="0" fluid /></div>
+        <div class="form-field"><label>Low Stock Threshold</label><InputNumber v-model="form.lowStockThreshold" :min="0" fluid /></div>
       </div>
       <template #footer>
         <Button label="Cancel" severity="secondary" outlined @click="showDialog = false" />
@@ -593,6 +695,27 @@ const exportUrl = computed(() => {
       <template #footer>
         <Button label="Cancel" severity="secondary" outlined @click="showDiscountFormDialog = false" />
         <Button label="Save" :loading="discountSubmitting" @click="saveDiscount" />
+      </template>
+    </Dialog>
+
+    <!-- Variant Form Dialog -->
+    <Dialog v-model:visible="showVariantDialog" :header="editingVariant ? 'Edit Variant' : 'Add Variant'" :modal="true" :style="{ width: '450px' }">
+      <div class="form-grid">
+        <div class="form-field"><label>Name *</label><InputText v-model="variantForm.name" fluid /></div>
+        <div class="form-field"><label>SKU</label><InputText v-model="variantForm.sku" fluid /></div>
+        <div class="form-field"><label>Price</label><InputNumber v-model="variantForm.price" mode="currency" currency="IDR" :min="0" fluid /></div>
+        <div class="form-field"><label>Stock</label><InputNumber v-model="variantForm.stockQuantity" :min="0" fluid /></div>
+        <div class="form-field"><label>Low Stock Threshold</label><InputNumber v-model="variantForm.lowStockThreshold" :min="0" fluid /></div>
+        <div class="form-field"><label>Sort Order</label><InputNumber v-model="variantForm.sortOrder" :min="0" fluid /></div>
+        <div class="form-field">
+          <label>Attributes</label>
+          <div class="attr-chips"><Chip v-for="(v,k) in variantForm.attributes" :key="k" :label="`${k}: ${v}`" removable @remove="removeAttribute(k)" style="margin:2px" /></div>
+          <div style="display:flex;gap:8px;margin-top:6px"><InputText v-model="attrKey" placeholder="Key (e.g. Size)" style="flex:1" size="small" /><InputText v-model="attrValue" placeholder="Value (e.g. L)" style="flex:1" size="small" /><Button icon="pi pi-plus" size="small" @click="addAttribute" /></div>
+        </div>
+      </div>
+      <template #footer>
+        <Button label="Cancel" severity="secondary" outlined @click="showVariantDialog = false" />
+        <Button label="Save" :loading="variantSubmitting" @click="saveVariant" />
       </template>
     </Dialog>
 
@@ -707,6 +830,12 @@ const exportUrl = computed(() => {
 
 .final-price {
   font-weight: 600;
+}
+
+.attr-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
 }
 
 @media (max-width: 640px) {

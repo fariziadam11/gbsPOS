@@ -43,3 +43,46 @@ export function getExportUrl(storeType?: string): string {
   const params = storeType ? `?storeType=${encodeURIComponent(storeType)}` : ''
   return `${baseUrl}/v1/products/export${params}&token=${encodeURIComponent(token || '')}`
 }
+
+// Variants
+export async function getVariants(productId: number): Promise<ApiResponse<VariantItem[]>> {
+  const response = await posApiClient.get<ApiResponse<VariantItem[]>>(`/v1/products/${productId}/variants`)
+  return response.data
+}
+
+export async function createVariant(productId: number, data: CreateVariantReq): Promise<ApiResponse<VariantItem>> {
+  const response = await posApiClient.post<ApiResponse<VariantItem>>(`/v1/products/${productId}/variants`, data)
+  return response.data
+}
+
+export async function updateVariant(id: number, data: CreateVariantReq): Promise<ApiResponse<VariantItem>> {
+  const response = await posApiClient.put<ApiResponse<VariantItem>>(`/v1/variants/${id}`, data)
+  return response.data
+}
+
+export async function deleteVariant(id: number): Promise<void> {
+  await posApiClient.delete(`/v1/variants/${id}`)
+}
+
+export interface VariantItem {
+  id: number
+  productId: number
+  sku: string | null
+  name: string
+  attributes: Record<string, string>
+  price: number | null
+  stockQuantity: number
+  lowStockThreshold: number | null
+  isActive: boolean
+  sortOrder: number
+}
+
+export interface CreateVariantReq {
+  sku?: string | null
+  name: string
+  attributes: Record<string, string>
+  price?: number | null
+  stockQuantity?: number
+  lowStockThreshold?: number | null
+  sortOrder?: number
+}

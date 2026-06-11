@@ -91,6 +91,9 @@ func (h *OrderHandler) Create(c *gin.Context) {
 			ProductPrice: it.ProductPrice,
 			Qty:          it.Qty,
 			Subtotal:     it.Subtotal,
+			VariantID:    it.VariantID,
+			VariantName:  it.VariantName,
+			SKU:          it.SKU,
 		}
 	}
 	newOrder := &model.Order{
@@ -116,6 +119,8 @@ func (h *OrderHandler) Create(c *gin.Context) {
 		CustomerID:    req.CustomerID,
 		CustomerPhone: req.CustomerPhone,
 		CustomerName:  req.CustomerName,
+		DiscountType:  req.DiscountType,
+		DiscountValue: req.DiscountValue,
 	}
 	if err := service.ValidateOrder(newOrder); err != nil {
 		c.JSON(http.StatusUnprocessableEntity, response.ValidationError(err.Error(), nil))

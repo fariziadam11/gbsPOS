@@ -11,6 +11,7 @@ import (
 	"gbs-pos-api/internal/config"
 	"gbs-pos-api/internal/database"
 	"gbs-pos-api/internal/handler"
+	"gbs-pos-api/internal/model"
 	"gbs-pos-api/internal/repository"
 	"gbs-pos-api/internal/router"
 	"gbs-pos-api/internal/service"
@@ -38,8 +39,22 @@ func main() {
 		log.Fatal("failed to connect database: ", err)
 	}
 
-	if err := database.RunMigrations(cfg.DatabaseURL, cfg.MigrationsPath); err != nil {
-		log.Fatal("failed to run migrations: ", err)
+	if cfg.MigrationsPath != "" {
+		if err := database.RunMigrations(cfg.DatabaseURL, cfg.MigrationsPath); err != nil {
+			log.Fatal("failed to run migrations: ", err)
+		}
+	} else if err := db.AutoMigrate(
+		&model.User{},
+		&model.Product{},
+		&model.Discount{},
+		&model.Customer{},
+		&model.StockMovement{},
+		&model.ProductVariant{},
+		&model.Order{},
+		&model.OrderItem{},
+		&model.Settlement{},
+	); err != nil {
+		log.Fatal("failed to migrate database: ", err)
 	}
 
 	database.Seed(db)
@@ -51,6 +66,7 @@ func main() {
 	settlementRepo := repository.NewSettlementRepository(db)
 	customerRepo := repository.NewCustomerRepository(db)
 	stockMovementRepo := repository.NewStockMovementRepository(db)
+	variantRepo := repository.NewProductVariantRepository(db)
 
 	dashboardRepo := repository.NewDashboardRepository(db)
 
@@ -59,7 +75,8 @@ func main() {
 	discountService := service.NewDiscountService(discountRepo, productRepo)
 	productService.SetDiscountService(discountService)
 	customerService := service.NewCustomerService(customerRepo)
-	orderService := service.NewOrderService(orderRepo, productService, customerService)
+	variantService := service.NewProductVariantService(variantRepo)
+	orderService := service.NewOrderService(orderRepo, productService, customerService, variantService)
 	settlementService := service.NewSettlementService(orderRepo, settlementRepo)
 	dashboardService := service.NewDashboardService(dashboardRepo)
 
@@ -70,6 +87,7 @@ func main() {
 	settlementHandler := handler.NewSettlementHandler(settlementService)
 	customerHandler := handler.NewCustomerHandler(customerService)
 	dashboardHandler := handler.NewDashboardHandler(dashboardService)
+	variantHandler := handler.NewProductVariantHandler(variantService)
 
 	if cfg.Env == "production" {
 		gin.SetMode(gin.ReleaseMode)
@@ -78,13 +96,14 @@ func main() {
 	r := router.Setup(
 		cfg,
 		router.Handlers{
-			Auth:       authHandler,
-			Product:    productHandler,
-			Discount:   discountHandler,
-			Order:      orderHandler,
-			Settlement: settlementHandler,
-			Customer:   customerHandler,
-			Dashboard:  dashboardHandler,
+			Auth:           authHandler,
+			Product:        productHandler,
+			Discount:       discountHandler,
+			Order:          orderHandler,
+			Settlement:     settlementHandler,
+			Customer:       customerHandler,
+			Dashboard:      dashboardHandler,
+			ProductVariant: variantHandler,
 		},
 	)
 

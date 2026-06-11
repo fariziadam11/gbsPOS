@@ -12,20 +12,23 @@ import (
 )
 
 type OrderService struct {
-	repo            *repository.OrderRepository
-	productService  *ProductService
-	customerService *CustomerService
+	repo              *repository.OrderRepository
+	productService    *ProductService
+	customerService   *CustomerService
+	variantService    *ProductVariantService
 }
 
 func NewOrderService(
 	repo *repository.OrderRepository,
 	productService *ProductService,
 	customerService *CustomerService,
+	variantService *ProductVariantService,
 ) *OrderService {
 	return &OrderService{
 		repo:            repo,
 		productService:  productService,
 		customerService: customerService,
+		variantService:  variantService,
 	}
 }
 
@@ -93,6 +96,28 @@ func (s *OrderService) Create(order *model.Order) (*model.Order, bool, error) {
 	}
 	order.LoyaltyPointsEarned = loyaltyPoints
 
+	// Calculate discount
+	if order.DiscountType != "" && order.DiscountValue != nil && *order.DiscountValue > 0 {
+		preDiscountTotal := order.Total
+		var discountAmount float64
+		if order.DiscountType == "PERCENTAGE" {
+			discountAmount = preDiscountTotal * (*order.DiscountValue) / 100
+		} else {
+			discountAmount = *order.DiscountValue
+		}
+		order.DiscountAmount = &discountAmount
+		order.Total = preDiscountTotal - discountAmount
+		if order.Total < 0 {
+			order.Total = 0
+		}
+		// Recalculate loyalty points on discounted total
+		loyaltyPoints = int(order.Total / 100)
+		if loyaltyPoints < 1 {
+			loyaltyPoints = 0
+		}
+		order.LoyaltyPointsEarned = loyaltyPoints
+	}
+
 	// Deduct stock in transaction
 	if err := s.repo.Transaction(func(tx *gorm.DB) error {
 		txRepo := s.repo.WithTx(tx)
@@ -100,6 +125,11 @@ func (s *OrderService) Create(order *model.Order) (*model.Order, bool, error) {
 			return err
 		}
 		for _, item := range order.Items {
+			if item.VariantID != nil {
+				if err := s.variantService.DeductVariantStock(tx, *item.VariantID, item.Qty, order.ID); err != nil {
+					return err
+				}
+			}
 			if err := s.productService.DeductStock(tx, item.ProductID, item.Qty, order.ID); err != nil {
 				return err
 			}
@@ -142,6 +172,11 @@ func (s *OrderService) Void(id, reason, voidedBy string) (*model.Order, error) {
 			return err
 		}
 		for _, item := range order.Items {
+			if item.VariantID != nil {
+				if err := s.variantService.RestoreVariantStock(tx, *item.VariantID, item.Qty, order.ID); err != nil {
+					return err
+				}
+			}
 			if err := s.productService.RestoreStock(tx, item.ProductID, item.Qty, order.ID); err != nil {
 				return err
 			}
