@@ -122,12 +122,12 @@ This section is maintained by AI agents. It must be updated after each completed
 ### Last Updated
 
 - 2026-06-12
+- 2026-06-12 (context update): added Stock Management + POS Hold/Resume planning phase
 
 ### Active Development Focus
 
 - POS system enhancements
 - CMS dashboard integration
-- Preparing Stock Management module (IN / OUT / OPNAME)
 
 ### Recently Implemented
 
@@ -142,6 +142,8 @@ This section is maintained by AI agents. It must be updated after each completed
 - Orders are immutable after settlement
 - All DB changes must go through golang-migrate
 - Handler must not contain business logic
+- Stock movement must be tracked as immutable ledger (IN / OUT / OPNAME)
+- POS Hold must persist cart snapshot before checkout or discard
 
 ## Memory Update Rule
 

@@ -1,6 +1,10 @@
 package model
 
-import "time"
+import (
+	"time"
+
+	"gorm.io/datatypes"
+)
 
 type User struct {
 	ID           uint      `gorm:"primaryKey"                   json:"id"`
@@ -138,4 +142,18 @@ type ProductVariant struct {
 	SortOrder          int                    `gorm:"not null;default:0"                     json:"sortOrder"`
 	CreatedAt          time.Time              `                                               json:"createdAt"`
 	UpdatedAt          time.Time              `                                               json:"updatedAt"`
+}
+
+type PosHoldSession struct {
+	ID         string         `gorm:"type:uuid;primaryKey" json:"id"`
+	StoreType  string         `json:"store_type"`
+	TerminalID string         `json:"terminal_id"`
+
+	Payload    datatypes.JSON `json:"payload"`
+	Total      float64        `json:"total"`
+
+	Status     string         `json:"status"`
+
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
