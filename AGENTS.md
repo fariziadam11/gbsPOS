@@ -3,6 +3,7 @@
 ## Architecture
 
 Three Go modules in a monorepo:
+
 - `gbs-pos-api/` — POS REST API on :8080 (products, orders, settlements)
 - `gbs-cms-api/` — CMS REST API on :8081 (ad upload, playlist, download)
 - `gbs-common/` — Shared middleware/auth/response imported by both via `replace` directive
@@ -12,6 +13,7 @@ Both APIs share the same PostgreSQL database (`gbs_pos`) but keep separate table
 ## Build & Test
 
 From repo root:
+
 ```bash
 make build        # builds bin/gbs-pos-api and bin/gbs-cms-api
 make test         # runs tests in both modules
@@ -20,6 +22,7 @@ make run-cms      # go run ./cmd/server from gbs-cms-api
 ```
 
 From inside a module:
+
 ```bash
 cd gbs-pos-api && go test ./... -count=1
 cd gbs-pos-api && go build ./cmd/server
@@ -31,15 +34,18 @@ Copy `.env.example` to `.env` in each module. Config is loaded with `github.com/
 The `.env` file is automatically loaded at startup via `github.com/joho/godotenv` in `cmd/server/main.go`.
 
 **Critical env vars:**
+
 - `JWT_SECRET` — mandatory, must be ≥32 characters (validated at startup)
 - `DATABASE_URL` — PostgreSQL connection string
 - `MIGRATIONS_PATH` — (POS API only) path to SQL migrations; default auto-detects `migrations/` at repo root. Always uses `golang-migrate/v4` on startup.
 - `UPLOAD_DIR` — CMS only, local filesystem path for uploaded videos
 
 **Docker:**
+
 ```bash
 docker-compose up -d   # starts postgres, pos-api (:8080), cms-api (:8081)
 ```
+
 Docker Compose sets `MIGRATIONS_PATH=/app/migrations` on **pos-api** only; CMS starts after POS has applied migrations.
 
 ## Database
@@ -52,11 +58,13 @@ Docker Compose sets `MIGRATIONS_PATH=/app/migrations` on **pos-api** only; CMS s
 ## Auth Middleware
 
 Do **not** call `os.Getenv("JWT_SECRET")` inside request handlers or middleware. The secret is injected via constructor:
+
 ```go
 middleware.NewAuthMiddleware(cfg.JWTSecret)
 ```
 
 This returns a `gin.HandlerFunc` that enforces:
+
 - `WithValidMethods(["HS256"])`
 - `WithExpirationRequired()`
 - `WithLeeway(5 * time.Second)`
@@ -68,6 +76,7 @@ Use `middleware.RequireRole("ADMIN")` for admin-only routes. Claims stored in Gi
 Both API modules import `gbs-common` via `replace gbs-common => ../gbs-common` in their `go.mod`. If you add new exported code to `gbs-common`, run `go mod tidy` in **all three modules** before building.
 
 Contents:
+
 - `middleware/auth.go` — `NewAuthMiddleware`, `RequireRole`
 - `middleware/cors.go` — `CORSMiddleware`
 - `middleware/logger.go` — `LoggerMiddleware` (zerolog request logging)
@@ -105,3 +114,43 @@ Contents:
 - Images are built and pushed to GitHub Container Registry (`ghcr.io`) via GitHub Actions on every push to `main`.
 - The `.env` file is auto-loaded by `godotenv` at startup; never commit `.env` to Git.
 - Shared SQL lives in `migrations/` (POS + CMS tables). Only **pos-api** runs migrate; CMS connects to the same DB.
+
+## Project Memory (AI Dynamic Context)
+
+This section is maintained by AI agents. It must be updated after each completed task.
+
+### Last Updated
+
+- 2026-06-12
+
+### Active Development Focus
+
+- POS system enhancements
+- CMS dashboard integration
+- Preparing Stock Management module (IN / OUT / OPNAME)
+
+### Recently Implemented
+
+- Product module with storeType filtering (RETAIL / FNB / OUTFIT)
+- Order repository with settlement summary (CASH / CARD / QRIS)
+- Settlement locking using SELECT FOR UPDATE
+- CMS Web unified dashboard (POS + CMS views)
+
+### Known System Rules (Runtime)
+
+- storeType is GLOBAL filter across POS system
+- Orders are immutable after settlement
+- All DB changes must go through golang-migrate
+- Handler must not contain business logic
+
+## Memory Update Rule
+
+After completing ANY task:
+
+- Update section "Project Memory"
+- Only record meaningful changes:
+    - new module
+    - schema change
+    - business rule change
+- Do NOT log minor refactors
+- Keep max 10 bullet points per section
