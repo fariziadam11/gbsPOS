@@ -100,12 +100,14 @@ const categories = ["Food", "Beverages", "Electronics", "Groceries"];
 const discountTypes: DiscountType[] = ["PERCENTAGE", "FIXED"];
 
 async function loadVariants(productId: number) {
-  variantLoading.value = true
+  variantLoading.value = true;
   try {
-    const res = await getVariants(productId)
-    variants.value = res.success ? res.data : []
-  } catch { variants.value = [] }
-  variantLoading.value = false
+    const res = await getVariants(productId);
+    variants.value = res.success ? res.data : [];
+  } catch {
+    variants.value = [];
+  }
+  variantLoading.value = false;
 }
 
 function openCreate() {
@@ -179,7 +181,8 @@ function save() {
     return;
   }
   submitting.value = true;
-  if (editingProduct.value) {    updateProduct(
+  if (editingProduct.value) {
+    updateProduct(
       { id: editingProduct.value.id, data: form.value },
       {
         onSuccess: () => {
@@ -294,7 +297,7 @@ function confirmDeleteDiscount(discount: Discount) {
 }
 
 function formatCurrency(value: number): string {
-  return `Rp ${value.toLocaleString("id-ID")}`;
+  return `Rp ${value?.toLocaleString("id-ID")}`;
 }
 
 function formatDate(value: string): string {
@@ -346,6 +349,14 @@ function formatDiscountValue(discount: Discount): string {
   if (discount.type === "PERCENTAGE") return `${discount.value}%`;
   return formatCurrency(discount.value);
 }
+
+const formatDiscountTag = (discount: any) => {
+  if (discount.type === "PERCENTAGE") {
+    return `${discount.value}%`;
+  }
+
+  return `${formatCurrency(discount.value)}`;
+};
 
 function getStatusSeverity(status: DiscountStatus): string {
   switch (status) {
@@ -480,46 +491,61 @@ const exportUrl = computed(() => {
 <template>
   <div class="products-page">
     <div class="page-header">
-      <div><h1 class="page-title">Products</h1><p class="page-subtitle">Manage product catalog and inventory</p></div>
+      <div>
+        <h1 class="page-title">Products</h1>
+        <p class="page-subtitle">Manage product catalog and inventory</p>
+      </div>
       <div class="header-actions">
-        <Select v-model="storeType" :options="storeTypes" showClear placeholder="All Stores" style="width:140px" />
+        <Select v-model="storeType" :options="storeTypes" showClear placeholder="All Stores" style="width: 140px" />
         <FileUpload mode="basic" accept=".csv" :maxFileSize="10000000" customUpload :auto="true" @uploader="onImport" chooseLabel="Import CSV" />
         <a :href="exportUrl" class="export-link"><Button label="Export CSV" icon="pi pi-download" text severity="secondary" /></a>
         <Button v-if="authStore.isAdmin" label="Add Product" icon="pi pi-plus" @click="openCreate" />
       </div>
     </div>
     <div class="card">
-      <DataTable :value="products || []" :loading="isLoading" tableStyle="min-width:60rem" stripedRows size="small" paginator :rows="20" :rowsPerPageOptions="[10,20,50]">
-        <Column field="id" header="ID" sortable style="width:60px" />
+      <DataTable :value="products || []" :loading="isLoading" tableStyle="min-width:60rem" stripedRows size="small" paginator :rows="20" :rowsPerPageOptions="[10, 20, 50]">
+        <Column field="id" header="ID" sortable style="width: 60px" />
         <Column field="name" header="Name" sortable />
-        <Column header="Price" sortable style="width: 120px">
+        <!-- <Column header="Price" sortable style="width: 120px">
           <template #body="{ data }">{{ formatCurrency(data.price) }}</template>
-        </Column>
-        <Column header="Discount" style="width: 180px">
+        </Column> -->
+
+        <!-- <Column header="Price" sortable style="width: 140px">
           <template #body="{ data }">
-            <div v-if="data.discount">
-              <template v-if="data.discount.status === 'ACTIVE'">
-                <Tag :value="data.discount.discountType === 'PERCENTAGE' ? `${data.discount.discountValue}% OFF` : `${formatCurrency(data.discount.discountValue)} OFF`" severity="success" />
+            <div class="price-cell">
+              <span class="final-price">
+                {{ formatCurrency(data.finalPrice ?? data.price) }}
+              </span>
 
-                <div class="discount-price">
-                  <small class="original-price">
-                    {{ formatCurrency(data.price) }}
-                  </small>
-
-                  <div class="final-price">
-                    {{ formatCurrency(data.finalPrice) }}
-                  </div>
-                </div>
-              </template>
-
-              <template v-else>
-                <Tag :value="data.discount.status" severity="secondary" />
-              </template>
+              <small v-if="data.discount" class="original-price">
+                {{ formatCurrency(data.price) }}
+              </small>
             </div>
+          </template>
+        </Column> -->
+
+        <Column header="Price" sortable style="width: 140px">
+          <template #body="{ data }">
+            <div class="price-cell">
+              <span class="final-price">
+                {{ formatCurrency(data.finalPrice ?? data.price) }}
+              </span>
+
+              <small v-if="data.discount" class="original-price">
+                {{ formatCurrency(data.price) }}
+              </small>
+            </div>
+          </template>
+        </Column>
+
+        <Column header="Discount" style="width: 160px">
+          <template #body="{ data }">
+            <Tag v-if="data.discount" :value="formatDiscountTag(data.discount)" severity="success" />
 
             <Tag v-else value="No Discount" severity="contrast" />
           </template>
         </Column>
+
         <Column field="category" header="Category" sortable style="width: 120px">
           <template #body="{ data }">
             <Tag :value="data.category" severity="info" />
@@ -556,42 +582,98 @@ const exportUrl = computed(() => {
     <!-- Product + Variants Dialog -->
     <Dialog v-model:visible="showDialog" :header="dialogTitle" :modal="true" :style="{ width: editingProduct ? '700px' : '500px' }">
       <Tabs v-if="editingProduct" v-model:value="activeTab">
-        <TabList><Tab value="0">Product</Tab><Tab value="1">Variants ({{ variants.length }})</Tab></TabList>
+        <TabList>
+          <Tab value="0">Product</Tab>
+          <Tab value="1">Variants ({{ variants.length }})</Tab>
+        </TabList>
         <TabPanels>
           <TabPanel value="0">
             <div class="form-grid">
-              <div class="form-field"><label>Name *</label><InputText v-model="form.name" fluid /></div>
-              <div class="form-field"><label>Price *</label><InputNumber v-model="form.price" mode="currency" currency="IDR" :min="0" fluid /></div>
-              <div class="form-field"><label>Category *</label><Select v-model="form.category" :options="categories" editable fluid /></div>
-              <div class="form-field"><label>Store Type</label><Select v-model="form.storeType" :options="storeTypes" fluid /></div>
-              <div class="form-field"><label>Image URL</label><InputText v-model="form.imageUrl" fluid /></div>
-              <div class="form-field"><label>Stock Quantity</label><InputNumber v-model="form.stockQuantity" :min="0" fluid /></div>
-              <div class="form-field"><label>Low Stock Threshold</label><InputNumber v-model="form.lowStockThreshold" :min="0" fluid /></div>
+              <div class="form-field">
+                <label>Name *</label>
+                <InputText v-model="form.name" fluid />
+              </div>
+              <div class="form-field">
+                <label>Price *</label>
+                <InputNumber v-model="form.price" mode="currency" currency="IDR" :min="0" fluid />
+              </div>
+              <div class="form-field">
+                <label>Category *</label>
+                <Select v-model="form.category" :options="categories" editable fluid />
+              </div>
+              <div class="form-field">
+                <label>Store Type</label>
+                <Select v-model="form.storeType" :options="storeTypes" fluid />
+              </div>
+              <div class="form-field">
+                <label>Image URL</label>
+                <InputText v-model="form.imageUrl" fluid />
+              </div>
+              <div class="form-field">
+                <label>Stock Quantity</label>
+                <InputNumber v-model="form.stockQuantity" :min="0" fluid />
+              </div>
+              <div class="form-field">
+                <label>Low Stock Threshold</label>
+                <InputNumber v-model="form.lowStockThreshold" :min="0" fluid />
+              </div>
             </div>
           </TabPanel>
           <TabPanel value="1">
-            <div style="margin-bottom:12px">
+            <div style="margin-bottom: 12px">
               <Button label="Add Variant" icon="pi pi-plus" size="small" @click="openVariantCreate" />
             </div>
             <DataTable :value="variants" :loading="variantLoading" size="small" stripedRows>
               <Column field="name" header="Name" />
-              <Column field="sku" header="SKU" style="width:100px" />
-              <Column header="Attributes" style="width:150px"><template #body="{data}"><Chip v-for="(v,k) in data.attributes" :key="k" :label="`${k}:${v}`" style="margin:2px" /></template></Column>
-              <Column header="Price" style="width:100px"><template #body="{data}">{{ data.price ? formatCurrency(data.price) : '-' }}</template></Column>
-              <Column field="stockQuantity" header="Stock" style="width:70px" />
-              <Column header="Actions" style="width:100px"><template #body="{data}"><div class="actions"><Button icon="pi pi-pencil" text rounded size="small" @click="openVariantEdit(data)" /><Button icon="pi pi-trash" text rounded size="small" severity="danger" @click="confirmDeleteVariant(data)" /></div></template></Column>
+              <Column field="sku" header="SKU" style="width: 100px" />
+              <Column header="Attributes" style="width: 150px">
+                <template #body="{ data }"><Chip v-for="(v, k) in data.attributes" :key="k" :label="`${k}:${v}`" style="margin: 2px" /></template>
+              </Column>
+              <Column header="Price" style="width: 100px">
+                <template #body="{ data }">{{ data.price ? formatCurrency(data.price) : "-" }}</template>
+              </Column>
+              <Column field="stockQuantity" header="Stock" style="width: 70px" />
+              <Column header="Actions" style="width: 100px">
+                <template #body="{ data }">
+                  <div class="actions">
+                    <Button icon="pi pi-pencil" text rounded size="small" @click="openVariantEdit(data)" />
+                    <Button icon="pi pi-trash" text rounded size="small" severity="danger" @click="confirmDeleteVariant(data)" />
+                  </div>
+                </template>
+              </Column>
             </DataTable>
           </TabPanel>
         </TabPanels>
       </Tabs>
       <div v-else class="form-grid">
-        <div class="form-field"><label>Name *</label><InputText v-model="form.name" fluid /></div>
-        <div class="form-field"><label>Price *</label><InputNumber v-model="form.price" mode="currency" currency="IDR" :min="0" fluid /></div>
-        <div class="form-field"><label>Category *</label><Select v-model="form.category" :options="categories" editable fluid /></div>
-        <div class="form-field"><label>Store Type</label><Select v-model="form.storeType" :options="storeTypes" fluid /></div>
-        <div class="form-field"><label>Image URL</label><InputText v-model="form.imageUrl" fluid /></div>
-        <div class="form-field"><label>Stock Quantity</label><InputNumber v-model="form.stockQuantity" :min="0" fluid /></div>
-        <div class="form-field"><label>Low Stock Threshold</label><InputNumber v-model="form.lowStockThreshold" :min="0" fluid /></div>
+        <div class="form-field">
+          <label>Name *</label>
+          <InputText v-model="form.name" fluid />
+        </div>
+        <div class="form-field">
+          <label>Price *</label>
+          <InputNumber v-model="form.price" mode="currency" currency="IDR" :min="0" fluid />
+        </div>
+        <div class="form-field">
+          <label>Category *</label>
+          <Select v-model="form.category" :options="categories" editable fluid />
+        </div>
+        <div class="form-field">
+          <label>Store Type</label>
+          <Select v-model="form.storeType" :options="storeTypes" fluid />
+        </div>
+        <div class="form-field">
+          <label>Image URL</label>
+          <InputText v-model="form.imageUrl" fluid />
+        </div>
+        <div class="form-field">
+          <label>Stock Quantity</label>
+          <InputNumber v-model="form.stockQuantity" :min="0" fluid />
+        </div>
+        <div class="form-field">
+          <label>Low Stock Threshold</label>
+          <InputNumber v-model="form.lowStockThreshold" :min="0" fluid />
+        </div>
       </div>
       <template #footer>
         <Button label="Cancel" severity="secondary" outlined @click="showDialog = false" />
@@ -701,16 +783,38 @@ const exportUrl = computed(() => {
     <!-- Variant Form Dialog -->
     <Dialog v-model:visible="showVariantDialog" :header="editingVariant ? 'Edit Variant' : 'Add Variant'" :modal="true" :style="{ width: '450px' }">
       <div class="form-grid">
-        <div class="form-field"><label>Name *</label><InputText v-model="variantForm.name" fluid /></div>
-        <div class="form-field"><label>SKU</label><InputText v-model="variantForm.sku" fluid /></div>
-        <div class="form-field"><label>Price</label><InputNumber v-model="variantForm.price" mode="currency" currency="IDR" :min="0" fluid /></div>
-        <div class="form-field"><label>Stock</label><InputNumber v-model="variantForm.stockQuantity" :min="0" fluid /></div>
-        <div class="form-field"><label>Low Stock Threshold</label><InputNumber v-model="variantForm.lowStockThreshold" :min="0" fluid /></div>
-        <div class="form-field"><label>Sort Order</label><InputNumber v-model="variantForm.sortOrder" :min="0" fluid /></div>
+        <div class="form-field">
+          <label>Name *</label>
+          <InputText v-model="variantForm.name" fluid />
+        </div>
+        <div class="form-field">
+          <label>SKU</label>
+          <InputText v-model="variantForm.sku" fluid />
+        </div>
+        <div class="form-field">
+          <label>Price</label>
+          <InputNumber v-model="variantForm.price" mode="currency" currency="IDR" :min="0" fluid />
+        </div>
+        <div class="form-field">
+          <label>Stock</label>
+          <InputNumber v-model="variantForm.stockQuantity" :min="0" fluid />
+        </div>
+        <div class="form-field">
+          <label>Low Stock Threshold</label>
+          <InputNumber v-model="variantForm.lowStockThreshold" :min="0" fluid />
+        </div>
+        <div class="form-field">
+          <label>Sort Order</label>
+          <InputNumber v-model="variantForm.sortOrder" :min="0" fluid />
+        </div>
         <div class="form-field">
           <label>Attributes</label>
-          <div class="attr-chips"><Chip v-for="(v,k) in variantForm.attributes" :key="k" :label="`${k}: ${v}`" removable @remove="removeAttribute(k)" style="margin:2px" /></div>
-          <div style="display:flex;gap:8px;margin-top:6px"><InputText v-model="attrKey" placeholder="Key (e.g. Size)" style="flex:1" size="small" /><InputText v-model="attrValue" placeholder="Value (e.g. L)" style="flex:1" size="small" /><Button icon="pi pi-plus" size="small" @click="addAttribute" /></div>
+          <div class="attr-chips"><Chip v-for="(v, k) in variantForm.attributes" :key="k" :label="`${k}: ${v}`" removable @remove="removeAttribute(k)" style="margin: 2px" /></div>
+          <div style="display: flex; gap: 8px; margin-top: 6px">
+            <InputText v-model="attrKey" placeholder="Key (e.g. Size)" style="flex: 1" size="small" />
+            <InputText v-model="attrValue" placeholder="Value (e.g. L)" style="flex: 1" size="small" />
+            <Button icon="pi pi-plus" size="small" @click="addAttribute" />
+          </div>
         </div>
       </div>
       <template #footer>
@@ -830,6 +934,29 @@ const exportUrl = computed(() => {
 
 .final-price {
   font-weight: 600;
+}
+
+.price-cell {
+  position: relative;
+  display: inline-block;
+  padding-right: 50px; /* kasih ruang kanan biar gak nabrak */
+}
+
+.final-price {
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 1;
+}
+
+.original-price {
+  position: absolute;
+  top: -6px;
+  right: 0;
+
+  font-size: 11px;
+  color: #9ca3af;
+  text-decoration: line-through;
+  white-space: nowrap;
 }
 
 .attr-chips {
