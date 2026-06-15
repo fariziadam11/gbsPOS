@@ -74,6 +74,21 @@ services:
       retries: 3
       start_period: 10s
 
+  cms-web:
+    image: ghcr.io/${GHCR_OWNER:-yourusername}/gbs-cms-web:latest
+    container_name: gbs-cms-web
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3000:80"
+    networks:
+      - gbs
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:80/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
 volumes:
   pgdata:
   pos-uploads:

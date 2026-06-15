@@ -10,6 +10,7 @@ import (
 func CORSMiddleware() gin.HandlerFunc {
 	return cors.New(cors.Config{
 		AllowOrigins: []string{
+			"https://cms.armmada.id",
 			"https://cms.gbs.com",
 			"http://localhost:5173",
 			"http://localhost:3000",
