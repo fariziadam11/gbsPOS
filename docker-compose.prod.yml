@@ -83,7 +83,7 @@ services:
     networks:
       - gbs
     healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://localhost:80/"]
+      test: ["CMD-SHELL", "pgrep nginx || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
