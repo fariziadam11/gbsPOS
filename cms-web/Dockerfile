@@ -1,6 +1,6 @@
 # Multi-stage build for the GBS CMS web frontend
 # Stage 1: Build the Vite + Vue SPA with Bun
-FROM oven/bun:1.3.14-alpine AS builder
+FROM oven/bun:1.3.14 AS builder
 
 WORKDIR /app
 
@@ -10,7 +10,7 @@ RUN bun install
 
 # Copy source and build
 COPY . .
-RUN bun run build
+RUN bunx vite build
 
 # Stage 2: Serve static files with nginx
 FROM nginx:1.27-alpine
