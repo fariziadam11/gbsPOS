@@ -261,3 +261,198 @@ func TestProductService_ListWithDiscountsClampsFixedDiscountAtZero(t *testing.T)
 	require.Len(t, products, 1)
 	assert.Equal(t, 0.0, products[0].FinalPrice)
 }
+
+func TestDiscountService_ProductDiscountStillWorks(t *testing.T) {
+	discountSvc, _, _ := setupDiscountTest(t)
+	now := time.Date(2026, 7, 15, 12, 0, 0, 0, time.UTC)
+	discountSvc.now = func() time.Time { return now }
+
+	created, err := discountSvc.Create(dto.CreateDiscountRequest{
+		ProductID: 1,
+		Name:      "Product Promo",
+		Type:      DiscountTypePercentage,
+		Value:     10,
+		StartDate: "2026-07-01",
+		EndDate:   "2026-07-31",
+	})
+
+	require.NoError(t, err)
+	require.NotNil(t, created.ProductID)
+	assert.Equal(t, uint(1), *created.ProductID)
+	assert.Equal(t, model.DiscountScopeProduct, created.Scope)
+
+	activeDiscounts, err := discountSvc.GetActiveDiscountsByProductIDs([]uint{1})
+	require.NoError(t, err)
+	require.Contains(t, activeDiscounts, uint(1))
+	assert.Equal(t, 9000.0, discountSvc.ApplyDiscount(10000, activeDiscounts[1]))
+}
+
+func TestDiscountService_ProductDiscountRejectsDuplicateActiveDiscount(t *testing.T) {
+	discountSvc, _, _ := setupDiscountTest(t)
+	now := time.Date(2026, 7, 15, 12, 0, 0, 0, time.UTC)
+	discountSvc.now = func() time.Time { return now }
+
+	_, err := discountSvc.Create(dto.CreateDiscountRequest{
+		ProductID: 1,
+		Name:      "Product Promo",
+		Type:      DiscountTypePercentage,
+		Value:     10,
+		StartDate: "2026-07-01",
+		EndDate:   "2026-07-31",
+	})
+	require.NoError(t, err)
+
+	_, err = discountSvc.Create(dto.CreateDiscountRequest{
+		ProductID: 1,
+		Name:      "Duplicate Promo",
+		Type:      DiscountTypeFixed,
+		Value:     1000,
+		StartDate: "2026-07-01",
+		EndDate:   "2026-07-31",
+	})
+
+	require.Error(t, err)
+	assert.True(t, errors.Is(err, ErrDiscountOverlap))
+}
+
+func TestDiscountService_ApplyTransactionPercentageDiscount(t *testing.T) {
+	discountSvc, _, _ := setupDiscountTest(t)
+	now := time.Date(2026, 7, 15, 12, 0, 0, 0, time.UTC)
+	discountSvc.now = func() time.Time { return now }
+
+	_, err := discountSvc.Create(dto.CreateDiscountRequest{
+		Scope:     model.DiscountScopeTransaction,
+		Name:      "Weekend Promo",
+		Type:      DiscountTypePercentage,
+		Value:     10,
+		StartDate: "2026-07-01",
+		EndDate:   "2026-07-31",
+	})
+	require.NoError(t, err)
+
+	finalTotal, discount, err := discountSvc.ApplyTransactionDiscount(100000)
+
+	require.NoError(t, err)
+	require.NotNil(t, discount)
+	assert.Equal(t, 90000.0, finalTotal)
+	assert.Equal(t, model.DiscountScopeTransaction, discount.Scope)
+}
+
+func TestDiscountService_ApplyTransactionFixedDiscount(t *testing.T) {
+	discountSvc, _, _ := setupDiscountTest(t)
+	now := time.Date(2026, 7, 15, 12, 0, 0, 0, time.UTC)
+	discountSvc.now = func() time.Time { return now }
+
+	_, err := discountSvc.Create(dto.CreateDiscountRequest{
+		Scope:     model.DiscountScopeTransaction,
+		Name:      "Fixed Transaction Promo",
+		Type:      DiscountTypeFixed,
+		Value:     15000,
+		StartDate: "2026-07-01",
+		EndDate:   "2026-07-31",
+	})
+	require.NoError(t, err)
+
+	finalTotal, discount, err := discountSvc.ApplyTransactionDiscount(100000)
+
+	require.NoError(t, err)
+	require.NotNil(t, discount)
+	assert.Equal(t, 85000.0, finalTotal)
+}
+
+func TestDiscountService_ApplyTransactionFixedDiscountClampsAtZero(t *testing.T) {
+	discountSvc, _, _ := setupDiscountTest(t)
+	now := time.Date(2026, 7, 15, 12, 0, 0, 0, time.UTC)
+	discountSvc.now = func() time.Time { return now }
+
+	_, err := discountSvc.Create(dto.CreateDiscountRequest{
+		Scope:     model.DiscountScopeTransaction,
+		Name:      "Large Transaction Promo",
+		Type:      DiscountTypeFixed,
+		Value:     15000,
+		StartDate: "2026-07-01",
+		EndDate:   "2026-07-31",
+	})
+	require.NoError(t, err)
+
+	finalTotal, discount, err := discountSvc.ApplyTransactionDiscount(10000)
+
+	require.NoError(t, err)
+	require.NotNil(t, discount)
+	assert.Equal(t, 0.0, finalTotal)
+}
+
+func TestDiscountService_ValidateVoucherValid(t *testing.T) {
+	discountSvc, _, _ := setupDiscountTest(t)
+	now := time.Date(2026, 7, 15, 12, 0, 0, 0, time.UTC)
+	discountSvc.now = func() time.Time { return now }
+	code := " welcome50 "
+	minTransaction := 50000.0
+
+	_, err := discountSvc.Create(dto.CreateDiscountRequest{
+		Scope:          model.DiscountScopeVoucher,
+		VoucherCode:    &code,
+		MinTransaction: &minTransaction,
+		Name:           "Welcome Voucher",
+		Type:           DiscountTypeFixed,
+		Value:          5000,
+		StartDate:      "2026-07-01",
+		EndDate:        "2026-07-31",
+	})
+	require.NoError(t, err)
+
+	discount, err := discountSvc.ValidateVoucher("welcome50", 60000)
+
+	require.NoError(t, err)
+	require.NotNil(t, discount)
+	assert.Equal(t, model.DiscountScopeVoucher, discount.Scope)
+	assert.Equal(t, "WELCOME50", *discount.VoucherCode)
+}
+
+func TestDiscountService_ValidateVoucherRejectsMinimumTransaction(t *testing.T) {
+	discountSvc, _, _ := setupDiscountTest(t)
+	now := time.Date(2026, 7, 15, 12, 0, 0, 0, time.UTC)
+	discountSvc.now = func() time.Time { return now }
+	code := "WELCOME50"
+	minTransaction := 50000.0
+
+	_, err := discountSvc.Create(dto.CreateDiscountRequest{
+		Scope:          model.DiscountScopeVoucher,
+		VoucherCode:    &code,
+		MinTransaction: &minTransaction,
+		Name:           "Welcome Voucher",
+		Type:           DiscountTypeFixed,
+		Value:          5000,
+		StartDate:      "2026-07-01",
+		EndDate:        "2026-07-31",
+	})
+	require.NoError(t, err)
+
+	_, err = discountSvc.ValidateVoucher("WELCOME50", 40000)
+
+	require.Error(t, err)
+	assert.True(t, errors.Is(err, ErrVoucherMinimumNotMet))
+}
+
+func TestDiscountService_ValidateVoucherRejectsExpired(t *testing.T) {
+	discountSvc, _, _ := setupDiscountTest(t)
+	now := time.Date(2026, 8, 1, 12, 0, 0, 0, time.UTC)
+	discountSvc.now = func() time.Time { return now }
+	code := "WELCOME50"
+
+	_, err := discountSvc.Create(dto.CreateDiscountRequest{
+		Scope:       model.DiscountScopeVoucher,
+		VoucherCode: &code,
+		Name:        "Welcome Voucher",
+		Type:        DiscountTypeFixed,
+		Value:       5000,
+		StartDate:   "2026-07-01",
+		EndDate:     "2026-07-31",
+	})
+	require.NoError(t, err)
+
+	_, err = discountSvc.ValidateVoucher("WELCOME50", 60000)
+
+	require.Error(t, err)
+	assert.True(t, errors.Is(err, ErrVoucherInvalid))
+}

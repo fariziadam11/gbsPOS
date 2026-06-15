@@ -30,18 +30,27 @@ type Product struct {
 	UpdatedAt         time.Time `                                   json:"updatedAt"`
 }
 
+const (
+	DiscountScopeProduct     = "PRODUCT"
+	DiscountScopeTransaction = "TRANSACTION"
+	DiscountScopeVoucher     = "VOUCHER"
+)
+
 type Discount struct {
-	ID        uint      `gorm:"primaryKey"                   json:"id"`
-	ProductID uint      `gorm:"not null;index"               json:"productId"`
-	Product   Product   `gorm:"foreignKey:ProductID;constraint:OnDelete:CASCADE" json:"-"`
-	Name      string    `gorm:"size:200;not null"            json:"name"`
-	Type      string    `gorm:"size:20;not null;index"       json:"type"` // PERCENTAGE, FIXED
-	Value     float64   `gorm:"type:decimal(12,2);not null"  json:"value"`
-	StartDate time.Time `gorm:"not null;index"              json:"startDate"`
-	EndDate   time.Time `gorm:"not null;index"              json:"endDate"`
-	Status    string    `gorm:"size:20;not null;index"       json:"status"` // PENDING, ACTIVE, EXPIRED, STOPPED, CANCELLED
-	CreatedAt time.Time `                                    json:"createdAt"`
-	UpdatedAt time.Time `                                    json:"updatedAt"`
+	ID             uint      `gorm:"primaryKey"                            json:"id"`
+	ProductID      *uint     `gorm:"index"                                 json:"productId,omitempty"`
+	Product        *Product  `gorm:"foreignKey:ProductID;constraint:OnDelete:CASCADE" json:"-"`
+	Scope          string    `gorm:"size:20;not null;default:PRODUCT;index" json:"scope"`
+	VoucherCode    *string   `gorm:"size:100;index"                         json:"voucherCode,omitempty"`
+	MinTransaction float64   `gorm:"type:decimal(12,2);not null;default:0"  json:"minTransaction"`
+	Name           string    `gorm:"size:200;not null"                      json:"name"`
+	Type           string    `gorm:"size:20;not null;index"                 json:"type"` // PERCENTAGE, FIXED
+	Value          float64   `gorm:"type:decimal(12,2);not null"            json:"value"`
+	StartDate      time.Time `gorm:"not null;index"                         json:"startDate"`
+	EndDate        time.Time `gorm:"not null;index"                         json:"endDate"`
+	Status         string    `gorm:"size:20;not null;index"                 json:"status"` // PENDING, ACTIVE, EXPIRED, STOPPED, CANCELLED
+	CreatedAt      time.Time `                                              json:"createdAt"`
+	UpdatedAt      time.Time `                                              json:"updatedAt"`
 }
 
 type Order struct {
@@ -130,29 +139,29 @@ type StockMovement struct {
 }
 
 type ProductVariant struct {
-	ID                 int                    `gorm:"primaryKey"                            json:"id"`
-	ProductID          int                    `gorm:"not null;index"                        json:"productId"`
-	SKU                string                 `gorm:"size:100"                               json:"sku"`
-	Name               string                 `gorm:"size:255;not null"                      json:"name"`
-	Attributes         map[string]interface{} `gorm:"serializer:json;not null"              json:"attributes"`
-	Price              *float64               `gorm:"type:decimal(12,2)"                     json:"price"`
-	StockQuantity      int                    `gorm:"not null;default:0"                     json:"stockQuantity"`
-	LowStockThreshold  *int                   `                                               json:"lowStockThreshold"`
-	IsActive           bool                   `gorm:"not null;default:true"                  json:"isActive"`
-	SortOrder          int                    `gorm:"not null;default:0"                     json:"sortOrder"`
-	CreatedAt          time.Time              `                                               json:"createdAt"`
-	UpdatedAt          time.Time              `                                               json:"updatedAt"`
+	ID                int                    `gorm:"primaryKey"                            json:"id"`
+	ProductID         int                    `gorm:"not null;index"                        json:"productId"`
+	SKU               string                 `gorm:"size:100"                               json:"sku"`
+	Name              string                 `gorm:"size:255;not null"                      json:"name"`
+	Attributes        map[string]interface{} `gorm:"serializer:json;not null"              json:"attributes"`
+	Price             *float64               `gorm:"type:decimal(12,2)"                     json:"price"`
+	StockQuantity     int                    `gorm:"not null;default:0"                     json:"stockQuantity"`
+	LowStockThreshold *int                   `                                               json:"lowStockThreshold"`
+	IsActive          bool                   `gorm:"not null;default:true"                  json:"isActive"`
+	SortOrder         int                    `gorm:"not null;default:0"                     json:"sortOrder"`
+	CreatedAt         time.Time              `                                               json:"createdAt"`
+	UpdatedAt         time.Time              `                                               json:"updatedAt"`
 }
 
 type PosHoldSession struct {
-	ID         string         `gorm:"type:uuid;primaryKey" json:"id"`
-	StoreType  string         `json:"store_type"`
-	TerminalID string         `json:"terminal_id"`
+	ID         string `gorm:"type:uuid;primaryKey" json:"id"`
+	StoreType  string `json:"store_type"`
+	TerminalID string `json:"terminal_id"`
 
-	Payload    datatypes.JSON `json:"payload"`
-	Total      float64        `json:"total"`
+	Payload datatypes.JSON `json:"payload"`
+	Total   float64        `json:"total"`
 
-	Status     string         `json:"status"`
+	Status string `json:"status"`
 
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`

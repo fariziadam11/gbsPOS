@@ -28,6 +28,9 @@ var (
 	ErrDiscountOverlap         = errors.New("DISCOUNT_PERIOD_OVERLAP")
 	ErrDiscountInvalidStatus   = errors.New("INVALID_DISCOUNT_STATUS")
 	ErrDiscountProductNotFound = errors.New("PRODUCT_NOT_FOUND")
+	ErrVoucherNotFound         = errors.New("VOUCHER_NOT_FOUND")
+	ErrVoucherInvalid          = errors.New("VOUCHER_INVALID")
+	ErrVoucherMinimumNotMet    = errors.New("VOUCHER_MIN_TRANSACTION_NOT_MET")
 )
 
 type DiscountValidationError struct {
@@ -61,19 +64,33 @@ func (s *DiscountService) Create(req dto.CreateDiscountRequest) (*dto.DiscountRe
 		return nil, err
 	}
 
-	discount := &model.Discount{
-		ProductID: req.ProductID,
-		Name:      strings.TrimSpace(req.Name),
-		Type:      strings.ToUpper(strings.TrimSpace(req.Type)),
-		Value:     req.Value,
-		StartDate: startDate,
-		EndDate:   endDate,
+	scope := normalizeDiscountScope(req.Scope)
+	var productID *uint
+	if req.ProductID > 0 {
+		productID = &req.ProductID
+	}
+	minTransaction := 0.0
+	if req.MinTransaction != nil {
+		minTransaction = *req.MinTransaction
 	}
 
-	if err := s.ensureProductExists(discount.ProductID); err != nil {
+	discount := &model.Discount{
+		ProductID:      productID,
+		Scope:          scope,
+		VoucherCode:    normalizeVoucherCode(req.VoucherCode),
+		MinTransaction: minTransaction,
+		Name:           strings.TrimSpace(req.Name),
+		Type:           strings.ToUpper(strings.TrimSpace(req.Type)),
+		Value:          req.Value,
+		StartDate:      startDate,
+		EndDate:        endDate,
+	}
+	normalizeDiscountFields(discount)
+
+	if err := validateDiscount(discount); err != nil {
 		return nil, err
 	}
-	if err := validateDiscount(discount); err != nil {
+	if err := s.ensureProductExists(discount.ProductID); err != nil {
 		return nil, err
 	}
 
@@ -97,13 +114,16 @@ func (s *DiscountService) Update(
 	}
 
 	if req.ProductID != nil {
-		if *req.ProductID == 0 {
-			return nil, &DiscountValidationError{Message: "productId is required"}
-		}
-		if err := s.ensureProductExists(*req.ProductID); err != nil {
-			return nil, err
-		}
-		discount.ProductID = *req.ProductID
+		discount.ProductID = req.ProductID
+	}
+	if strings.TrimSpace(req.Scope) != "" {
+		discount.Scope = strings.ToUpper(strings.TrimSpace(req.Scope))
+	}
+	if req.VoucherCode != nil {
+		discount.VoucherCode = normalizeVoucherCode(req.VoucherCode)
+	}
+	if req.MinTransaction != nil {
+		discount.MinTransaction = *req.MinTransaction
 	}
 	if strings.TrimSpace(req.Name) != "" {
 		discount.Name = strings.TrimSpace(req.Name)
@@ -129,7 +149,11 @@ func (s *DiscountService) Update(
 		discount.EndDate = endDate
 	}
 
+	normalizeDiscountFields(discount)
 	if err := validateDiscount(discount); err != nil {
+		return nil, err
+	}
+	if err := s.ensureProductExists(discount.ProductID); err != nil {
 		return nil, err
 	}
 	if !isTerminalDiscountStatus(discount.Status) {
@@ -228,13 +252,16 @@ func (s *DiscountService) GetActiveDiscountsByProductIDs(
 	result := make(map[uint]*model.Discount)
 	for i := range discounts {
 		discount := &discounts[i]
+		if discount.Scope != model.DiscountScopeProduct || discount.ProductID == nil {
+			continue
+		}
 		if s.calculateEffectiveStatus(discount, now) != DiscountStatusActive {
 			continue
 		}
-		if _, exists := result[discount.ProductID]; exists {
+		if _, exists := result[*discount.ProductID]; exists {
 			continue
 		}
-		result[discount.ProductID] = discount
+		result[*discount.ProductID] = discount
 	}
 	return result, nil
 }
@@ -257,6 +284,45 @@ func (s *DiscountService) ApplyDiscount(price float64, discount *model.Discount)
 	return finalPrice
 }
 
+func (s *DiscountService) ApplyTransactionDiscount(total float64) (float64, *model.Discount, error) {
+	discounts, err := s.repo.FindTransactionDiscount()
+	if err != nil {
+		return total, nil, err
+	}
+
+	now := s.now()
+	for i := range discounts {
+		discount := &discounts[i]
+		if s.calculateEffectiveStatus(discount, now) != DiscountStatusActive {
+			continue
+		}
+		return s.ApplyDiscount(total, discount), discount, nil
+	}
+	return total, nil, nil
+}
+
+func (s *DiscountService) ValidateVoucher(code string, transactionTotal float64) (*model.Discount, error) {
+	code = strings.ToUpper(strings.TrimSpace(code))
+	if code == "" {
+		return nil, ErrVoucherNotFound
+	}
+
+	discount, err := s.repo.FindVoucherByCode(code)
+	if err != nil {
+		return nil, err
+	}
+	if discount == nil {
+		return nil, ErrVoucherNotFound
+	}
+	if s.GetEffectiveStatus(discount) != DiscountStatusActive {
+		return nil, ErrVoucherInvalid
+	}
+	if transactionTotal < discount.MinTransaction {
+		return nil, ErrVoucherMinimumNotMet
+	}
+	return discount, nil
+}
+
 func (s *DiscountService) findByID(id uint) (*model.Discount, error) {
 	discount, err := s.repo.FindByID(id)
 	if err != nil {
@@ -268,11 +334,11 @@ func (s *DiscountService) findByID(id uint) (*model.Discount, error) {
 	return discount, nil
 }
 
-func (s *DiscountService) ensureProductExists(productID uint) error {
-	if productID == 0 {
-		return &DiscountValidationError{Message: "productId is required"}
+func (s *DiscountService) ensureProductExists(productID *uint) error {
+	if productID == nil {
+		return nil
 	}
-	if _, err := s.productRepo.FindByID(productID); err != nil {
+	if _, err := s.productRepo.FindByID(*productID); err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return ErrDiscountProductNotFound
 		}
@@ -282,13 +348,16 @@ func (s *DiscountService) ensureProductExists(productID uint) error {
 }
 
 func (s *DiscountService) ensureNoOverlap(discount *model.Discount, excludeID uint) error {
+	if discount.Scope != model.DiscountScopeProduct || discount.ProductID == nil {
+		return nil
+	}
 	effectiveStatus := s.GetEffectiveStatus(discount)
 	if effectiveStatus != DiscountStatusActive && effectiveStatus != DiscountStatusPending {
 		return nil
 	}
 
 	overlapping, err := s.repo.FindOverlappingDiscount(
-		discount.ProductID,
+		*discount.ProductID,
 		excludeID,
 		discount.StartDate,
 		discount.EndDate,
@@ -327,6 +396,9 @@ func (s *DiscountService) toResponse(discount *model.Discount) *dto.DiscountResp
 	return &dto.DiscountResponse{
 		ID:              discount.ID,
 		ProductID:       discount.ProductID,
+		Scope:           discount.Scope,
+		VoucherCode:     discount.VoucherCode,
+		MinTransaction:  discount.MinTransaction,
 		Name:            discount.Name,
 		Type:            discount.Type,
 		Value:           discount.Value,
@@ -340,8 +412,29 @@ func (s *DiscountService) toResponse(discount *model.Discount) *dto.DiscountResp
 }
 
 func validateDiscount(discount *model.Discount) error {
-	if discount.ProductID == 0 {
-		return &DiscountValidationError{Message: "productId is required"}
+	switch discount.Scope {
+	case model.DiscountScopeProduct:
+		if discount.ProductID == nil || *discount.ProductID == 0 {
+			return &DiscountValidationError{Message: "productId is required"}
+		}
+	case model.DiscountScopeTransaction:
+		if discount.ProductID != nil {
+			return &DiscountValidationError{Message: "productId must be empty for transaction discounts"}
+		}
+	case model.DiscountScopeVoucher:
+		if discount.ProductID != nil {
+			return &DiscountValidationError{Message: "productId must be empty for voucher discounts"}
+		}
+		if discount.VoucherCode == nil || strings.TrimSpace(*discount.VoucherCode) == "" {
+			return &DiscountValidationError{Message: "voucherCode is required"}
+		}
+	default:
+		return &DiscountValidationError{
+			Message: "scope must be one of: PRODUCT, TRANSACTION, VOUCHER",
+		}
+	}
+	if discount.MinTransaction < 0 {
+		return &DiscountValidationError{Message: "minTransaction must be >= 0"}
 	}
 	if strings.TrimSpace(discount.Name) == "" {
 		return &DiscountValidationError{Message: "name is required"}
@@ -414,4 +507,36 @@ func parseDiscountDate(value string, endOfDay bool) (time.Time, error) {
 
 func isTerminalDiscountStatus(status string) bool {
 	return status == DiscountStatusStopped || status == DiscountStatusCancelled
+}
+
+func normalizeDiscountScope(scope string) string {
+	scope = strings.ToUpper(strings.TrimSpace(scope))
+	if scope == "" {
+		return model.DiscountScopeProduct
+	}
+	return scope
+}
+
+func normalizeVoucherCode(code *string) *string {
+	if code == nil {
+		return nil
+	}
+	normalized := strings.ToUpper(strings.TrimSpace(*code))
+	if normalized == "" {
+		return nil
+	}
+	return &normalized
+}
+
+func normalizeDiscountFields(discount *model.Discount) {
+	discount.Scope = normalizeDiscountScope(discount.Scope)
+	if discount.Scope != model.DiscountScopeProduct {
+		discount.ProductID = nil
+	}
+	if discount.Scope == model.DiscountScopeVoucher {
+		discount.VoucherCode = normalizeVoucherCode(discount.VoucherCode)
+	} else {
+		discount.VoucherCode = nil
+		discount.MinTransaction = 0
+	}
 }

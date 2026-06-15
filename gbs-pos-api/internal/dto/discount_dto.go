@@ -3,26 +3,35 @@ package dto
 import "time"
 
 type CreateDiscountRequest struct {
-	ProductID uint    `json:"productId" binding:"required"`
-	Name      string  `json:"name" binding:"required"`
-	Type      string  `json:"type" binding:"required"`
-	Value     float64 `json:"value" binding:"required"`
-	StartDate string  `json:"startDate" binding:"required"`
-	EndDate   string  `json:"endDate" binding:"required"`
+	ProductID      uint     `json:"productId"`
+	Scope          string   `json:"scope"`
+	VoucherCode    *string  `json:"voucherCode"`
+	MinTransaction *float64 `json:"minTransaction"`
+	Name           string   `json:"name" binding:"required"`
+	Type           string   `json:"type" binding:"required"`
+	Value          float64  `json:"value" binding:"required"`
+	StartDate      string   `json:"startDate" binding:"required"`
+	EndDate        string   `json:"endDate" binding:"required"`
 }
 
 type UpdateDiscountRequest struct {
-	ProductID *uint    `json:"productId"`
-	Name      string   `json:"name"`
-	Type      string   `json:"type"`
-	Value     *float64 `json:"value"`
-	StartDate string   `json:"startDate"`
-	EndDate   string   `json:"endDate"`
+	ProductID      *uint    `json:"productId"`
+	Scope          string   `json:"scope"`
+	VoucherCode    *string  `json:"voucherCode"`
+	MinTransaction *float64 `json:"minTransaction"`
+	Name           string   `json:"name"`
+	Type           string   `json:"type"`
+	Value          *float64 `json:"value"`
+	StartDate      string   `json:"startDate"`
+	EndDate        string   `json:"endDate"`
 }
 
 type DiscountResponse struct {
 	ID              uint      `json:"id"`
-	ProductID       uint      `json:"productId"`
+	ProductID       *uint     `json:"productId,omitempty"`
+	Scope           string    `json:"scope"`
+	VoucherCode     *string   `json:"voucherCode,omitempty"`
+	MinTransaction  float64   `json:"minTransaction"`
 	Name            string    `json:"name"`
 	Type            string    `json:"type"`
 	Value           float64   `json:"value"`
