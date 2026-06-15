@@ -125,7 +125,7 @@ function cancelEdit() {
 }
 
 function goBack() {
-  router.push('/')
+  router.push('/ads')
 }
 
 function formatDate(dateStr: string | null): string {

@@ -106,7 +106,7 @@ function handleSubmit() {
         detail: 'Ad uploaded successfully.',
         life: 3000,
       })
-      router.push('/')
+      router.push('/ads')
     },
     onError: (err) => {
       toast.add({
@@ -255,7 +255,7 @@ function formatFileSize(bytes: number): string {
               label="Cancel"
               severity="secondary"
               outlined
-              @click="router.push('/')"
+              @click="router.push('/ads')"
             />
             <Button
               type="submit"
