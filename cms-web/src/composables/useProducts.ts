@@ -1,11 +1,12 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/vue-query'
+import { computed } from 'vue'
 import type { Ref } from 'vue'
 import { getProducts, getProduct, createProduct, updateProduct, deleteProduct, importProducts } from '../api/products'
 import type { UpdateProductRequest } from '../types/api'
 
 export function useProducts(storeType?: Ref<string | undefined>) {
   return useQuery({
-    queryKey: ['products', storeType?.value],
+    queryKey: computed(() => ['products', storeType?.value]),
     queryFn: () => getProducts(storeType?.value),
     select: (res) => (res.success ? res.data : null),
   })

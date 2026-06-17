@@ -48,6 +48,12 @@ const editForm = ref<EditForm>({
   endTime: null,
 })
 
+function parseApiDate(dateStr: string | null): Date | null {
+  if (!dateStr) return null
+  const d = new Date(dateStr)
+  return isNaN(d.getTime()) ? null : d
+}
+
 function timeStrToDate(timeStr: string | null): Date | null {
   if (!timeStr) return null
   const [h, m, s] = timeStr.split(':').map(Number)
@@ -66,7 +72,10 @@ function dateToTimeStr(date: Date | null): string | null {
 
 function dateToDateStr(date: Date | null): string | null {
   if (!date) return null
-  return date.toISOString().split('T')[0]
+  const y = date.getFullYear()
+  const m = String(date.getMonth() + 1).padStart(2, '0')
+  const d = String(date.getDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
 }
 
 function startEdit() {
@@ -76,8 +85,8 @@ function startEdit() {
     storeTypes: [...ad.value.storeTypes],
     playlistOrder: ad.value.playlistOrder,
     isActive: ad.value.isActive,
-    startDate: ad.value.startDate ? new Date(ad.value.startDate + 'T00:00:00') : null,
-    endDate: ad.value.endDate ? new Date(ad.value.endDate + 'T00:00:00') : null,
+    startDate: parseApiDate(ad.value.startDate),
+    endDate: parseApiDate(ad.value.endDate),
     startTime: timeStrToDate(ad.value.startTime),
     endTime: timeStrToDate(ad.value.endTime),
   }
@@ -130,7 +139,8 @@ function goBack() {
 
 function formatDate(dateStr: string | null): string {
   if (!dateStr) return 'Not set'
-  return new Date(dateStr).toLocaleDateString()
+  const d = new Date(dateStr)
+  return isNaN(d.getTime()) ? 'Invalid date' : d.toLocaleDateString()
 }
 
 function formatTime(timeStr: string | null): string {

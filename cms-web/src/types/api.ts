@@ -161,6 +161,9 @@ export interface Order {
   paymentMethod: string;
   cashReceived: number | null;
   changeAmount: number | null;
+  discountType: string | null;
+  discountValue: number | null;
+  discountAmount: number | null;
   timestamp: number;
   isVoided: boolean;
   isSettled: boolean;

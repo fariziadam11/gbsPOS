@@ -46,13 +46,15 @@ func (s *ProductVariantService) Create(productID int, req dto.CreateVariantReque
 	variant := &model.ProductVariant{
 		ProductID:         productID,
 		SKU:               req.SKU,
-		Name:              req.Name,
 		Attributes:        req.Attributes,
 		Price:             req.Price,
 		StockQuantity:     req.StockQuantity,
 		LowStockThreshold: req.LowStockThreshold,
 		SortOrder:         req.SortOrder,
 		IsActive:          true,
+	}
+	if req.Name != nil {
+		variant.Name = *req.Name
 	}
 	if req.IsActive != nil {
 		variant.IsActive = *req.IsActive

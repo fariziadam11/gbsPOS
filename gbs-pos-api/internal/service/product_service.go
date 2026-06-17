@@ -53,7 +53,8 @@ func (s *ProductService) Update(id uint, updates *model.Product) (*model.Product
 	if updates.StoreType != "" {
 		product.StoreType = updates.StoreType
 	}
-	if updates.LowStockThreshold > 0 {
+	product.StockQuantity = updates.StockQuantity
+	if updates.LowStockThreshold >= 0 {
 		product.LowStockThreshold = updates.LowStockThreshold
 	}
 	if err := s.repo.Update(product); err != nil {
