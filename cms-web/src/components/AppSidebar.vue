@@ -13,6 +13,7 @@ const visible = ref(false)
 const navItems = [
   { label: 'Dashboard', icon: 'pi pi-chart-bar', route: '/', requiresAdmin: false },
   { label: 'Products', icon: 'pi pi-box', route: '/products', requiresAdmin: false },
+  { label: 'Discounts', icon: 'pi pi-tag', route: '/discounts', requiresAdmin: true },
   { label: 'Orders', icon: 'pi pi-receipt', route: '/orders', requiresAdmin: false },
   { label: 'Customers', icon: 'pi pi-users', route: '/customers', requiresAdmin: false },
   { label: 'Ads', icon: 'pi pi-video', route: '/', hasSubItems: true, requiresAdmin: false },

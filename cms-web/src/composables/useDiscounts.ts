@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 import { computed } from 'vue'
-import type { Ref } from 'vue'
+import type { ComputedRef, Ref } from 'vue'
 import {
   cancelDiscount,
   createDiscount,
@@ -10,14 +10,14 @@ import {
   stopDiscount,
   updateDiscount,
 } from '../api/discounts'
+import type { DiscountQuery } from '../api/discounts'
 import type { UpdateDiscountRequest } from '../types/api'
 
-export function useDiscounts(productId?: Ref<number | null>) {
+export function useDiscounts(query?: Ref<DiscountQuery> | ComputedRef<DiscountQuery>) {
   return useQuery({
-    queryKey: computed(() => ['discounts', productId?.value]),
-    queryFn: () => getDiscounts(productId?.value || undefined),
+    queryKey: computed(() => ['discounts', query?.value ?? {}]),
+    queryFn: () => getDiscounts(query?.value),
     select: (res) => (res.success ? res.data : null),
-    enabled: () => !productId || !!productId.value,
   })
 }
 
@@ -35,7 +35,9 @@ export function useCreateDiscount() {
   return useMutation({
     mutationFn: createDiscount,
     onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['discounts', variables.productId] })
+      if (variables.productId) {
+        queryClient.invalidateQueries({ queryKey: ['discounts', { productId: variables.productId }] })
+      }
       queryClient.invalidateQueries({ queryKey: ['discounts'] })
       queryClient.invalidateQueries({ queryKey: ['products'] })
     },
@@ -48,7 +50,7 @@ export function useUpdateDiscount() {
     mutationFn: ({ id, data }: { id: number; data: UpdateDiscountRequest }) => updateDiscount(id, data),
     onSuccess: (_data, variables) => {
       if (variables.data.productId) {
-        queryClient.invalidateQueries({ queryKey: ['discounts', variables.data.productId] })
+        queryClient.invalidateQueries({ queryKey: ['discounts', { productId: variables.data.productId }] })
       }
       queryClient.invalidateQueries({ queryKey: ['discounts'] })
       queryClient.invalidateQueries({ queryKey: ['discount', variables.id] })

@@ -155,11 +155,16 @@ export interface ImportResult {
 // Discount types
 export type DiscountType = 'PERCENTAGE' | 'FIXED';
 
+export type DiscountScope = 'PRODUCT' | 'TRANSACTION' | 'VOUCHER';
+
 export type DiscountStatus = 'PENDING' | 'ACTIVE' | 'EXPIRED' | 'STOPPED' | 'CANCELLED';
 
 export interface Discount {
   id: number;
-  productId: number;
+  productId?: number | null;
+  scope: DiscountScope;
+  voucherCode?: string | null;
+  minTransaction: number;
   name: string;
   type: DiscountType;
   value: number;
@@ -172,7 +177,10 @@ export interface Discount {
 }
 
 export interface CreateDiscountRequest {
-  productId: number;
+  productId?: number;
+  scope?: DiscountScope;
+  voucherCode?: string | null;
+  minTransaction?: number;
   name: string;
   type: DiscountType;
   value: number;
@@ -181,7 +189,10 @@ export interface CreateDiscountRequest {
 }
 
 export interface UpdateDiscountRequest {
-  productId?: number;
+  productId?: number | null;
+  scope?: DiscountScope;
+  voucherCode?: string | null;
+  minTransaction?: number;
   name?: string;
   type?: DiscountType;
   value?: number;

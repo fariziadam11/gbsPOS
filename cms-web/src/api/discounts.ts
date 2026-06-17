@@ -1,9 +1,13 @@
 import posApiClient from './pos-client'
 import type { ApiResponse, CreateDiscountRequest, Discount, UpdateDiscountRequest } from '../types/api'
 
-export async function getDiscounts(productId?: number): Promise<ApiResponse<Discount[]>> {
+export interface DiscountQuery {
+  productId?: number
+}
+
+export async function getDiscounts(query: DiscountQuery = {}): Promise<ApiResponse<Discount[]>> {
   const response = await posApiClient.get<ApiResponse<Discount[]>>('/v1/discounts', {
-    params: productId ? { productId } : {},
+    params: query.productId ? { productId: query.productId } : {},
   })
   return response.data
 }
