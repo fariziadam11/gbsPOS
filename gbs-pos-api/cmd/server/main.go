@@ -74,6 +74,7 @@ func main() {
 	productService := service.NewProductService(productRepo, stockMovementRepo)
 	discountService := service.NewDiscountService(discountRepo, productRepo)
 	productService.SetDiscountService(discountService)
+	pricingService := service.NewPricingService(productRepo, discountService)
 	customerService := service.NewCustomerService(customerRepo)
 	variantService := service.NewProductVariantService(variantRepo)
 	orderService := service.NewOrderService(orderRepo, productService, customerService, variantService)
@@ -82,7 +83,7 @@ func main() {
 
 	authHandler := handler.NewAuthHandler(authService)
 	productHandler := handler.NewProductHandler(productService)
-	discountHandler := handler.NewDiscountHandler(discountService)
+	discountHandler := handler.NewDiscountHandler(discountService, pricingService)
 	orderHandler := handler.NewOrderHandler(orderService, settlementService)
 	settlementHandler := handler.NewSettlementHandler(settlementService)
 	customerHandler := handler.NewCustomerHandler(customerService)

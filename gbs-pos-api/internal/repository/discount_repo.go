@@ -103,10 +103,55 @@ func (r *DiscountRepository) FindActiveByProductIDs(
 	return discounts, nil
 }
 
+func (r *DiscountRepository) FindActiveByScope(
+	scope string,
+	now time.Time,
+) ([]model.Discount, error) {
+	var discounts []model.Discount
+	if err := r.db.
+		Where("scope = ?", scope).
+		Where("status NOT IN ?", []string{"STOPPED", "CANCELLED"}).
+		Where("start_date <= ? AND end_date >= ?", now, now).
+		Order("start_date DESC").
+		Find(&discounts).Error; err != nil {
+		return nil, err
+	}
+	return discounts, nil
+}
+
 func (r *DiscountRepository) FindTransactionDiscount() ([]model.Discount, error) {
 	var discounts []model.Discount
 	if err := r.db.
 		Where("scope = ?", model.DiscountScopeTransaction).
+		Order("start_date DESC").
+		Find(&discounts).Error; err != nil {
+		return nil, err
+	}
+	return discounts, nil
+}
+
+func (r *DiscountRepository) FindVoucherDiscountsByCode(code string) ([]model.Discount, error) {
+	var discounts []model.Discount
+	if err := r.db.
+		Where("scope = ?", model.DiscountScopeVoucher).
+		Where("voucher_code = ?", code).
+		Order("start_date DESC").
+		Find(&discounts).Error; err != nil {
+		return nil, err
+	}
+	return discounts, nil
+}
+
+func (r *DiscountRepository) FindActiveVoucherDiscountsByCode(
+	code string,
+	now time.Time,
+) ([]model.Discount, error) {
+	var discounts []model.Discount
+	if err := r.db.
+		Where("scope = ?", model.DiscountScopeVoucher).
+		Where("voucher_code = ?", code).
+		Where("status NOT IN ?", []string{"STOPPED", "CANCELLED"}).
+		Where("start_date <= ? AND end_date >= ?", now, now).
 		Order("start_date DESC").
 		Find(&discounts).Error; err != nil {
 		return nil, err

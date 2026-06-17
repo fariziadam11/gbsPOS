@@ -271,56 +271,144 @@ func (s *DiscountService) ApplyDiscount(price float64, discount *model.Discount)
 		return price
 	}
 
-	finalPrice := price
-	switch discount.Type {
-	case DiscountTypePercentage:
-		finalPrice = price - (price * discount.Value / 100)
-	case DiscountTypeFixed:
-		finalPrice = price - discount.Value
-	}
+	finalPrice := price - s.CalculateDiscountAmount(price, discount)
 	if finalPrice < 0 {
 		return 0
 	}
 	return finalPrice
 }
 
+func (s *DiscountService) CalculateDiscountAmount(
+	baseAmount float64,
+	discount *model.Discount,
+) float64 {
+	if discount == nil || baseAmount <= 0 {
+		return 0
+	}
+
+	var amount float64
+	switch discount.Type {
+	case DiscountTypePercentage:
+		amount = baseAmount * discount.Value / 100
+	case DiscountTypeFixed:
+		amount = discount.Value
+	}
+	if amount < 0 {
+		return 0
+	}
+	if amount > baseAmount {
+		return baseAmount
+	}
+	return amount
+}
+
 func (s *DiscountService) ApplyTransactionDiscount(total float64) (float64, *model.Discount, error) {
-	discounts, err := s.repo.FindTransactionDiscount()
+	discount, amount, err := s.SelectBestTransactionDiscount(total)
 	if err != nil {
 		return total, nil, err
 	}
+	if discount == nil {
+		return total, nil, nil
+	}
+
+	finalTotal := total - amount
+	if finalTotal < 0 {
+		finalTotal = 0
+	}
+	return finalTotal, discount, nil
+}
+
+func (s *DiscountService) SelectBestTransactionDiscount(
+	total float64,
+) (*model.Discount, float64, error) {
+	now := s.now()
+	discounts, err := s.repo.FindActiveByScope(model.DiscountScopeTransaction, now)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	discount, amount := s.selectBestApplicableDiscount(discounts, total, now)
+	return discount, amount, nil
+}
+
+func (s *DiscountService) SelectBestVoucherDiscount(
+	code string,
+	transactionTotal float64,
+) (*model.Discount, float64, error) {
+	code = strings.ToUpper(strings.TrimSpace(code))
+	if code == "" {
+		return nil, 0, ErrVoucherNotFound
+	}
+
+	discounts, err := s.repo.FindVoucherDiscountsByCode(code)
+	if err != nil {
+		return nil, 0, err
+	}
+	if len(discounts) == 0 {
+		return nil, 0, ErrVoucherNotFound
+	}
 
 	now := s.now()
+	hasActive := false
+	hasMinimumUnmet := false
+	var best *model.Discount
+	var bestAmount float64
 	for i := range discounts {
 		discount := &discounts[i]
 		if s.calculateEffectiveStatus(discount, now) != DiscountStatusActive {
 			continue
 		}
-		return s.ApplyDiscount(total, discount), discount, nil
+		hasActive = true
+		if transactionTotal < discount.MinTransaction {
+			hasMinimumUnmet = true
+			continue
+		}
+		amount := s.CalculateDiscountAmount(transactionTotal, discount)
+		if best == nil || amount > bestAmount {
+			best = discount
+			bestAmount = amount
+		}
 	}
-	return total, nil, nil
+
+	if best != nil {
+		return best, bestAmount, nil
+	}
+	if hasActive && hasMinimumUnmet {
+		return nil, 0, ErrVoucherMinimumNotMet
+	}
+	return nil, 0, ErrVoucherInvalid
 }
 
 func (s *DiscountService) ValidateVoucher(code string, transactionTotal float64) (*model.Discount, error) {
-	code = strings.ToUpper(strings.TrimSpace(code))
-	if code == "" {
-		return nil, ErrVoucherNotFound
-	}
-
-	discount, err := s.repo.FindVoucherByCode(code)
+	discount, _, err := s.SelectBestVoucherDiscount(code, transactionTotal)
 	if err != nil {
 		return nil, err
 	}
-	if discount == nil {
-		return nil, ErrVoucherNotFound
-	}
-	if s.GetEffectiveStatus(discount) != DiscountStatusActive {
-		return nil, ErrVoucherInvalid
-	}
-	if transactionTotal < discount.MinTransaction {
-		return nil, ErrVoucherMinimumNotMet
-	}
 	return discount, nil
+}
+
+func (s *DiscountService) selectBestApplicableDiscount(
+	discounts []model.Discount,
+	baseAmount float64,
+	now time.Time,
+) (*model.Discount, float64) {
+	var best *model.Discount
+	var bestAmount float64
+	for i := range discounts {
+		discount := &discounts[i]
+		if s.calculateEffectiveStatus(discount, now) != DiscountStatusActive {
+			continue
+		}
+		if baseAmount < discount.MinTransaction {
+			continue
+		}
+		amount := s.CalculateDiscountAmount(baseAmount, discount)
+		if best == nil || amount > bestAmount {
+			best = discount
+			bestAmount = amount
+		}
+	}
+	return best, bestAmount
 }
 
 func (s *DiscountService) findByID(id uint) (*model.Discount, error) {
@@ -537,6 +625,8 @@ func normalizeDiscountFields(discount *model.Discount) {
 		discount.VoucherCode = normalizeVoucherCode(discount.VoucherCode)
 	} else {
 		discount.VoucherCode = nil
+	}
+	if discount.Scope == model.DiscountScopeProduct {
 		discount.MinTransaction = 0
 	}
 }

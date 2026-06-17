@@ -124,6 +124,7 @@ This section is maintained by AI agents. It must be updated after each completed
 - 2026-06-12
 - 2026-06-12 (context update): added Stock Management + POS Hold/Resume planning phase
 - 2026-06-15
+- 2026-06-17
 
 ### Active Development Focus
 
@@ -137,6 +138,7 @@ This section is maintained by AI agents. It must be updated after each completed
 - Settlement locking using SELECT FOR UPDATE
 - CMS Web unified dashboard (POS + CMS views)
 - Discount engine expanded to support PRODUCT, TRANSACTION, and VOUCHER scopes with combined discount flow.
+- Pricing calculation service applies PRODUCT -> TRANSACTION -> VOUCHER discounts and selects highest monetary TRANSACTION/VOUCHER discount per scope/code.
 
 ### Known System Rules (Runtime)
 

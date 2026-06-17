@@ -13,10 +13,18 @@ import (
 
 type DiscountHandler struct {
 	discountService *service.DiscountService
+	pricingService  *service.PricingService
 }
 
-func NewDiscountHandler(discountService *service.DiscountService) *DiscountHandler {
-	return &DiscountHandler{discountService: discountService}
+func NewDiscountHandler(
+	discountService *service.DiscountService,
+	pricingService ...*service.PricingService,
+) *DiscountHandler {
+	h := &DiscountHandler{discountService: discountService}
+	if len(pricingService) > 0 {
+		h.pricingService = pricingService[0]
+	}
+	return h
 }
 
 func (h *DiscountHandler) List(c *gin.Context) {
@@ -46,6 +54,26 @@ func (h *DiscountHandler) Get(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, response.Success(discount))
+}
+
+func (h *DiscountHandler) Calculate(c *gin.Context) {
+	if h.pricingService == nil {
+		c.JSON(http.StatusInternalServerError, response.Error("INTERNAL_SERVER_ERROR", "Pricing service is not configured"))
+		return
+	}
+
+	var req dto.PricingCalculationRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusUnprocessableEntity, response.ValidationError("Invalid request body", nil))
+		return
+	}
+
+	result, err := h.pricingService.Calculate(req)
+	if err != nil {
+		h.writeDiscountError(c, err)
+		return
+	}
+	c.JSON(http.StatusOK, response.Success(result))
 }
 
 func (h *DiscountHandler) Create(c *gin.Context) {
@@ -137,6 +165,16 @@ func (h *DiscountHandler) writeDiscountError(c *gin.Context, err error) {
 		c.JSON(http.StatusConflict, response.Error("DISCOUNT_PERIOD_OVERLAP", "Discount period overlaps with another active or pending discount for this product"))
 	case errors.Is(err, service.ErrDiscountInvalidStatus):
 		c.JSON(http.StatusConflict, response.Error("INVALID_DISCOUNT_STATUS", "Discount cannot be changed to the requested status"))
+	case errors.Is(err, service.ErrVoucherNotFound):
+		c.JSON(http.StatusNotFound, response.Error("VOUCHER_NOT_FOUND", "Voucher not found"))
+	case errors.Is(err, service.ErrVoucherInvalid):
+		c.JSON(http.StatusConflict, response.Error("VOUCHER_INVALID", "Voucher is not active"))
+	case errors.Is(err, service.ErrVoucherMinimumNotMet):
+		c.JSON(http.StatusConflict, response.Error("VOUCHER_MIN_TRANSACTION_NOT_MET", "Voucher minimum transaction is not met"))
+	case errors.Is(err, service.ErrPricingEmptyCart):
+		c.JSON(http.StatusBadRequest, response.Error("PRICING_EMPTY_CART", "Cart items cannot be empty"))
+	case errors.Is(err, service.ErrPricingInvalidQuantity):
+		c.JSON(http.StatusBadRequest, response.Error("PRICING_INVALID_QUANTITY", "Item quantity must be greater than zero"))
 	default:
 		c.JSON(http.StatusInternalServerError, response.Error("INTERNAL_SERVER_ERROR", err.Error()))
 	}

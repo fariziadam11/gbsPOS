@@ -16,6 +16,7 @@ func setupDiscountRoutes(
 	}
 
 	rg.GET("/discounts", discountHandler.List)
+	rg.POST("/pricing/calculate", discountHandler.Calculate)
 	rg.GET("/discounts/:id", discountHandler.Get)
 
 	rg.POST(
