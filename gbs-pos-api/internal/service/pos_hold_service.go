@@ -76,5 +76,12 @@ func (s *PosHoldService) Resume(id string) (*model.PosHoldSession, error) {
 }
 
 func (s *PosHoldService) Delete(id string) error {
+	session, err := s.repo.FindByID(id)
+	if err != nil {
+		return err
+	}
+	if session.Status != model.PosHoldStatusActive {
+		return errors.New("CANNOT_DELETE_NON_ACTIVE_HOLD")
+	}
 	return s.repo.Delete(id)
 }

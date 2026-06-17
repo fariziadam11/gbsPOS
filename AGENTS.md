@@ -140,6 +140,7 @@ This section is maintained by AI agents. It must be updated after each completed
 - Discount engine expanded to support PRODUCT, TRANSACTION, and VOUCHER scopes with combined discount flow.
 - Pricing calculation service applies PRODUCT -> TRANSACTION -> VOUCHER discounts and selects highest monetary TRANSACTION/VOUCHER discount per scope/code.
 - CMS Web Discount management page centralizes PRODUCT / TRANSACTION / VOUCHER CRUD and product-page discount icons now deep-link to filtered discount management.
+- POS Hold module implemented for temporary POS cart snapshots with ACTIVE -> RESUMED lifecycle.
 
 ### Known System Rules (Runtime)
 

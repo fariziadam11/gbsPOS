@@ -125,3 +125,14 @@ func TestPosHoldService_Delete(t *testing.T) {
 
 	assert.Error(t, err)
 }
+
+func TestPosHoldService_Delete_NotActive(t *testing.T) {
+	svc, db := setupPosHoldService(t)
+
+	seedHold(db, "H1", model.PosHoldStatusResumed, "POS-001")
+
+	err := svc.Delete("H1")
+
+	require.Error(t, err)
+	assert.Equal(t, "CANNOT_DELETE_NON_ACTIVE_HOLD", err.Error())
+}

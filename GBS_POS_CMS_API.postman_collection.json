@@ -53,7 +53,7 @@
         },
         {
           "name": "Discounts",
-          "items": [
+          "item": [
             {
               "name": "Create Product Discount",
               "request": {
@@ -70,13 +70,14 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"productId\": 1,\n  \"scope\": \"PRODUCT\",\n  \"name\": \"Product Promo\",\n  \"type\": \"PERCENTAGE\",\n  \"value\": 10,\n  \"startDate\": \"2026-05-01\",\n  \"endDate\": \"2026-12-21\"\n}"
+                  "raw": "{\n  \"productId\": 1,\n  \"scope\": \"PRODUCT\",\n  \"name\": \"Product Promo\",\n  \"type\": \"PERCENTAGE\",\n  \"value\": 10,\n  \"startDate\": \"2026-06-01\",\n  \"endDate\": \"2026-06-30\"\n}"
                 },
                 "url": {
                   "raw": "{{pos_base_url}}/v1/discounts",
                   "host": ["{{pos_base_url}}"],
                   "path": ["v1", "discounts"]
-                }
+                },
+                "description": "Create a PRODUCT discount attached to a product. Only one active/pending product discount can overlap for the same product."
               }
             },
             {
@@ -95,13 +96,14 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"scope\": \"TRANSACTION\",\n  \"name\": \"Member Discount\",\n  \"type\": \"PERCENTAGE\",\n  \"value\": 5,\n  \"minTransaction\": 50000,\n  \"startDate\": \"2026-05-01\",\n  \"endDate\": \"2026-12-21\"\n}"
+                  "raw": "{\n  \"scope\": \"TRANSACTION\",\n  \"name\": \"Transaction Promo\",\n  \"type\": \"PERCENTAGE\",\n  \"value\": 5,\n  \"minTransaction\": 50000,\n  \"startDate\": \"2026-06-01\",\n  \"endDate\": \"2026-06-30\"\n}"
                 },
                 "url": {
                   "raw": "{{pos_base_url}}/v1/discounts",
                   "host": ["{{pos_base_url}}"],
                   "path": ["v1", "discounts"]
-                }
+                },
+                "description": "Create a TRANSACTION discount. Multiple active transaction discounts can exist; pricing chooses the highest monetary discount."
               }
             },
             {
@@ -120,13 +122,14 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"scope\": \"VOUCHER\",\n  \"voucherCode\": \"HEMAT10\",\n  \"name\": \"Voucher Hemat\",\n  \"type\": \"PERCENTAGE\",\n  \"value\": 10,\n  \"minTransaction\": 100000,\n  \"startDate\": \"2026-05-01\",\n  \"endDate\": \"2026-12-21\"\n}"
+                  "raw": "{\n  \"scope\": \"VOUCHER\",\n  \"voucherCode\": \"PROMO10\",\n  \"name\": \"Voucher Promo\",\n  \"type\": \"FIXED\",\n  \"value\": 10000,\n  \"startDate\": \"2026-06-01\",\n  \"endDate\": \"2026-06-30\"\n}"
                 },
                 "url": {
                   "raw": "{{pos_base_url}}/v1/discounts",
                   "host": ["{{pos_base_url}}"],
                   "path": ["v1", "discounts"]
-                }
+                },
+                "description": "Create a VOUCHER discount. Voucher code is evaluated independently; pricing chooses the highest monetary discount for the provided code."
               }
             },
             {
@@ -143,7 +146,8 @@
                   "raw": "{{pos_base_url}}/v1/discounts/1",
                   "host": ["{{pos_base_url}}"],
                   "path": ["v1", "discounts", "1"]
-                }
+                },
+                "description": "Get a discount by ID. Response includes scope, productId, voucherCode, minTransaction, type, value, startDate, endDate, status, and effectiveStatus."
               }
             },
             {
@@ -162,13 +166,14 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"name\": \"Updated Promo\",\n  \"value\": 15\n}"
+                  "raw": "{\n  \"scope\": \"VOUCHER\",\n  \"voucherCode\": \"PROMO10\",\n  \"minTransaction\": 50000,\n  \"name\": \"Updated Voucher Promo\",\n  \"type\": \"FIXED\",\n  \"value\": 15000,\n  \"startDate\": \"2026-06-01\",\n  \"endDate\": \"2026-06-30\"\n}"
                 },
                 "url": {
                   "raw": "{{pos_base_url}}/v1/discounts/1",
                   "host": ["{{pos_base_url}}"],
                   "path": ["v1", "discounts", "1"]
-                }
+                },
+                "description": "Update discount fields. PRODUCT uses productId; TRANSACTION uses minTransaction; VOUCHER uses voucherCode and optional minTransaction."
               }
             },
             {
@@ -185,7 +190,117 @@
                   "raw": "{{pos_base_url}}/v1/discounts/1",
                   "host": ["{{pos_base_url}}"],
                   "path": ["v1", "discounts", "1"]
-                }
+                },
+                "description": "Delete a discount by ID. Returns 204 No Content."
+              }
+            }
+          ]
+        },
+        {
+          "name": "POS Hold",
+          "item": [
+            {
+              "name": "Create Hold",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{pos_token}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"storeType\": \"RETAIL\",\n  \"terminalId\": \"POS-001\",\n  \"payload\": {\n    \"items\": [\n      {\n        \"productId\": 1,\n        \"name\": \"Chitato\",\n        \"qty\": 1,\n        \"price\": 10000\n      }\n    ]\n  },\n  \"total\": 10000\n}"
+                },
+                "url": {
+                  "raw": "{{pos_base_url}}/v1/pos/hold",
+                  "host": ["{{pos_base_url}}"],
+                  "path": ["v1", "pos", "hold"]
+                },
+                "description": "Hold creates temporary POS transaction snapshot."
+              }
+            },
+            {
+              "name": "List Active Hold",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{pos_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{pos_base_url}}/v1/pos/hold?terminalId=POS-001",
+                  "host": ["{{pos_base_url}}"],
+                  "path": ["v1", "pos", "hold"],
+                  "query": [
+                    {
+                      "key": "terminalId",
+                      "value": "POS-001"
+                    }
+                  ]
+                },
+                "description": "List ACTIVE hold sessions for a terminal."
+              }
+            },
+            {
+              "name": "Get Hold Detail",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{pos_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{pos_base_url}}/v1/pos/hold/{{hold_id}}",
+                  "host": ["{{pos_base_url}}"],
+                  "path": ["v1", "pos", "hold", "{{hold_id}}"]
+                },
+                "description": "Get a POS hold snapshot by ID."
+              }
+            },
+            {
+              "name": "Resume Hold",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{pos_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{pos_base_url}}/v1/pos/hold/{{hold_id}}/resume",
+                  "host": ["{{pos_base_url}}"],
+                  "path": ["v1", "pos", "hold", "{{hold_id}}", "resume"]
+                },
+                "description": "Resume changes status ACTIVE -> RESUMED. Only ACTIVE hold can be resumed."
+              }
+            },
+            {
+              "name": "Delete Hold",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{pos_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{pos_base_url}}/v1/pos/hold/{{hold_id}}",
+                  "host": ["{{pos_base_url}}"],
+                  "path": ["v1", "pos", "hold", "{{hold_id}}"]
+                },
+                "description": "Delete an ACTIVE POS hold. Resumed hold cannot be deleted."
               }
             }
           ]

@@ -10,6 +10,10 @@ func setupPosHoldRoutes(
 	rg *gin.RouterGroup,
 	posHoldHandler *handler.PosHoldHandler,
 ) {
+	if posHoldHandler == nil {
+		return
+	}
+
 	pos := rg.Group("/pos/hold")
 
 	pos.POST("", posHoldHandler.Hold)
