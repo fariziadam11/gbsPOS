@@ -8,8 +8,12 @@ WORKDIR /app
 COPY package.json ./
 RUN bun install
 
-# Copy source and build
+# Copy source
 COPY . .
+
+# Vite embeds VITE_* env vars at build time. .env.production must be present.
+RUN test -f .env.production || (echo "ERROR: .env.production is required. See WEBSITE_DEPLOYMENT.md Step 1." && exit 1)
+
 RUN bunx vite build
 
 # Stage 2: Serve static files with nginx

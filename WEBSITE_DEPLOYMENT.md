@@ -47,7 +47,7 @@ Public hostnames served through the tunnel:
 
 ## Step 1: Configure Production Environment Variables
 
-Vite embeds `VITE_*` variables at **build time**, so you must set them before building.
+Vite embeds `VITE_*` variables at **build time**, so you must set them before building. If they are missing, API calls fall back to the website origin (`cms.armmada.id`), and nginx returns `405 Method Not Allowed` for POST requests.
 
 Create `cms-web/.env.production`:
 
@@ -57,6 +57,8 @@ VITE_POS_API_BASE_URL=https://api-pos.armmada.id
 ```
 
 **Do not commit this file.** It is added to `.gitignore` automatically.
+
+The Dockerfile requires this file to be present; the build will fail with a clear error if it is missing.
 
 ---
 
