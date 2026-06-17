@@ -55,7 +55,7 @@
           "name": "Discounts",
           "items": [
             {
-              "name": "Create Discount",
+              "name": "Create Product Discount",
               "request": {
                 "method": "POST",
                 "header": [
@@ -70,14 +70,63 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n \"productId\": 1,\n  \"name\": \"Discount 1\",\n  \"type\": \"PERCENTAGE\",\n  \"value\": 10,\n  \"startDate\": \"2026-05-01\",\n  \"endDate\": \"2026-12-21\"\n}"
+                  "raw": "{\n  \"productId\": 1,\n  \"scope\": \"PRODUCT\",\n  \"name\": \"Product Promo\",\n  \"type\": \"PERCENTAGE\",\n  \"value\": 10,\n  \"startDate\": \"2026-05-01\",\n  \"endDate\": \"2026-12-21\"\n}"
                 },
                 "url": {
                   "raw": "{{pos_base_url}}/v1/discounts",
                   "host": ["{{pos_base_url}}"],
                   "path": ["v1", "discounts"]
+                }
+              }
+            },
+            {
+              "name": "Create Transaction Discount",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{pos_token}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"scope\": \"TRANSACTION\",\n  \"name\": \"Member Discount\",\n  \"type\": \"PERCENTAGE\",\n  \"value\": 5,\n  \"minTransaction\": 50000,\n  \"startDate\": \"2026-05-01\",\n  \"endDate\": \"2026-12-21\"\n}"
                 },
-                "description": "Create a new discount. ADMIN role only. Returns 201 Created."
+                "url": {
+                  "raw": "{{pos_base_url}}/v1/discounts",
+                  "host": ["{{pos_base_url}}"],
+                  "path": ["v1", "discounts"]
+                }
+              }
+            },
+            {
+              "name": "Create Voucher Discount",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{pos_token}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"scope\": \"VOUCHER\",\n  \"voucherCode\": \"HEMAT10\",\n  \"name\": \"Voucher Hemat\",\n  \"type\": \"PERCENTAGE\",\n  \"value\": 10,\n  \"minTransaction\": 100000,\n  \"startDate\": \"2026-05-01\",\n  \"endDate\": \"2026-12-21\"\n}"
+                },
+                "url": {
+                  "raw": "{{pos_base_url}}/v1/discounts",
+                  "host": ["{{pos_base_url}}"],
+                  "path": ["v1", "discounts"]
+                }
               }
             },
             {
@@ -94,8 +143,7 @@
                   "raw": "{{pos_base_url}}/v1/discounts/1",
                   "host": ["{{pos_base_url}}"],
                   "path": ["v1", "discounts", "1"]
-                },
-                "description": "Get a discount by ID. ADMIN role only. Returns 200 OK."
+                }
               }
             },
             {
@@ -114,14 +162,13 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n \"productId\": 1,\n  \"name\": \"Discount 1\",\n  \"type\": \"PERCENTAGE\",\n  \"value\": 10,\n  \"startDate\": \"2026-05-01\",\n  \"endDate\": \"2026-12-21\"\n}"
+                  "raw": "{\n  \"name\": \"Updated Promo\",\n  \"value\": 15\n}"
                 },
                 "url": {
                   "raw": "{{pos_base_url}}/v1/discounts/1",
                   "host": ["{{pos_base_url}}"],
                   "path": ["v1", "discounts", "1"]
-                },
-                "description": "Update a discount. ADMIN role only. Returns 200 OK."
+                }
               }
             },
             {
@@ -138,8 +185,7 @@
                   "raw": "{{pos_base_url}}/v1/discounts/1",
                   "host": ["{{pos_base_url}}"],
                   "path": ["v1", "discounts", "1"]
-                },
-                "description": "Delete a discount. ADMIN role only. Returns 204 No Content."
+                }
               }
             }
           ]
