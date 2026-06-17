@@ -153,6 +153,13 @@ type ProductVariant struct {
 	UpdatedAt         time.Time              `                                               json:"updatedAt"`
 }
 
+const (
+	PosHoldStatusActive  = "ACTIVE"
+	PosHoldStatusResumed = "RESUMED"
+	PosHoldStatusVoided  = "VOIDED"
+	PosHoldStatusExpired = "EXPIRED"
+)
+
 type PosHoldSession struct {
 	ID         string `gorm:"type:uuid;primaryKey" json:"id"`
 	StoreType  string `json:"store_type"`
