@@ -50,7 +50,7 @@ func main() {
 		&model.Customer{},
 		&model.StockMovement{},
 		&model.ProductVariant{},
-		&model.PosHoldSession{},
+		&model.HoldSession{},
 		&model.Order{},
 		&model.OrderItem{},
 		&model.Settlement{},
@@ -68,7 +68,7 @@ func main() {
 	customerRepo := repository.NewCustomerRepository(db)
 	stockMovementRepo := repository.NewStockMovementRepository(db)
 	variantRepo := repository.NewProductVariantRepository(db)
-	posHoldRepo := repository.NewPosHoldRepository(db)
+	holdRepo := repository.NewHoldRepository(db)
 
 	dashboardRepo := repository.NewDashboardRepository(db)
 
@@ -79,7 +79,7 @@ func main() {
 	pricingService := service.NewPricingService(productRepo, discountService)
 	customerService := service.NewCustomerService(customerRepo)
 	variantService := service.NewProductVariantService(variantRepo)
-	posHoldService := service.NewPosHoldService(posHoldRepo)
+	holdService := service.NewHoldService(holdRepo)
 	orderService := service.NewOrderService(orderRepo, productService, customerService, variantService)
 	settlementService := service.NewSettlementService(orderRepo, settlementRepo)
 	dashboardService := service.NewDashboardService(dashboardRepo)
@@ -92,7 +92,7 @@ func main() {
 	customerHandler := handler.NewCustomerHandler(customerService)
 	dashboardHandler := handler.NewDashboardHandler(dashboardService)
 	variantHandler := handler.NewProductVariantHandler(variantService)
-	posHoldHandler := handler.NewPosHoldHandler(posHoldService)
+	holdHandler := handler.NewHoldHandler(holdService)
 
 	if cfg.Env == "production" {
 		gin.SetMode(gin.ReleaseMode)
@@ -109,7 +109,7 @@ func main() {
 			Customer:       customerHandler,
 			Dashboard:      dashboardHandler,
 			ProductVariant: variantHandler,
-			Hold:           posHoldHandler,
+			Hold:           holdHandler,
 		},
 	)
 

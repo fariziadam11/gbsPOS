@@ -12,16 +12,16 @@ import (
 	"gorm.io/gorm"
 )
 
-type PosHoldHandler struct {
-	service *service.PosHoldService
+type HoldHandler struct {
+	service *service.HoldService
 }
 
-func NewPosHoldHandler(service *service.PosHoldService) *PosHoldHandler {
-	return &PosHoldHandler{service: service}
+func NewHoldHandler(service *service.HoldService) *HoldHandler {
+	return &HoldHandler{service: service}
 }
 
-func (h *PosHoldHandler) Hold(c *gin.Context) {
-	var req dto.CreatePosHoldRequest
+func (h *HoldHandler) Create(c *gin.Context) {
+	var req dto.CreateHoldRequest
 
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusUnprocessableEntity,
@@ -29,17 +29,17 @@ func (h *PosHoldHandler) Hold(c *gin.Context) {
 		return
 	}
 
-	result, err := h.service.Hold(req.StoreType, req.TerminalID, req.Payload, req.Total)
+	result, err := h.service.Create(req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError,
 			response.Error("INTERNAL_SERVER_ERROR", err.Error()))
 		return
 	}
 
-	c.JSON(http.StatusCreated, response.Success(toPosHoldResponse(result)))
+	c.JSON(http.StatusCreated, response.Success(toHoldResponse(result)))
 }
 
-func (h *PosHoldHandler) List(c *gin.Context) {
+func (h *HoldHandler) List(c *gin.Context) {
 	terminalID := c.Query("terminalId")
 
 	result, err := h.service.List(terminalID)
@@ -49,10 +49,10 @@ func (h *PosHoldHandler) List(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, response.Success(toPosHoldResponses(result)))
+	c.JSON(http.StatusOK, response.Success(toHoldResponses(result)))
 }
 
-func (h *PosHoldHandler) Get(c *gin.Context) {
+func (h *HoldHandler) Get(c *gin.Context) {
 	id := c.Param("id")
 
 	result, err := h.service.Get(id)
@@ -61,10 +61,10 @@ func (h *PosHoldHandler) Get(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, response.Success(toPosHoldResponse(result)))
+	c.JSON(http.StatusOK, response.Success(toHoldResponse(result)))
 }
 
-func (h *PosHoldHandler) Resume(c *gin.Context) {
+func (h *HoldHandler) Resume(c *gin.Context) {
 	id := c.Param("id")
 
 	session, err := h.service.Resume(id)
@@ -73,10 +73,10 @@ func (h *PosHoldHandler) Resume(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, response.Success(toPosHoldResponse(session)))
+	c.JSON(http.StatusOK, response.Success(toHoldResponse(session)))
 }
 
-func (h *PosHoldHandler) Delete(c *gin.Context) {
+func (h *HoldHandler) Delete(c *gin.Context) {
 	id := c.Param("id")
 
 	err := h.service.Delete(id)
@@ -88,36 +88,36 @@ func (h *PosHoldHandler) Delete(c *gin.Context) {
 	c.Status(http.StatusNoContent)
 }
 
-func (h *PosHoldHandler) writeHoldError(c *gin.Context, err error) {
+func (h *HoldHandler) writeHoldError(c *gin.Context, err error) {
 	switch {
 	case errors.Is(err, gorm.ErrRecordNotFound):
 		c.JSON(http.StatusNotFound, response.Error("HOLD_NOT_FOUND", "Hold session not found"))
-	case err.Error() == "CANNOT_RESUME_NON_ACTIVE_HOLD":
+	case errors.Is(err, service.ErrHoldCannotResumeNonActive):
 		c.JSON(http.StatusConflict, response.Error("CANNOT_RESUME_NON_ACTIVE_HOLD", "Only ACTIVE hold can be resumed"))
-	case err.Error() == "CANNOT_DELETE_NON_ACTIVE_HOLD":
+	case errors.Is(err, service.ErrHoldCannotDeleteNonActive):
 		c.JSON(http.StatusConflict, response.Error("CANNOT_DELETE_NON_ACTIVE_HOLD", "Only ACTIVE hold can be deleted"))
 	default:
 		c.JSON(http.StatusInternalServerError, response.Error("INTERNAL_SERVER_ERROR", err.Error()))
 	}
 }
 
-func toPosHoldResponse(session *model.PosHoldSession) dto.PosHoldResponse {
-	return dto.PosHoldResponse{
+func toHoldResponse(session *model.HoldSession) dto.HoldResponse {
+	return dto.HoldResponse{
 		ID:         session.ID,
 		StoreType:  session.StoreType,
 		TerminalID: session.TerminalID,
 		Payload:    []byte(session.Payload),
 		Total:      session.Total,
-		Status:     session.Status,
+		Status:     string(session.Status),
 		CreatedAt:  session.CreatedAt,
 		UpdatedAt:  session.UpdatedAt,
 	}
 }
 
-func toPosHoldResponses(sessions []model.PosHoldSession) []dto.PosHoldResponse {
-	responses := make([]dto.PosHoldResponse, 0, len(sessions))
+func toHoldResponses(sessions []model.HoldSession) []dto.HoldResponse {
+	responses := make([]dto.HoldResponse, 0, len(sessions))
 	for i := range sessions {
-		responses = append(responses, toPosHoldResponse(&sessions[i]))
+		responses = append(responses, toHoldResponse(&sessions[i]))
 	}
 	return responses
 }

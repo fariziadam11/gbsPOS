@@ -153,23 +153,24 @@ type ProductVariant struct {
 	UpdatedAt         time.Time              `                                               json:"updatedAt"`
 }
 
+type HoldStatus string
+
 const (
-	PosHoldStatusActive  = "ACTIVE"
-	PosHoldStatusResumed = "RESUMED"
-	PosHoldStatusVoided  = "VOIDED"
-	PosHoldStatusExpired = "EXPIRED"
+	HoldStatusActive  HoldStatus = "ACTIVE"
+	HoldStatusResumed HoldStatus = "RESUMED"
 )
 
-type PosHoldSession struct {
-	ID         string `gorm:"type:uuid;primaryKey" json:"id"`
-	StoreType  string `json:"store_type"`
-	TerminalID string `json:"terminal_id"`
+type HoldSession struct {
+	ID         string         `gorm:"type:uuid;primaryKey" json:"id"`
+	StoreType  string         `json:"storeType"`
+	TerminalID string         `json:"terminalId"`
+	Payload    datatypes.JSON `json:"payload"`
+	Total      float64        `json:"total"`
+	Status     HoldStatus     `json:"status"`
+	CreatedAt  time.Time      `json:"createdAt"`
+	UpdatedAt  time.Time      `json:"updatedAt"`
+}
 
-	Payload datatypes.JSON `json:"payload"`
-	Total   float64        `json:"total"`
-
-	Status string `json:"status"`
-
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+func (HoldSession) TableName() string {
+	return "pos_hold_sessions"
 }

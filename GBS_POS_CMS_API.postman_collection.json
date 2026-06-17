@@ -197,7 +197,7 @@
           ]
         },
         {
-          "name": "POS Hold",
+          "name": "Hold",
           "item": [
             {
               "name": "Create Hold",
@@ -222,7 +222,7 @@
                   "host": ["{{pos_base_url}}"],
                   "path": ["v1", "pos", "hold"]
                 },
-                "description": "Hold creates temporary POS transaction snapshot."
+                "description": "Create an ACTIVE hold session with storeType, terminalId, payload, and total."
               }
             },
             {
@@ -264,7 +264,7 @@
                   "host": ["{{pos_base_url}}"],
                   "path": ["v1", "pos", "hold", "{{hold_id}}"]
                 },
-                "description": "Get a POS hold snapshot by ID."
+                "description": "Get a hold snapshot by ID."
               }
             },
             {
@@ -300,7 +300,7 @@
                   "host": ["{{pos_base_url}}"],
                   "path": ["v1", "pos", "hold", "{{hold_id}}"]
                 },
-                "description": "Delete an ACTIVE POS hold. Resumed hold cannot be deleted."
+                "description": "Delete an ACTIVE hold. Resumed hold cannot be deleted."
               }
             }
           ]

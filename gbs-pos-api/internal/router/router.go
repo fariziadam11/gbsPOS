@@ -59,7 +59,7 @@ type Handlers struct {
 	Customer       *handler.CustomerHandler
 	Dashboard      *handler.DashboardHandler
 	ProductVariant *handler.ProductVariantHandler
-	Hold           *handler.PosHoldHandler
+	Hold           *handler.HoldHandler
 }
 
 func Setup(
@@ -95,7 +95,7 @@ func Setup(
 	setupCustomerRoutes(auth, h.Customer)
 	setupDashboardRoutes(auth, h.Dashboard)
 	setupVariantRoutes(auth, h.ProductVariant)
-	setupPosHoldRoutes(auth, h.Hold)
+	setupHoldRoutes(auth, h.Hold)
 
 	return r
 }

@@ -5,14 +5,14 @@ import (
 	"time"
 )
 
-type CreatePosHoldRequest struct {
+type CreateHoldRequest struct {
 	StoreType  string          `json:"storeType"  binding:"required"`
 	TerminalID string          `json:"terminalId" binding:"required"`
 	Payload    json.RawMessage `json:"payload"    binding:"required"`
 	Total      float64         `json:"total"      binding:"required"`
 }
 
-type PosHoldResponse struct {
+type HoldResponse struct {
 	ID         string          `json:"id"`
 	StoreType  string          `json:"storeType"`
 	TerminalID string          `json:"terminalId"`
