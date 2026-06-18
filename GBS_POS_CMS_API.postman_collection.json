@@ -16,12 +16,7 @@
               "name": "Login",
               "request": {
                 "method": "POST",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
                 "body": {
                   "mode": "raw",
                   "raw": "{\n  \"username\": \"admin\",\n  \"password\": \"admin123\"\n}"
@@ -31,7 +26,7 @@
                   "host": ["{{pos_base_url}}"],
                   "path": ["v1", "login"]
                 },
-                "description": "Authenticate and get JWT token. The token is automatically saved to `pos_token` variable."
+                "description": "Authenticate and get JWT token. Token auto-saved to `pos_token`."
               },
               "event": [
                 {
@@ -52,21 +47,284 @@
           ]
         },
         {
+          "name": "Products",
+          "item": [
+            {
+              "name": "List Products",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Authorization", "value": "Bearer {{pos_token}}" }],
+                "url": {
+                  "raw": "{{pos_base_url}}/v1/products?storeType=RETAIL&lastSync=0",
+                  "host": ["{{pos_base_url}}"],
+                  "path": ["v1", "products"],
+                  "query": [
+                    { "key": "storeType", "value": "RETAIL" },
+                    { "key": "category", "value": "", "disabled": true },
+                    { "key": "lastSync", "value": "0" }
+                  ]
+                },
+                "description": "List products. Optional: storeType, category, lastSync. Returns X-Last-Sync header."
+              }
+            },
+            {
+              "name": "Get Product",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Authorization", "value": "Bearer {{pos_token}}" }],
+                "url": {
+                  "raw": "{{pos_base_url}}/v1/products/1",
+                  "host": ["{{pos_base_url}}"],
+                  "path": ["v1", "products", "1"]
+                },
+                "description": "Get a single product by ID. Returns product with discount and finalPrice."
+              }
+            },
+            {
+              "name": "Get Low Stock Products",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Authorization", "value": "Bearer {{pos_token}}" }],
+                "url": {
+                  "raw": "{{pos_base_url}}/v1/products/low-stock",
+                  "host": ["{{pos_base_url}}"],
+                  "path": ["v1", "products", "low-stock"]
+                },
+                "description": "List products where stockQuantity <= lowStockThreshold."
+              }
+            },
+            {
+              "name": "Create Product",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Authorization", "value": "Bearer {{pos_token}}" },
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Teh Botol\",\n  \"price\": 5000.00,\n  \"category\": \"Beverages\",\n  \"imageUrl\": \"https://example.com/teh-botol.jpg\",\n  \"storeType\": \"RETAIL\",\n  \"stockQuantity\": 100,\n  \"lowStockThreshold\": 10\n}"
+                },
+                "url": {
+                  "raw": "{{pos_base_url}}/v1/products",
+                  "host": ["{{pos_base_url}}"],
+                  "path": ["v1", "products"]
+                },
+                "description": "Create a new product. ADMIN only. Returns 201 Created."
+              }
+            },
+            {
+              "name": "Update Product",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  { "key": "Authorization", "value": "Bearer {{pos_token}}" },
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Chitato Rasa Sapi Panggang\",\n  \"price\": 12000.00,\n  \"category\": \"Snacks\",\n  \"imageUrl\": \"https://images.unsplash.com/photo-1621939514649-28b12e81658b\",\n  \"storeType\": \"RETAIL\",\n  \"stockQuantity\": 50,\n  \"lowStockThreshold\": 5\n}"
+                },
+                "url": {
+                  "raw": "{{pos_base_url}}/v1/products/1",
+                  "host": ["{{pos_base_url}}"],
+                  "path": ["v1", "products", "1"]
+                },
+                "description": "Update an existing product. ADMIN only."
+              }
+            },
+            {
+              "name": "Delete Product",
+              "request": {
+                "method": "DELETE",
+                "header": [{ "key": "Authorization", "value": "Bearer {{pos_token}}" }],
+                "url": {
+                  "raw": "{{pos_base_url}}/v1/products/1",
+                  "host": ["{{pos_base_url}}"],
+                  "path": ["v1", "products", "1"]
+                },
+                "description": "Delete a product. ADMIN only. Returns 204 No Content."
+              }
+            },
+            {
+              "name": "Adjust Stock",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Authorization", "value": "Bearer {{pos_token}}" },
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"type\": \"IN\",\n  \"quantity\": 50,\n  \"reason\": \"Restock from supplier\"\n}"
+                },
+                "url": {
+                  "raw": "{{pos_base_url}}/v1/products/1/stock",
+                  "host": ["{{pos_base_url}}"],
+                  "path": ["v1", "products", "1", "stock"]
+                },
+                "description": "Adjust product stock. ADMIN only. type: IN | OUT | ADJUSTMENT. Returns updated product."
+              }
+            },
+            {
+              "name": "Get Stock History",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Authorization", "value": "Bearer {{pos_token}}" }],
+                "url": {
+                  "raw": "{{pos_base_url}}/v1/products/1/stock-history",
+                  "host": ["{{pos_base_url}}"],
+                  "path": ["v1", "products", "1", "stock-history"]
+                },
+                "description": "Get stock adjustment history for a product."
+              }
+            },
+            {
+              "name": "Import Products (CSV)",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Authorization", "value": "Bearer {{pos_token}}" }],
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    { "key": "file", "type": "file", "src": "/path/to/products.csv", "description": "CSV file with columns: name, price, category, imageUrl, storeType, stockQuantity, lowStockThreshold" }
+                  ]
+                },
+                "url": {
+                  "raw": "{{pos_base_url}}/v1/products/import",
+                  "host": ["{{pos_base_url}}"],
+                  "path": ["v1", "products", "import"]
+                },
+                "description": "Bulk import products from CSV. ADMIN only. Returns { success, failed, errors }."
+              }
+            },
+            {
+              "name": "Export Products (CSV)",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Authorization", "value": "Bearer {{pos_token}}" }],
+                "url": {
+                  "raw": "{{pos_base_url}}/v1/products/export?storeType=RETAIL",
+                  "host": ["{{pos_base_url}}"],
+                  "path": ["v1", "products", "export"],
+                  "query": [{ "key": "storeType", "value": "RETAIL" }]
+                },
+                "description": "Export all products as CSV download. ADMIN only."
+              }
+            }
+          ]
+        },
+        {
+          "name": "Product Variants",
+          "item": [
+            {
+              "name": "List Variants",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Authorization", "value": "Bearer {{pos_token}}" }],
+                "url": {
+                  "raw": "{{pos_base_url}}/v1/products/1/variants",
+                  "host": ["{{pos_base_url}}"],
+                  "path": ["v1", "products", "1", "variants"]
+                },
+                "description": "List all variants for a product."
+              }
+            },
+            {
+              "name": "Create Variant",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Authorization", "value": "Bearer {{pos_token}}" },
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"sku\": \"CHIT-BBQ-75G\",\n  \"name\": \"BBQ 75g\",\n  \"attributes\": { \"flavor\": \"BBQ\", \"weight\": \"75g\" },\n  \"price\": 12000,\n  \"stockQuantity\": 100,\n  \"lowStockThreshold\": 10,\n  \"isActive\": true,\n  \"sortOrder\": 1\n}"
+                },
+                "url": {
+                  "raw": "{{pos_base_url}}/v1/products/1/variants",
+                  "host": ["{{pos_base_url}}"],
+                  "path": ["v1", "products", "1", "variants"]
+                },
+                "description": "Create a variant for a product. ADMIN only."
+              }
+            },
+            {
+              "name": "Update Variant",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  { "key": "Authorization", "value": "Bearer {{pos_token}}" },
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"sku\": \"CHIT-BBQ-75G-V2\",\n  \"name\": \"BBQ 75g Updated\",\n  \"price\": 13000,\n  \"stockQuantity\": 80,\n  \"isActive\": true\n}"
+                },
+                "url": {
+                  "raw": "{{pos_base_url}}/v1/variants/1",
+                  "host": ["{{pos_base_url}}"],
+                  "path": ["v1", "variants", "1"]
+                },
+                "description": "Update a variant by variant ID. ADMIN only."
+              }
+            },
+            {
+              "name": "Delete Variant",
+              "request": {
+                "method": "DELETE",
+                "header": [{ "key": "Authorization", "value": "Bearer {{pos_token}}" }],
+                "url": {
+                  "raw": "{{pos_base_url}}/v1/variants/1",
+                  "host": ["{{pos_base_url}}"],
+                  "path": ["v1", "variants", "1"]
+                },
+                "description": "Delete a variant by variant ID. ADMIN only. Returns 204."
+              }
+            }
+          ]
+        },
+        {
           "name": "Discounts",
           "item": [
+            {
+              "name": "List Discounts",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Authorization", "value": "Bearer {{pos_token}}" }],
+                "url": {
+                  "raw": "{{pos_base_url}}/v1/discounts?scope=PRODUCT&status=ACTIVE",
+                  "host": ["{{pos_base_url}}"],
+                  "path": ["v1", "discounts"],
+                  "query": [
+                    { "key": "scope", "value": "PRODUCT", "disabled": true },
+                    { "key": "status", "value": "ACTIVE", "disabled": true }
+                  ]
+                },
+                "description": "List all discounts. Optional filters: scope (PRODUCT|TRANSACTION|VOUCHER), status."
+              }
+            },
+            {
+              "name": "Get Discount",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Authorization", "value": "Bearer {{pos_token}}" }],
+                "url": {
+                  "raw": "{{pos_base_url}}/v1/discounts/1",
+                  "host": ["{{pos_base_url}}"],
+                  "path": ["v1", "discounts", "1"]
+                },
+                "description": "Get discount by ID. Returns scope, productId, voucherCode, minTransaction, type, value, startDate, endDate, status, effectiveStatus."
+              }
+            },
             {
               "name": "Create Product Discount",
               "request": {
                 "method": "POST",
                 "header": [
-                  {
-                    "key": "Authorization",
-                    "value": "Bearer {{pos_token}}"
-                  },
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
+                  { "key": "Authorization", "value": "Bearer {{pos_token}}" },
+                  { "key": "Content-Type", "value": "application/json" }
                 ],
                 "body": {
                   "mode": "raw",
@@ -77,7 +335,7 @@
                   "host": ["{{pos_base_url}}"],
                   "path": ["v1", "discounts"]
                 },
-                "description": "Create a PRODUCT discount attached to a product. Only one active/pending product discount can overlap for the same product."
+                "description": "Create PRODUCT discount. Only one active/pending product discount can overlap per product. ADMIN only."
               }
             },
             {
@@ -85,14 +343,8 @@
               "request": {
                 "method": "POST",
                 "header": [
-                  {
-                    "key": "Authorization",
-                    "value": "Bearer {{pos_token}}"
-                  },
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
+                  { "key": "Authorization", "value": "Bearer {{pos_token}}" },
+                  { "key": "Content-Type", "value": "application/json" }
                 ],
                 "body": {
                   "mode": "raw",
@@ -103,7 +355,7 @@
                   "host": ["{{pos_base_url}}"],
                   "path": ["v1", "discounts"]
                 },
-                "description": "Create a TRANSACTION discount. Multiple active transaction discounts can exist; pricing chooses the highest monetary discount."
+                "description": "Create TRANSACTION discount. Pricing picks the highest monetary discount. ADMIN only."
               }
             },
             {
@@ -111,14 +363,8 @@
               "request": {
                 "method": "POST",
                 "header": [
-                  {
-                    "key": "Authorization",
-                    "value": "Bearer {{pos_token}}"
-                  },
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
+                  { "key": "Authorization", "value": "Bearer {{pos_token}}" },
+                  { "key": "Content-Type", "value": "application/json" }
                 ],
                 "body": {
                   "mode": "raw",
@@ -129,25 +375,7 @@
                   "host": ["{{pos_base_url}}"],
                   "path": ["v1", "discounts"]
                 },
-                "description": "Create a VOUCHER discount. Voucher code is evaluated independently; pricing chooses the highest monetary discount for the provided code."
-              }
-            },
-            {
-              "name": "Get Discount",
-              "request": {
-                "method": "GET",
-                "header": [
-                  {
-                    "key": "Authorization",
-                    "value": "Bearer {{pos_token}}"
-                  }
-                ],
-                "url": {
-                  "raw": "{{pos_base_url}}/v1/discounts/1",
-                  "host": ["{{pos_base_url}}"],
-                  "path": ["v1", "discounts", "1"]
-                },
-                "description": "Get a discount by ID. Response includes scope, productId, voucherCode, minTransaction, type, value, startDate, endDate, status, and effectiveStatus."
+                "description": "Create VOUCHER discount. Applied when voucher code is provided at checkout. ADMIN only."
               }
             },
             {
@@ -155,14 +383,8 @@
               "request": {
                 "method": "PUT",
                 "header": [
-                  {
-                    "key": "Authorization",
-                    "value": "Bearer {{pos_token}}"
-                  },
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
+                  { "key": "Authorization", "value": "Bearer {{pos_token}}" },
+                  { "key": "Content-Type", "value": "application/json" }
                 ],
                 "body": {
                   "mode": "raw",
@@ -173,25 +395,71 @@
                   "host": ["{{pos_base_url}}"],
                   "path": ["v1", "discounts", "1"]
                 },
-                "description": "Update discount fields. PRODUCT uses productId; TRANSACTION uses minTransaction; VOUCHER uses voucherCode and optional minTransaction."
+                "description": "Update discount. PRODUCT uses productId; TRANSACTION uses minTransaction; VOUCHER uses voucherCode. ADMIN only."
+              }
+            },
+            {
+              "name": "Stop Discount",
+              "request": {
+                "method": "PATCH",
+                "header": [{ "key": "Authorization", "value": "Bearer {{pos_token}}" }],
+                "url": {
+                  "raw": "{{pos_base_url}}/v1/discounts/1/stop",
+                  "host": ["{{pos_base_url}}"],
+                  "path": ["v1", "discounts", "1", "stop"]
+                },
+                "description": "Stop an ACTIVE discount immediately (sets effectiveStatus to STOPPED). ADMIN only."
+              }
+            },
+            {
+              "name": "Cancel Discount",
+              "request": {
+                "method": "PATCH",
+                "header": [{ "key": "Authorization", "value": "Bearer {{pos_token}}" }],
+                "url": {
+                  "raw": "{{pos_base_url}}/v1/discounts/1/cancel",
+                  "host": ["{{pos_base_url}}"],
+                  "path": ["v1", "discounts", "1", "cancel"]
+                },
+                "description": "Cancel a PENDING discount before it starts. ADMIN only."
               }
             },
             {
               "name": "Delete Discount",
               "request": {
                 "method": "DELETE",
-                "header": [
-                  {
-                    "key": "Authorization",
-                    "value": "Bearer {{pos_token}}"
-                  }
-                ],
+                "header": [{ "key": "Authorization", "value": "Bearer {{pos_token}}" }],
                 "url": {
                   "raw": "{{pos_base_url}}/v1/discounts/1",
                   "host": ["{{pos_base_url}}"],
                   "path": ["v1", "discounts", "1"]
                 },
-                "description": "Delete a discount by ID. Returns 204 No Content."
+                "description": "Delete a discount by ID. ADMIN only. Returns 204 No Content."
+              }
+            }
+          ]
+        },
+        {
+          "name": "Pricing",
+          "item": [
+            {
+              "name": "Calculate Pricing",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Authorization", "value": "Bearer {{pos_token}}" },
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"items\": [\n    { \"productId\": 1, \"qty\": 2 },\n    { \"productId\": 2, \"qty\": 3 }\n  ],\n  \"subtotal\": 33500.00,\n  \"voucherCode\": \"PROMO10\"\n}"
+                },
+                "url": {
+                  "raw": "{{pos_base_url}}/v1/pricing/calculate",
+                  "host": ["{{pos_base_url}}"],
+                  "path": ["v1", "pricing", "calculate"]
+                },
+                "description": "Calculate final pricing with product/transaction/voucher discounts applied. Returns per-item breakdown and totals."
               }
             }
           ]
@@ -204,47 +472,46 @@
               "request": {
                 "method": "POST",
                 "header": [
-                  {
-                    "key": "Authorization",
-                    "value": "Bearer {{pos_token}}"
-                  },
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
+                  { "key": "Authorization", "value": "Bearer {{pos_token}}" },
+                  { "key": "Content-Type", "value": "application/json" }
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"storeType\": \"RETAIL\",\n  \"terminalId\": \"POS-001\",\n  \"payload\": {\n    \"items\": [\n      {\n        \"productId\": 1,\n        \"name\": \"Chitato\",\n        \"qty\": 1,\n        \"price\": 10000\n      }\n    ]\n  },\n  \"total\": 10000\n}"
+                  "raw": "{\n  \"storeType\": \"RETAIL\",\n  \"terminalId\": \"POS-001\",\n  \"payload\": {\n    \"items\": [\n      { \"productId\": 1, \"name\": \"Chitato\", \"qty\": 1, \"price\": 10000 }\n    ]\n  },\n  \"total\": 10000\n}"
                 },
                 "url": {
                   "raw": "{{pos_base_url}}/v1/pos/hold",
                   "host": ["{{pos_base_url}}"],
                   "path": ["v1", "pos", "hold"]
                 },
-                "description": "Create an ACTIVE hold session with storeType, terminalId, payload, and total."
-              }
+                "description": "Create an ACTIVE hold session."
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "var jsonData = pm.response.json();",
+                      "if (jsonData.success && jsonData.data && jsonData.data.id) {",
+                      "    pm.collectionVariables.set('hold_id', jsonData.data.id);",
+                      "    console.log('Hold ID saved:', jsonData.data.id);",
+                      "}"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ]
             },
             {
-              "name": "List Active Hold",
+              "name": "List Active Holds",
               "request": {
                 "method": "GET",
-                "header": [
-                  {
-                    "key": "Authorization",
-                    "value": "Bearer {{pos_token}}"
-                  }
-                ],
+                "header": [{ "key": "Authorization", "value": "Bearer {{pos_token}}" }],
                 "url": {
                   "raw": "{{pos_base_url}}/v1/pos/hold?terminalId=POS-001",
                   "host": ["{{pos_base_url}}"],
                   "path": ["v1", "pos", "hold"],
-                  "query": [
-                    {
-                      "key": "terminalId",
-                      "value": "POS-001"
-                    }
-                  ]
+                  "query": [{ "key": "terminalId", "value": "POS-001" }]
                 },
                 "description": "List ACTIVE hold sessions for a terminal."
               }
@@ -253,12 +520,7 @@
               "name": "Get Hold Detail",
               "request": {
                 "method": "GET",
-                "header": [
-                  {
-                    "key": "Authorization",
-                    "value": "Bearer {{pos_token}}"
-                  }
-                ],
+                "header": [{ "key": "Authorization", "value": "Bearer {{pos_token}}" }],
                 "url": {
                   "raw": "{{pos_base_url}}/v1/pos/hold/{{hold_id}}",
                   "host": ["{{pos_base_url}}"],
@@ -271,139 +533,26 @@
               "name": "Resume Hold",
               "request": {
                 "method": "POST",
-                "header": [
-                  {
-                    "key": "Authorization",
-                    "value": "Bearer {{pos_token}}"
-                  }
-                ],
+                "header": [{ "key": "Authorization", "value": "Bearer {{pos_token}}" }],
                 "url": {
                   "raw": "{{pos_base_url}}/v1/pos/hold/{{hold_id}}/resume",
                   "host": ["{{pos_base_url}}"],
                   "path": ["v1", "pos", "hold", "{{hold_id}}", "resume"]
                 },
-                "description": "Resume changes status ACTIVE -> RESUMED. Only ACTIVE hold can be resumed."
+                "description": "Resume a hold. Changes status ACTIVE -> RESUMED. Only ACTIVE holds can be resumed."
               }
             },
             {
               "name": "Delete Hold",
               "request": {
                 "method": "DELETE",
-                "header": [
-                  {
-                    "key": "Authorization",
-                    "value": "Bearer {{pos_token}}"
-                  }
-                ],
+                "header": [{ "key": "Authorization", "value": "Bearer {{pos_token}}" }],
                 "url": {
                   "raw": "{{pos_base_url}}/v1/pos/hold/{{hold_id}}",
                   "host": ["{{pos_base_url}}"],
                   "path": ["v1", "pos", "hold", "{{hold_id}}"]
                 },
-                "description": "Delete an ACTIVE hold. Resumed hold cannot be deleted."
-              }
-            }
-          ]
-        },
-        {
-          "name": "Products",
-          "item": [
-            {
-              "name": "List Products",
-              "request": {
-                "method": "GET",
-                "header": [
-                  {
-                    "key": "Authorization",
-                    "value": "Bearer {{pos_token}}"
-                  }
-                ],
-                "url": {
-                  "raw": "{{pos_base_url}}/v1/products?storeType=RETAIL&lastSync=0",
-                  "host": ["{{pos_base_url}}"],
-                  "path": ["v1", "products"],
-                  "query": [
-                    {
-                      "key": "storeType",
-                      "value": "RETAIL"
-                    },
-                    {
-                      "key": "lastSync",
-                      "value": "0"
-                    }
-                  ]
-                },
-                "description": "List products. Optional filters: storeType, category, lastSync. Returns X-Last-Sync header."
-              }
-            },
-            {
-              "name": "Create Product",
-              "request": {
-                "method": "POST",
-                "header": [
-                  {
-                    "key": "Authorization",
-                    "value": "Bearer {{pos_token}}"
-                  },
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"name\": \"Teh Botol\",\n  \"price\": 5000.00,\n  \"category\": \"Beverages\",\n  \"imageUrl\": \"https://example.com/teh-botol.jpg\",\n  \"storeType\": \"RETAIL\"\n}"
-                },
-                "url": {
-                  "raw": "{{pos_base_url}}/v1/products",
-                  "host": ["{{pos_base_url}}"],
-                  "path": ["v1", "products"]
-                },
-                "description": "Create a new product. ADMIN role only. Returns 201 Created."
-              }
-            },
-            {
-              "name": "Update Product",
-              "request": {
-                "method": "PUT",
-                "header": [
-                  {
-                    "key": "Authorization",
-                    "value": "Bearer {{pos_token}}"
-                  },
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"name\": \"Chitato Rasa Sapi Panggang\",\n  \"price\": 12000.00,\n  \"category\": \"Snacks\",\n  \"imageUrl\": \"https://images.unsplash.com/photo-1621939514649-28b12e81658b\",\n  \"storeType\": \"RETAIL\"\n}"
-                },
-                "url": {
-                  "raw": "{{pos_base_url}}/v1/products/1",
-                  "host": ["{{pos_base_url}}"],
-                  "path": ["v1", "products", "1"]
-                },
-                "description": "Update an existing product. ADMIN role only. Partial updates supported."
-              }
-            },
-            {
-              "name": "Delete Product",
-              "request": {
-                "method": "DELETE",
-                "header": [
-                  {
-                    "key": "Authorization",
-                    "value": "Bearer {{pos_token}}"
-                  }
-                ],
-                "url": {
-                  "raw": "{{pos_base_url}}/v1/products/1",
-                  "host": ["{{pos_base_url}}"],
-                  "path": ["v1", "products", "1"]
-                },
-                "description": "Delete a product. ADMIN role only. Returns 204 No Content."
+                "description": "Delete an ACTIVE hold. RESUMED holds cannot be deleted."
               }
             }
           ]
@@ -415,50 +564,33 @@
               "name": "List Orders",
               "request": {
                 "method": "GET",
-                "header": [
-                  {
-                    "key": "Authorization",
-                    "value": "Bearer {{pos_token}}"
-                  }
-                ],
+                "header": [{ "key": "Authorization", "value": "Bearer {{pos_token}}" }],
                 "url": {
                   "raw": "{{pos_base_url}}/v1/orders?storeType=RETAIL&isVoided=false&isSettled=false",
                   "host": ["{{pos_base_url}}"],
                   "path": ["v1", "orders"],
                   "query": [
-                    {
-                      "key": "storeType",
-                      "value": "RETAIL"
-                    },
-                    {
-                      "key": "isVoided",
-                      "value": "false"
-                    },
-                    {
-                      "key": "isSettled",
-                      "value": "false"
-                    }
+                    { "key": "storeType", "value": "RETAIL" },
+                    { "key": "isVoided", "value": "false" },
+                    { "key": "isSettled", "value": "false" },
+                    { "key": "terminalId", "value": "POS-001", "disabled": true },
+                    { "key": "paymentMethod", "value": "CASH", "disabled": true }
                   ]
                 },
-                "description": "List orders with filters. Sorted by timestamp DESC."
+                "description": "List orders. Filters: storeType, isVoided, isSettled, terminalId, paymentMethod. Sorted by timestamp DESC."
               }
             },
             {
               "name": "Get Order",
               "request": {
                 "method": "GET",
-                "header": [
-                  {
-                    "key": "Authorization",
-                    "value": "Bearer {{pos_token}}"
-                  }
-                ],
+                "header": [{ "key": "Authorization", "value": "Bearer {{pos_token}}" }],
                 "url": {
                   "raw": "{{pos_base_url}}/v1/orders/A1B2C3D4",
                   "host": ["{{pos_base_url}}"],
                   "path": ["v1", "orders", "A1B2C3D4"]
                 },
-                "description": "Get single order by ID."
+                "description": "Get a single order by ID."
               }
             },
             {
@@ -466,25 +598,39 @@
               "request": {
                 "method": "POST",
                 "header": [
-                  {
-                    "key": "Authorization",
-                    "value": "Bearer {{pos_token}}"
-                  },
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
+                  { "key": "Authorization", "value": "Bearer {{pos_token}}" },
+                  { "key": "Content-Type", "value": "application/json" }
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"id\": \"A1B2C3D4\",\n  \"items\": [\n    {\n      \"productId\": 1,\n      \"productName\": \"Chitato\",\n      \"productPrice\": 11500.00,\n      \"qty\": 2,\n      \"subtotal\": 23000.00\n    },\n    {\n      \"productId\": 2,\n      \"productName\": \"Indomie Goreng\",\n      \"productPrice\": 3500.00,\n      \"qty\": 3,\n      \"subtotal\": 10500.00\n    }\n  ],\n  \"subtotal\": 33500.00,\n  \"tax\": 3350.00,\n  \"total\": 36850.00,\n  \"paymentMethod\": \"CARD\",\n  \"timestamp\": 1716023456789,\n  \"storeType\": \"RETAIL\",\n  \"terminalId\": \"POS-001\",\n  \"transactionId\": \"TXN-20250115-001\",\n  \"approvalCode\": \"123456\",\n  \"entryMode\": \"CONTACTLESS\",\n  \"maskedAccount\": \"************1234\",\n  \"acqMid\": \"123456789012345\",\n  \"acqTid\": \"TID001\",\n  \"posMessageId\": \"MSG-ABC-123\",\n  \"bankName\": \"BCA\"\n}"
+                  "raw": "{\n  \"id\": \"A1B2C3D4\",\n  \"items\": [\n    {\n      \"productId\": 1,\n      \"productName\": \"Chitato\",\n      \"productPrice\": 11500.00,\n      \"qty\": 2,\n      \"subtotal\": 23000.00,\n      \"variantId\": null,\n      \"variantName\": \"\",\n      \"sku\": \"\"\n    },\n    {\n      \"productId\": 2,\n      \"productName\": \"Indomie Goreng\",\n      \"productPrice\": 3500.00,\n      \"qty\": 3,\n      \"subtotal\": 10500.00\n    }\n  ],\n  \"subtotal\": 33500.00,\n  \"tax\": 3350.00,\n  \"total\": 36850.00,\n  \"paymentMethod\": \"CARD\",\n  \"cashReceived\": null,\n  \"changeAmount\": null,\n  \"timestamp\": 1716023456789,\n  \"storeType\": \"RETAIL\",\n  \"terminalId\": \"POS-001\",\n  \"transactionId\": \"TXN-20250115-001\",\n  \"approvalCode\": \"123456\",\n  \"entryMode\": \"CONTACTLESS\",\n  \"maskedAccount\": \"************1234\",\n  \"acqMid\": \"123456789012345\",\n  \"acqTid\": \"TID001\",\n  \"posMessageId\": \"MSG-ABC-123\",\n  \"bankName\": \"BCA\",\n  \"customerId\": null,\n  \"customerPhone\": \"\",\n  \"customerName\": \"\",\n  \"discountType\": \"\",\n  \"discountValue\": null\n}"
                 },
                 "url": {
                   "raw": "{{pos_base_url}}/v1/orders",
                   "host": ["{{pos_base_url}}"],
                   "path": ["v1", "orders"]
                 },
-                "description": "Create an order (idempotent). Returns 201 on first create, 200 with idempotent:true on duplicate."
+                "description": "Create an order (idempotent by id). Returns 201 on first create, 200 with idempotent:true on duplicate."
+              }
+            },
+            {
+              "name": "Create Order (Cash)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Authorization", "value": "Bearer {{pos_token}}" },
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"id\": \"B2C3D4E5\",\n  \"items\": [\n    {\n      \"productId\": 1,\n      \"productName\": \"Chitato\",\n      \"productPrice\": 11500.00,\n      \"qty\": 1,\n      \"subtotal\": 11500.00\n    }\n  ],\n  \"subtotal\": 11500.00,\n  \"tax\": 1150.00,\n  \"total\": 12650.00,\n  \"paymentMethod\": \"CASH\",\n  \"cashReceived\": 15000.00,\n  \"changeAmount\": 2350.00,\n  \"timestamp\": 1716023456789,\n  \"storeType\": \"RETAIL\",\n  \"terminalId\": \"POS-001\"\n}"
+                },
+                "url": {
+                  "raw": "{{pos_base_url}}/v1/orders",
+                  "host": ["{{pos_base_url}}"],
+                  "path": ["v1", "orders"]
+                },
+                "description": "Create a CASH order with cashReceived and changeAmount."
               }
             },
             {
@@ -492,14 +638,8 @@
               "request": {
                 "method": "POST",
                 "header": [
-                  {
-                    "key": "Authorization",
-                    "value": "Bearer {{pos_token}}"
-                  },
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
+                  { "key": "Authorization", "value": "Bearer {{pos_token}}" },
+                  { "key": "Content-Type", "value": "application/json" }
                 ],
                 "body": {
                   "mode": "raw",
@@ -510,7 +650,7 @@
                   "host": ["{{pos_base_url}}"],
                   "path": ["v1", "sync", "orders"]
                 },
-                "description": "Bulk sync orders from offline queue."
+                "description": "Bulk sync orders from offline queue. Returns { orders, created, existing, failed }."
               }
             },
             {
@@ -518,14 +658,8 @@
               "request": {
                 "method": "PATCH",
                 "header": [
-                  {
-                    "key": "Authorization",
-                    "value": "Bearer {{pos_token}}"
-                  },
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
+                  { "key": "Authorization", "value": "Bearer {{pos_token}}" },
+                  { "key": "Content-Type", "value": "application/json" }
                 ],
                 "body": {
                   "mode": "raw",
@@ -536,35 +670,24 @@
                   "host": ["{{pos_base_url}}"],
                   "path": ["v1", "orders", "A1B2C3D4", "void"]
                 },
-                "description": "Void an order. ADMIN role only. Cannot void settled or already-voided orders."
+                "description": "Void an order. ADMIN only. Cannot void settled or already-voided orders."
               }
             },
             {
               "name": "Unsettled Summary",
               "request": {
                 "method": "GET",
-                "header": [
-                  {
-                    "key": "Authorization",
-                    "value": "Bearer {{pos_token}}"
-                  }
-                ],
+                "header": [{ "key": "Authorization", "value": "Bearer {{pos_token}}" }],
                 "url": {
                   "raw": "{{pos_base_url}}/v1/orders/unsettled/summary?storeType=RETAIL&terminalId=POS-001",
                   "host": ["{{pos_base_url}}"],
                   "path": ["v1", "orders", "unsettled", "summary"],
                   "query": [
-                    {
-                      "key": "storeType",
-                      "value": "RETAIL"
-                    },
-                    {
-                      "key": "terminalId",
-                      "value": "POS-001"
-                    }
+                    { "key": "storeType", "value": "RETAIL" },
+                    { "key": "terminalId", "value": "POS-001" }
                   ]
                 },
-                "description": "Get unsettled order summary grouped by payment method."
+                "description": "Get unsettled order summary grouped by payment method: { count, total, paymentSummary }."
               }
             },
             {
@@ -572,14 +695,8 @@
               "request": {
                 "method": "POST",
                 "header": [
-                  {
-                    "key": "Authorization",
-                    "value": "Bearer {{pos_token}}"
-                  },
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
+                  { "key": "Authorization", "value": "Bearer {{pos_token}}" },
+                  { "key": "Content-Type", "value": "application/json" }
                 ],
                 "body": {
                   "mode": "raw",
@@ -590,7 +707,7 @@
                   "host": ["{{pos_base_url}}"],
                   "path": ["v1", "orders", "settle"]
                 },
-                "description": "Run settlement batch. ADMIN role only. Atomically closes all unsettled, non-voided orders."
+                "description": "Run settlement batch. ADMIN only. Atomically marks all unsettled non-voided orders as settled."
               }
             }
           ]
@@ -602,25 +719,14 @@
               "name": "List Settlements",
               "request": {
                 "method": "GET",
-                "header": [
-                  {
-                    "key": "Authorization",
-                    "value": "Bearer {{pos_token}}"
-                  }
-                ],
+                "header": [{ "key": "Authorization", "value": "Bearer {{pos_token}}" }],
                 "url": {
                   "raw": "{{pos_base_url}}/v1/settlements?limit=5&storeType=RETAIL",
                   "host": ["{{pos_base_url}}"],
                   "path": ["v1", "settlements"],
                   "query": [
-                    {
-                      "key": "limit",
-                      "value": "5"
-                    },
-                    {
-                      "key": "storeType",
-                      "value": "RETAIL"
-                    }
+                    { "key": "limit", "value": "5" },
+                    { "key": "storeType", "value": "RETAIL" }
                   ]
                 },
                 "description": "List recent settlements."
@@ -630,18 +736,175 @@
               "name": "Get Settlement",
               "request": {
                 "method": "GET",
-                "header": [
-                  {
-                    "key": "Authorization",
-                    "value": "Bearer {{pos_token}}"
-                  }
-                ],
+                "header": [{ "key": "Authorization", "value": "Bearer {{pos_token}}" }],
                 "url": {
                   "raw": "{{pos_base_url}}/v1/settlements/SETTLE-1716023456789",
                   "host": ["{{pos_base_url}}"],
                   "path": ["v1", "settlements", "SETTLE-1716023456789"]
                 },
                 "description": "Get settlement detail by ID."
+              }
+            }
+          ]
+        },
+        {
+          "name": "Customers",
+          "item": [
+            {
+              "name": "List Customers",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Authorization", "value": "Bearer {{pos_token}}" }],
+                "url": {
+                  "raw": "{{pos_base_url}}/v1/customers?page=1&limit=20",
+                  "host": ["{{pos_base_url}}"],
+                  "path": ["v1", "customers"],
+                  "query": [
+                    { "key": "page", "value": "1" },
+                    { "key": "limit", "value": "20" },
+                    { "key": "search", "value": "", "disabled": true }
+                  ]
+                },
+                "description": "List all customers. Optional search filter."
+              }
+            },
+            {
+              "name": "Get Customer",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Authorization", "value": "Bearer {{pos_token}}" }],
+                "url": {
+                  "raw": "{{pos_base_url}}/v1/customers/1",
+                  "host": ["{{pos_base_url}}"],
+                  "path": ["v1", "customers", "1"]
+                },
+                "description": "Get customer by ID. Returns customer, totalSpent, totalOrders."
+              }
+            },
+            {
+              "name": "Get Customer by Phone",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Authorization", "value": "Bearer {{pos_token}}" }],
+                "url": {
+                  "raw": "{{pos_base_url}}/v1/customers/phone/08123456789",
+                  "host": ["{{pos_base_url}}"],
+                  "path": ["v1", "customers", "phone", "08123456789"]
+                },
+                "description": "Look up a customer by phone number. Used at POS checkout to attach loyalty."
+              }
+            },
+            {
+              "name": "Create Customer",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Authorization", "value": "Bearer {{pos_token}}" },
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Budi Santoso\",\n  \"phone\": \"08123456789\",\n  \"email\": \"budi@example.com\",\n  \"address\": \"Jl. Merdeka No. 10, Jakarta\"\n}"
+                },
+                "url": {
+                  "raw": "{{pos_base_url}}/v1/customers",
+                  "host": ["{{pos_base_url}}"],
+                  "path": ["v1", "customers"]
+                },
+                "description": "Create a new customer. phone is required and must be unique."
+              }
+            },
+            {
+              "name": "Update Customer",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  { "key": "Authorization", "value": "Bearer {{pos_token}}" },
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Budi Santoso Updated\",\n  \"phone\": \"08123456789\",\n  \"email\": \"budi.new@example.com\",\n  \"address\": \"Jl. Merdeka No. 20, Jakarta\"\n}"
+                },
+                "url": {
+                  "raw": "{{pos_base_url}}/v1/customers/1",
+                  "host": ["{{pos_base_url}}"],
+                  "path": ["v1", "customers", "1"]
+                },
+                "description": "Update customer profile. All fields optional."
+              }
+            },
+            {
+              "name": "Get Customer Orders",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Authorization", "value": "Bearer {{pos_token}}" }],
+                "url": {
+                  "raw": "{{pos_base_url}}/v1/customers/1/orders",
+                  "host": ["{{pos_base_url}}"],
+                  "path": ["v1", "customers", "1", "orders"]
+                },
+                "description": "Get order history for a customer."
+              }
+            }
+          ]
+        },
+        {
+          "name": "Dashboard",
+          "item": [
+            {
+              "name": "Summary",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Authorization", "value": "Bearer {{pos_token}}" }],
+                "url": {
+                  "raw": "{{pos_base_url}}/v1/dashboard/summary?storeType=RETAIL&from=2026-06-01&to=2026-06-30",
+                  "host": ["{{pos_base_url}}"],
+                  "path": ["v1", "dashboard", "summary"],
+                  "query": [
+                    { "key": "storeType", "value": "RETAIL", "disabled": true },
+                    { "key": "from", "value": "2026-06-01" },
+                    { "key": "to", "value": "2026-06-30" }
+                  ]
+                },
+                "description": "Get dashboard summary: totalOrders, totalRevenue, avgOrderValue, cashTotal, cardTotal, qrisTotal, voidedCount."
+              }
+            },
+            {
+              "name": "Revenue Chart",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Authorization", "value": "Bearer {{pos_token}}" }],
+                "url": {
+                  "raw": "{{pos_base_url}}/v1/dashboard/revenue?storeType=RETAIL&from=2026-06-01&to=2026-06-30",
+                  "host": ["{{pos_base_url}}"],
+                  "path": ["v1", "dashboard", "revenue"],
+                  "query": [
+                    { "key": "storeType", "value": "RETAIL", "disabled": true },
+                    { "key": "from", "value": "2026-06-01" },
+                    { "key": "to", "value": "2026-06-30" }
+                  ]
+                },
+                "description": "Get daily revenue data points: [{ date, revenue, orders }]. Used to render revenue chart."
+              }
+            },
+            {
+              "name": "Top Products",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Authorization", "value": "Bearer {{pos_token}}" }],
+                "url": {
+                  "raw": "{{pos_base_url}}/v1/dashboard/top-products?storeType=RETAIL&from=2026-06-01&to=2026-06-30&limit=10",
+                  "host": ["{{pos_base_url}}"],
+                  "path": ["v1", "dashboard", "top-products"],
+                  "query": [
+                    { "key": "storeType", "value": "RETAIL", "disabled": true },
+                    { "key": "from", "value": "2026-06-01" },
+                    { "key": "to", "value": "2026-06-30" },
+                    { "key": "limit", "value": "10" }
+                  ]
+                },
+                "description": "Get top-selling products: [{ productId, productName, totalSold, revenue }]."
               }
             }
           ]
@@ -658,12 +921,7 @@
               "name": "Login",
               "request": {
                 "method": "POST",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
                 "body": {
                   "mode": "raw",
                   "raw": "{\n  \"username\": \"admin\",\n  \"password\": \"admin123\"\n}"
@@ -700,55 +958,18 @@
               "name": "Upload Ad",
               "request": {
                 "method": "POST",
-                "header": [
-                  {
-                    "key": "Authorization",
-                    "value": "Bearer {{cms_token}}"
-                  }
-                ],
+                "header": [{ "key": "Authorization", "value": "Bearer {{cms_token}}" }],
                 "body": {
                   "mode": "formdata",
                   "formdata": [
-                    {
-                      "key": "file",
-                      "type": "file",
-                      "src": "/path/to/your/video.mp4"
-                    },
-                    {
-                      "key": "name",
-                      "value": "Indomie Promo Januari",
-                      "type": "text"
-                    },
-                    {
-                      "key": "storeTypes",
-                      "value": "RETAIL",
-                      "type": "text"
-                    },
-                    {
-                      "key": "playlistOrder",
-                      "value": "0",
-                      "type": "text"
-                    },
-                    {
-                      "key": "startDate",
-                      "value": "2025-01-01",
-                      "type": "text"
-                    },
-                    {
-                      "key": "endDate",
-                      "value": "2025-01-31",
-                      "type": "text"
-                    },
-                    {
-                      "key": "startTime",
-                      "value": "09:00:00",
-                      "type": "text"
-                    },
-                    {
-                      "key": "endTime",
-                      "value": "21:00:00",
-                      "type": "text"
-                    }
+                    { "key": "file", "type": "file", "src": "/path/to/your/video.mp4", "description": "Video file, max 50MB" },
+                    { "key": "name", "value": "Indomie Promo Januari", "type": "text" },
+                    { "key": "storeTypes", "value": "RETAIL", "type": "text", "description": "Comma-separated: RETAIL,FNB" },
+                    { "key": "playlistOrder", "value": "0", "type": "text" },
+                    { "key": "startDate", "value": "2026-01-01", "type": "text" },
+                    { "key": "endDate", "value": "2026-01-31", "type": "text" },
+                    { "key": "startTime", "value": "09:00:00", "type": "text" },
+                    { "key": "endTime", "value": "21:00:00", "type": "text" }
                   ]
                 },
                 "url": {
@@ -763,25 +984,14 @@
               "name": "List Ads",
               "request": {
                 "method": "GET",
-                "header": [
-                  {
-                    "key": "Authorization",
-                    "value": "Bearer {{cms_token}}"
-                  }
-                ],
+                "header": [{ "key": "Authorization", "value": "Bearer {{cms_token}}" }],
                 "url": {
                   "raw": "{{cms_base_url}}/v1/ads?page=1&limit=20",
                   "host": ["{{cms_base_url}}"],
                   "path": ["v1", "ads"],
                   "query": [
-                    {
-                      "key": "page",
-                      "value": "1"
-                    },
-                    {
-                      "key": "limit",
-                      "value": "20"
-                    }
+                    { "key": "page", "value": "1" },
+                    { "key": "limit", "value": "20" }
                   ]
                 },
                 "description": "List all ads with pagination. ADMIN only."
@@ -791,12 +1001,7 @@
               "name": "Get Ad",
               "request": {
                 "method": "GET",
-                "header": [
-                  {
-                    "key": "Authorization",
-                    "value": "Bearer {{cms_token}}"
-                  }
-                ],
+                "header": [{ "key": "Authorization", "value": "Bearer {{cms_token}}" }],
                 "url": {
                   "raw": "{{cms_base_url}}/v1/ads/1",
                   "host": ["{{cms_base_url}}"],
@@ -810,18 +1015,12 @@
               "request": {
                 "method": "PUT",
                 "header": [
-                  {
-                    "key": "Authorization",
-                    "value": "Bearer {{cms_token}}"
-                  },
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
+                  { "key": "Authorization", "value": "Bearer {{cms_token}}" },
+                  { "key": "Content-Type", "value": "application/json" }
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"name\": \"Indomie Promo Februari\",\n  \"storeTypes\": [\"RETAIL\", \"FNB\"],\n  \"playlistOrder\": 1,\n  \"isActive\": true,\n  \"startDate\": \"2025-02-01T00:00:00Z\",\n  \"endDate\": \"2025-02-28T00:00:00Z\",\n  \"startTime\": \"08:00:00\",\n  \"endTime\": \"22:00:00\"\n}"
+                  "raw": "{\n  \"name\": \"Indomie Promo Februari\",\n  \"storeTypes\": [\"RETAIL\", \"FNB\"],\n  \"playlistOrder\": 1,\n  \"isActive\": true,\n  \"startDate\": \"2026-02-01T00:00:00Z\",\n  \"endDate\": \"2026-02-28T00:00:00Z\",\n  \"startTime\": \"08:00:00\",\n  \"endTime\": \"22:00:00\"\n}"
                 },
                 "url": {
                   "raw": "{{cms_base_url}}/v1/ads/1",
@@ -835,12 +1034,7 @@
               "name": "Delete Ad",
               "request": {
                 "method": "DELETE",
-                "header": [
-                  {
-                    "key": "Authorization",
-                    "value": "Bearer {{cms_token}}"
-                  }
-                ],
+                "header": [{ "key": "Authorization", "value": "Bearer {{cms_token}}" }],
                 "url": {
                   "raw": "{{cms_base_url}}/v1/ads/1",
                   "host": ["{{cms_base_url}}"],
@@ -853,12 +1047,7 @@
               "name": "Toggle Ad",
               "request": {
                 "method": "POST",
-                "header": [
-                  {
-                    "key": "Authorization",
-                    "value": "Bearer {{cms_token}}"
-                  }
-                ],
+                "header": [{ "key": "Authorization", "value": "Bearer {{cms_token}}" }],
                 "url": {
                   "raw": "{{cms_base_url}}/v1/ads/1/toggle",
                   "host": ["{{cms_base_url}}"],
@@ -871,42 +1060,27 @@
               "name": "Active Playlist",
               "request": {
                 "method": "GET",
-                "header": [
-                  {
-                    "key": "Authorization",
-                    "value": "Bearer {{cms_token}}"
-                  }
-                ],
+                "header": [{ "key": "Authorization", "value": "Bearer {{cms_token}}" }],
                 "url": {
                   "raw": "{{cms_base_url}}/v1/ads/active?storeType=RETAIL",
                   "host": ["{{cms_base_url}}"],
                   "path": ["v1", "ads", "active"],
-                  "query": [
-                    {
-                      "key": "storeType",
-                      "value": "RETAIL"
-                    }
-                  ]
+                  "query": [{ "key": "storeType", "value": "RETAIL" }]
                 },
-                "description": "Get active playlist for a store type (called by Android POS)."
+                "description": "Get active playlist for a store type. Called by Android POS to fetch scheduled ads."
               }
             },
             {
               "name": "Download Ad",
               "request": {
                 "method": "GET",
-                "header": [
-                  {
-                    "key": "Authorization",
-                    "value": "Bearer {{cms_token}}"
-                  }
-                ],
+                "header": [{ "key": "Authorization", "value": "Bearer {{cms_token}}" }],
                 "url": {
                   "raw": "{{cms_base_url}}/v1/ads/download/1",
                   "host": ["{{cms_base_url}}"],
                   "path": ["v1", "ads", "download", "1"]
                 },
-                "description": "Download video file (binary stream). Called by Android POS."
+                "description": "Download video file as binary stream. Called by Android POS."
               }
             },
             {
@@ -914,14 +1088,8 @@
               "request": {
                 "method": "POST",
                 "header": [
-                  {
-                    "key": "Authorization",
-                    "value": "Bearer {{cms_token}}"
-                  },
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
+                  { "key": "Authorization", "value": "Bearer {{cms_token}}" },
+                  { "key": "Content-Type", "value": "application/json" }
                 ],
                 "body": {
                   "mode": "raw",
@@ -932,7 +1100,134 @@
                   "host": ["{{cms_base_url}}"],
                   "path": ["v1", "ads", "1", "play"]
                 },
-                "description": "Log that an ad was played (optional analytics)."
+                "description": "Log that an ad was played (analytics). Returns 200."
+              }
+            }
+          ]
+        },
+        {
+          "name": "Settings",
+          "item": [
+            {
+              "name": "Get All Settings",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Authorization", "value": "Bearer {{cms_token}}" }],
+                "url": {
+                  "raw": "{{cms_base_url}}/v1/settings",
+                  "host": ["{{cms_base_url}}"],
+                  "path": ["v1", "settings"]
+                },
+                "description": "Get all settings as key-value map. ADMIN only. Returns { settings: { key: value, ... } }."
+              }
+            },
+            {
+              "name": "Update Settings",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  { "key": "Authorization", "value": "Bearer {{cms_token}}" },
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"settings\": {\n    \"store_name\": \"GBS Retail\",\n    \"tax_rate\": \"10\",\n    \"currency\": \"IDR\",\n    \"receipt_footer\": \"Thank you for shopping!\"\n  }\n}"
+                },
+                "url": {
+                  "raw": "{{cms_base_url}}/v1/settings",
+                  "host": ["{{cms_base_url}}"],
+                  "path": ["v1", "settings"]
+                },
+                "description": "Upsert settings as key-value pairs. ADMIN only. Pass only the keys you want to update."
+              }
+            }
+          ]
+        },
+        {
+          "name": "Users",
+          "item": [
+            {
+              "name": "List Users",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Authorization", "value": "Bearer {{cms_token}}" }],
+                "url": {
+                  "raw": "{{cms_base_url}}/v1/users?page=1&limit=20",
+                  "host": ["{{cms_base_url}}"],
+                  "path": ["v1", "users"],
+                  "query": [
+                    { "key": "page", "value": "1" },
+                    { "key": "limit", "value": "20" },
+                    { "key": "role", "value": "CASHIER", "disabled": true }
+                  ]
+                },
+                "description": "List all users. ADMIN only."
+              }
+            },
+            {
+              "name": "Get User",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Authorization", "value": "Bearer {{cms_token}}" }],
+                "url": {
+                  "raw": "{{cms_base_url}}/v1/users/1",
+                  "host": ["{{cms_base_url}}"],
+                  "path": ["v1", "users", "1"]
+                },
+                "description": "Get user by ID. Returns id, username, name, role, gender, createdAt, updatedAt. ADMIN only."
+              }
+            },
+            {
+              "name": "Create User",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Authorization", "value": "Bearer {{cms_token}}" },
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"username\": \"cashier01\",\n  \"password\": \"cashier123\",\n  \"name\": \"Cashier Satu\",\n  \"role\": \"CASHIER\",\n  \"gender\": \"MALE\"\n}"
+                },
+                "url": {
+                  "raw": "{{cms_base_url}}/v1/users",
+                  "host": ["{{cms_base_url}}"],
+                  "path": ["v1", "users"]
+                },
+                "description": "Create a new user. ADMIN only. role: ADMIN | CASHIER. password min 6 chars."
+              }
+            },
+            {
+              "name": "Update User",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  { "key": "Authorization", "value": "Bearer {{cms_token}}" },
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Cashier Satu Updated\",\n  \"role\": \"CASHIER\",\n  \"password\": \"newpassword123\",\n  \"gender\": \"FEMALE\"\n}"
+                },
+                "url": {
+                  "raw": "{{cms_base_url}}/v1/users/1",
+                  "host": ["{{cms_base_url}}"],
+                  "path": ["v1", "users", "1"]
+                },
+                "description": "Update user. ADMIN only. All fields optional. Omit password to keep existing."
+              }
+            },
+            {
+              "name": "Delete User",
+              "request": {
+                "method": "DELETE",
+                "header": [{ "key": "Authorization", "value": "Bearer {{cms_token}}" }],
+                "url": {
+                  "raw": "{{cms_base_url}}/v1/users/1",
+                  "host": ["{{cms_base_url}}"],
+                  "path": ["v1", "users", "1"]
+                },
+                "description": "Delete a user by ID. ADMIN only. Returns 204 No Content."
               }
             }
           ]
@@ -942,25 +1237,10 @@
   ],
   "event": [],
   "variable": [
-    {
-      "key": "pos_base_url",
-      "value": "http://localhost:8080",
-      "type": "string"
-    },
-    {
-      "key": "cms_base_url",
-      "value": "http://localhost:8081",
-      "type": "string"
-    },
-    {
-      "key": "pos_token",
-      "value": "",
-      "type": "string"
-    },
-    {
-      "key": "cms_token",
-      "value": "",
-      "type": "string"
-    }
+    { "key": "pos_base_url", "value": "http://localhost:8080", "type": "string" },
+    { "key": "cms_base_url", "value": "http://localhost:8081", "type": "string" },
+    { "key": "pos_token", "value": "", "type": "string" },
+    { "key": "cms_token", "value": "", "type": "string" },
+    { "key": "hold_id", "value": "", "type": "string" }
   ]
 }
