@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { userManager, extractRoles, parseTokenExpiry } from '../keycloak'
+import { userManager, extractRoles, parseTokenExpiry, getKeycloakLogoutUrl, clientId } from '../keycloak'
 import type { User } from 'oidc-client-ts'
 
 interface StoredUser {
@@ -52,7 +52,7 @@ export const useAuthStore = defineStore('auth', {
       return true
     },
     isAdmin: (state) => state.user?.role === 'ADMIN',
-    username: (state) => state.user?.name || state.user?.username || 'User',
+    username: (state) => state.user?.username || state.user?.name || 'User',
   },
   actions: {
     setUserSession(user: User) {
@@ -90,15 +90,23 @@ export const useAuthStore = defineStore('auth', {
       return user
     },
     async logout() {
+      const idToken = this.idToken
+      this.clearSession()
       try {
-        await userManager.signoutRedirect({
-          id_token_hint: this.idToken || undefined,
-          post_logout_redirect_uri: window.location.origin + '/login',
-        })
-      } catch {
         await userManager.removeUser()
-        this.clearSession()
+      } catch {
+        // ignore
       }
+
+      // Redirect to Keycloak end-session endpoint manually so we control
+      // the exact URL and always clear local state first.
+      const logoutUrl = new URL(getKeycloakLogoutUrl())
+      logoutUrl.searchParams.set('post_logout_redirect_uri', window.location.origin + '/login')
+      logoutUrl.searchParams.set('client_id', clientId)
+      if (idToken) {
+        logoutUrl.searchParams.set('id_token_hint', idToken)
+      }
+      window.location.href = logoutUrl.toString()
     },
     async restoreFromStorage() {
       const token = localStorage.getItem(TOKEN_KEY)

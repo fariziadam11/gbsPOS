@@ -2,7 +2,7 @@ import { UserManager, WebStorageStateStore, type User } from 'oidc-client-ts'
 
 const baseUrl = import.meta.env.VITE_KEYCLOAK_BASE_URL || 'https://auth.armmada.id'
 const realm = import.meta.env.VITE_KEYCLOAK_REALM || 'gbs-pos'
-const clientId = import.meta.env.VITE_KEYCLOAK_CLIENT_ID || 'gbs-cms-web'
+export const clientId = import.meta.env.VITE_KEYCLOAK_CLIENT_ID || 'gbs-cms-web'
 
 export const keycloakAuthority = `${baseUrl}/realms/${realm}`
 
