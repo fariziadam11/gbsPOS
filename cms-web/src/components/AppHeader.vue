@@ -2,11 +2,9 @@
 import Button from 'primevue/button'
 import Menu from 'primevue/menu'
 import { ref } from 'vue'
-import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 
 const authStore = useAuthStore()
-const router = useRouter()
 const userMenu = ref<InstanceType<typeof Menu> | null>(null)
 
 const userMenuItems = ref([
@@ -15,7 +13,6 @@ const userMenuItems = ref([
     icon: 'pi pi-sign-out',
     command: () => {
       authStore.logout()
-      router.push('/login')
     },
   },
 ])
@@ -24,9 +21,8 @@ function toggleUserMenu(event: Event) {
   userMenu.value?.toggle(event)
 }
 
-function logout() {
-  authStore.logout()
-  router.push('/login')
+async function logout() {
+  await authStore.logout()
 }
 </script>
 

@@ -1,33 +1,23 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import Card from 'primevue/card'
-import InputText from 'primevue/inputtext'
-import Password from 'primevue/password'
 import Button from 'primevue/button'
 import Message from 'primevue/message'
-import { useLogin } from '../composables/useAuth'
-import { getErrorMessage } from '../api/client'
+import { useAuthStore } from '../stores/auth'
 
-const username = ref('')
-const password = ref('')
+const authStore = useAuthStore()
 const errorMsg = ref('')
+const isPending = ref(false)
 
-const { mutate: doLogin, isPending } = useLogin()
-
-function handleLogin() {
+async function handleLogin() {
   errorMsg.value = ''
-  if (!username.value || !password.value) {
-    errorMsg.value = 'Please enter both username and password.'
-    return
+  isPending.value = true
+  try {
+    await authStore.login()
+  } catch (err) {
+    isPending.value = false
+    errorMsg.value = err instanceof Error ? err.message : 'Failed to start login'
   }
-  doLogin(
-    { username: username.value, password: password.value },
-    {
-      onError: (err) => {
-        errorMsg.value = getErrorMessage(err)
-      },
-    }
-  )
 }
 </script>
 
@@ -42,31 +32,7 @@ function handleLogin() {
       </template>
       <template #subtitle>Sign in to manage ads</template>
       <template #content>
-        <form @submit.prevent="handleLogin" class="login-form">
-          <div class="field">
-            <label for="username">Username</label>
-            <InputText
-              id="username"
-              v-model="username"
-              placeholder="Enter username"
-              :disabled="isPending"
-              autocomplete="username"
-              style="width: 100%"
-            />
-          </div>
-          <div class="field">
-            <label for="password">Password</label>
-            <Password
-              id="password"
-              v-model="password"
-              placeholder="Enter password"
-              :feedback="false"
-              :disabled="isPending"
-              toggleMask
-              style="width: 100%"
-              :inputStyle="{ width: '100%' }"
-            />
-          </div>
+        <div class="login-form">
           <Message
             v-if="errorMsg"
             severity="error"
@@ -76,13 +42,14 @@ function handleLogin() {
             {{ errorMsg }}
           </Message>
           <Button
-            type="submit"
-            label="Sign In"
+            type="button"
+            label="Sign in with Keycloak"
             icon="pi pi-sign-in"
             style="width: 100%"
             :loading="isPending"
+            @click="handleLogin"
           />
-        </form>
+        </div>
       </template>
     </Card>
   </div>
@@ -120,17 +87,5 @@ function handleLogin() {
   display: flex;
   flex-direction: column;
   gap: 16px;
-}
-
-.field {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.field label {
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--p-text-secondary-color);
 }
 </style>
