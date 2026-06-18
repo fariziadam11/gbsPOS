@@ -1,6 +1,7 @@
 package router
 
 import (
+	"gbs-pos-api/internal/config"
 	"gbs-pos-api/internal/handler"
 
 	"github.com/gin-gonic/gin"
@@ -9,7 +10,9 @@ import (
 func setupAuthRoutes(
 	rg *gin.RouterGroup,
 	authHandler *handler.AuthHandler,
+	cfg *config.Config,
 ) {
-
-	rg.POST("/login", authHandler.Login)
+	if !cfg.UseKeycloak() || cfg.EnableDemoAuth {
+		rg.POST("/login", authHandler.Login)
+	}
 }

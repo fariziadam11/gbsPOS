@@ -11,6 +11,7 @@ import (
 	"gbs-cms-api/internal/config"
 	"gbs-cms-api/internal/database"
 	"gbs-cms-api/internal/handler"
+	"gbs-cms-api/internal/model"
 	"gbs-cms-api/internal/repository"
 	"gbs-cms-api/internal/service"
 	"gbs-common/middleware"
@@ -18,6 +19,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 	"github.com/rs/zerolog"
+	"gorm.io/gorm"
 )
 
 func main() {
@@ -69,9 +71,16 @@ func main() {
 
 	v1 := r.Group("/v1")
 	{
-		v1.POST("/login", authHandler.Login)
+		if !cfg.UseKeycloak() || cfg.EnableDemoAuth {
+			v1.POST("/login", authHandler.Login)
+		}
 
-		auth := v1.Group("", middleware.NewAuthMiddleware(cfg.JWTSecret))
+		authMiddleware, err := buildAuthMiddleware(cfg)
+		if err != nil {
+			log.Fatal("failed to build auth middleware: ", err)
+		}
+
+		auth := v1.Group("", authMiddleware)
 		{
 			auth.POST("/ads/upload", middleware.RequireRole("ADMIN"), cmsHandler.UploadAd)
 			auth.GET("/ads", middleware.RequireRole("ADMIN"), cmsHandler.ListAds)
@@ -122,4 +131,37 @@ func main() {
 		log.Fatal("forced shutdown: ", err)
 	}
 	log.Println("CMS API stopped")
+}
+
+func buildAuthMiddleware(cfg *config.Config) (gin.HandlerFunc, error) {
+	if cfg.UseKeycloak() {
+		return middleware.NewCompositeAuthMiddleware(cfg.KeycloakJWKSURL(), cfg.JWTSecret)
+	}
+	return middleware.NewAuthMiddleware(cfg.JWTSecret), nil
+}
+
+func seedData(db *gorm.DB) {
+	var count int64
+	db.Model(&model.User{}).Count(&count)
+	if count > 0 {
+		return
+	}
+	log.Println("CMS seeding data...")
+	users := []model.User{
+		{
+			Username:     "admin",
+			PasswordHash: "$2a$10$uIjrPVsZtsoK01VHa6VC8e0t3O62BpTnF/YomtOLAN0BF087eAah2",
+			Name:         "Admin User",
+			Role:         "ADMIN",
+		},
+		{
+			Username:     "cashier",
+			PasswordHash: "$2a$10$7OgCWELW2gl7lL/dAmzFkeJVf540NN4ZboNCJYawE6to/b.Z5s/G2",
+			Name:         "Cashier User",
+			Role:         "CASHIER",
+		},
+	}
+	for _, u := range users {
+		db.Create(&u)
+	}
 }

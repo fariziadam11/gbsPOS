@@ -62,6 +62,13 @@ type Handlers struct {
 	Hold           *handler.HoldHandler
 }
 
+func buildAuthMiddleware(cfg *config.Config) (gin.HandlerFunc, error) {
+	if cfg.UseKeycloak() {
+		return middleware.NewCompositeAuthMiddleware(cfg.KeycloakJWKSURL(), cfg.JWTSecret)
+	}
+	return middleware.NewAuthMiddleware(cfg.JWTSecret), nil
+}
+
 func Setup(
 	cfg *config.Config,
 	h Handlers,
@@ -81,11 +88,16 @@ func Setup(
 
 	v1 := r.Group("/v1")
 
-	setupAuthRoutes(v1, h.Auth)
+	setupAuthRoutes(v1, h.Auth, cfg)
+
+	authMiddleware, err := buildAuthMiddleware(cfg)
+	if err != nil {
+		panic(err)
+	}
 
 	auth := v1.Group(
 		"",
-		middleware.NewAuthMiddleware(cfg.JWTSecret),
+		authMiddleware,
 	)
 
 	setupProductRoutes(auth, h.Product)
