@@ -52,14 +52,15 @@ const dialogTitle = ref("Add Product");
 const submitting = ref(false);
 const activeTab = ref("0");
 
-const variants = ref<VariantItem[]>([]);
-const variantLoading = ref(false);
-const showVariantDialog = ref(false);
-const editingVariant = ref<VariantItem | null>(null);
-const variantForm = ref<CreateVariantReq>({ name: "", attributes: {}, stockQuantity: 0 });
-const attrKey = ref("");
-const attrValue = ref("");
-const variantSubmitting = ref(false);
+// Variant state
+const variants = ref<VariantItem[]>([])
+const variantLoading = ref(false)
+const showVariantDialog = ref(false)
+const editingVariant = ref<VariantItem | null>(null)
+const variantForm = ref<CreateVariantReq>({ attributes: {}, stockQuantity: 0 })
+const attrKey = ref('')
+const attrValue = ref('')
+const variantSubmitting = ref(false)
 
 const storeTypes = ["RETAIL", "FNB", "OUTFIT"];
 const categories = ["Food", "Beverages", "Electronics", "Groceries"];
@@ -208,42 +209,23 @@ function removeAttribute(key: string) {
 }
 
 function openVariantCreate() {
-  editingVariant.value = null;
-  variantForm.value = { name: "", attributes: {}, stockQuantity: 0 };
-  showVariantDialog.value = true;
+  editingVariant.value = null
+  variantForm.value = { attributes: {}, stockQuantity: 0 }
+  showVariantDialog.value = true
 }
 
 function openVariantEdit(v: VariantItem) {
-  editingVariant.value = v;
-  variantForm.value = {
-    sku: v.sku,
-    name: v.name,
-    attributes: { ...v.attributes },
-    price: v.price,
-    stockQuantity: v.stockQuantity,
-    lowStockThreshold: v.lowStockThreshold,
-    sortOrder: v.sortOrder,
-  };
-  showVariantDialog.value = true;
+  editingVariant.value = v
+  variantForm.value = { sku: v.sku, attributes: { ...v.attributes }, price: v.price, stockQuantity: v.stockQuantity, lowStockThreshold: v.lowStockThreshold, sortOrder: v.sortOrder }
+  showVariantDialog.value = true
 }
 
 function saveVariant() {
-  if (!variantForm.value.name) {
-    toast.add({ severity: "warn", summary: "Validation", detail: "Name required", life: 3000 });
-    return;
-  }
-  if (!editingProduct.value) return;
-  variantSubmitting.value = true;
-  const pid = editingProduct.value.id;
-  const onDone = () => {
-    variantSubmitting.value = false;
-    showVariantDialog.value = false;
-    loadVariants(pid);
-  };
-  const onErr = (err: unknown) => {
-    toast.add({ severity: "error", summary: "Error", detail: getErrorMessage(err), life: 5000 });
-    variantSubmitting.value = false;
-  };
+  if (!editingProduct.value) return
+  variantSubmitting.value = true
+  const pid = editingProduct.value.id
+  const onDone = () => { variantSubmitting.value = false; showVariantDialog.value = false; loadVariants(pid) }
+  const onErr = (err: any) => { toast.add({ severity: 'error', detail: getErrorMessage(err), life: 5000 }); variantSubmitting.value = false }
   if (editingVariant.value) {
     updateVariant(editingVariant.value.id, variantForm.value).then(onDone).catch(onErr);
   } else {
@@ -252,20 +234,13 @@ function saveVariant() {
 }
 
 function confirmDeleteVariant(v: VariantItem) {
+  const label = v.sku || Object.entries(v.attributes).map(([k, val]) => `${k}: ${val}`).join(', ') || `Variant #${v.id}`
   confirm.require({
-    message: `Delete variant "${v.name}"?`,
-    header: "Confirm Delete",
-    icon: "pi pi-exclamation-triangle",
-    rejectLabel: "Cancel",
-    rejectProps: { severity: "secondary", outlined: true },
-    acceptLabel: "Delete",
-    acceptProps: { severity: "danger" },
-    accept: () =>
-      deleteVariant(v.id).then(() => {
-        toast.add({ severity: "success", summary: "Deleted", detail: "Variant deleted", life: 3000 });
-        if (editingProduct.value) loadVariants(editingProduct.value.id);
-      }),
-  });
+    message: `Delete variant "${label}"?`, header: 'Confirm', icon: 'pi pi-exclamation-triangle',
+    rejectLabel: 'Cancel', rejectProps: { severity: 'secondary', outlined: true },
+    acceptLabel: 'Delete', acceptProps: { severity: 'danger' },
+    accept: () => deleteVariant(v.id).then(() => { toast.add({ severity: 'success', detail: 'Variant deleted', life: 3000 }); if (editingProduct.value) loadVariants(editingProduct.value.id) })
+  })
 }
 
 function onImport(event: any) {
@@ -432,7 +407,6 @@ const exportUrl = computed(() => {
               <Button label="Add Variant" icon="pi pi-plus" size="small" @click="openVariantCreate" />
             </div>
             <DataTable :value="variants" :loading="variantLoading" size="small" stripedRows>
-              <Column field="name" header="Name" />
               <Column field="sku" header="SKU" style="width: 100px" />
               <Column header="Attributes" style="width: 150px">
                 <template #body="{ data }"><Chip v-for="(v, k) in data.attributes" :key="k" :label="`${k}:${v}`" style="margin: 2px" /></template>
@@ -492,10 +466,6 @@ const exportUrl = computed(() => {
     <!-- Variant Form Dialog -->
     <Dialog v-model:visible="showVariantDialog" :header="editingVariant ? 'Edit Variant' : 'Add Variant'" :modal="true" :style="{ width: '450px' }">
       <div class="form-grid">
-        <div class="form-field">
-          <label>Name *</label>
-          <InputText v-model="variantForm.name" fluid />
-        </div>
         <div class="form-field">
           <label>SKU</label>
           <InputText v-model="variantForm.sku" fluid />

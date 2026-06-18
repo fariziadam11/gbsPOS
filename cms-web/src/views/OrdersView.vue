@@ -156,6 +156,7 @@ watch(dateRange, (val) => {
         <div class="order-totals">
           <div class="total-row"><span>Subtotal</span><span>{{ formatCurrency(selectedOrder.subtotal) }}</span></div>
           <div class="total-row"><span>Tax (10%)</span><span>{{ formatCurrency(selectedOrder.tax) }}</span></div>
+          <div v-if="selectedOrder.discountAmount" class="total-row"><span>Discount</span><span>-{{ formatCurrency(selectedOrder.discountAmount) }}</span></div>
           <div class="total-row grand"><span>Total</span><span>{{ formatCurrency(selectedOrder.total) }}</span></div>
         </div>
       </div>

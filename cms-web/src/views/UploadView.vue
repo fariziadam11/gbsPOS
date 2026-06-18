@@ -47,7 +47,10 @@ function onFileSelected(event: Event) {
 
 function dateToDateStr(date: Date | null): string | undefined {
   if (!date) return undefined
-  return date.toISOString().split('T')[0]
+  const y = date.getFullYear()
+  const m = String(date.getMonth() + 1).padStart(2, '0')
+  const d = String(date.getDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
 }
 
 function dateToTimeStr(date: Date | null): string | undefined {
@@ -106,7 +109,7 @@ function handleSubmit() {
         detail: 'Ad uploaded successfully.',
         life: 3000,
       })
-      router.push('/')
+      router.push('/ads')
     },
     onError: (err) => {
       toast.add({
@@ -255,7 +258,7 @@ function formatFileSize(bytes: number): string {
               label="Cancel"
               severity="secondary"
               outlined
-              @click="router.push('/')"
+              @click="router.push('/ads')"
             />
             <Button
               type="submit"

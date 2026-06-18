@@ -17,6 +17,12 @@ const router = createRouter({
       meta: { requiresAuth: true },
     },
     {
+      path: '/ads',
+      name: 'ads',
+      component: () => import('../views/AdsView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
       path: '/ads/:id',
       name: 'ad-detail',
       component: () => import('../views/AdDetailView.vue'),

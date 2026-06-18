@@ -2,7 +2,7 @@ package dto
 
 type CreateVariantRequest struct {
 	SKU                string                 `json:"sku"`
-	Name               string                 `json:"name" binding:"required"`
+	Name               *string                `json:"name"`
 	Attributes         map[string]interface{} `json:"attributes"`
 	Price              *float64               `json:"price"`
 	StockQuantity      int                    `json:"stockQuantity"`

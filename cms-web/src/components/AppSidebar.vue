@@ -16,7 +16,7 @@ const navItems = [
   { label: 'Discounts', icon: 'pi pi-tag', route: '/discounts', requiresAdmin: true },
   { label: 'Orders', icon: 'pi pi-receipt', route: '/orders', requiresAdmin: false },
   { label: 'Customers', icon: 'pi pi-users', route: '/customers', requiresAdmin: false },
-  { label: 'Ads', icon: 'pi pi-video', route: '/', hasSubItems: true, requiresAdmin: false },
+  { label: 'Ads', icon: 'pi pi-video', route: '/ads', requiresAdmin: false },
   { label: 'Upload Ad', icon: 'pi pi-upload', route: '/upload', requiresAdmin: true },
   { label: 'Users', icon: 'pi pi-id-card', route: '/users', requiresAdmin: true },
   { label: 'Settings', icon: 'pi pi-cog', route: '/settings', requiresAdmin: true },
@@ -27,7 +27,10 @@ const filteredNavItems = navItems.filter(
 )
 
 function isActive(path: string) {
-  return route.path === path
+  if (path === '/') {
+    return route.path === '/'
+  }
+  return route.path === path || route.path.startsWith(`${path}/`)
 }
 
 function navigateTo(path: string) {

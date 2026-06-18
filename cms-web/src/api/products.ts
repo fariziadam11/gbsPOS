@@ -68,7 +68,6 @@ export interface VariantItem {
   id: number
   productId: number
   sku: string | null
-  name: string
   attributes: Record<string, string>
   price: number | null
   stockQuantity: number
@@ -79,7 +78,6 @@ export interface VariantItem {
 
 export interface CreateVariantReq {
   sku?: string | null
-  name: string
   attributes: Record<string, string>
   price?: number | null
   stockQuantity?: number
