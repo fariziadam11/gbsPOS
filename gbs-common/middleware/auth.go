@@ -11,6 +11,54 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
+func NewCompositeAuthMiddleware(jwksURL, jwtSecret string) (gin.HandlerFunc, error) {
+	keycloakHandler, err := NewKeycloakMiddleware(jwksURL)
+	if err != nil {
+		return nil, err
+	}
+
+	legacyHandler := NewAuthMiddleware(jwtSecret)
+
+	return func(c *gin.Context) {
+		authHeader := c.GetHeader("Authorization")
+		if authHeader == "" {
+			c.AbortWithStatusJSON(
+				http.StatusUnauthorized,
+				response.Error("UNAUTHORIZED", "Missing authorization header"),
+			)
+			return
+		}
+
+		tokenString := strings.TrimPrefix(authHeader, "Bearer ")
+
+		parser := jwt.NewParser()
+		token, _, err := parser.ParseUnverified(tokenString, jwt.MapClaims{})
+		if err != nil {
+			c.AbortWithStatusJSON(
+				http.StatusUnauthorized,
+				response.Error("INVALID_TOKEN", "Invalid token format"),
+			)
+			return
+		}
+
+		alg, _ := token.Header["alg"].(string)
+		if alg == "RS256" {
+			keycloakHandler(c)
+			return
+		}
+
+		if jwtSecret != "" {
+			legacyHandler(c)
+			return
+		}
+
+		c.AbortWithStatusJSON(
+			http.StatusUnauthorized,
+			response.Error("INVALID_TOKEN", "Unsupported token algorithm"),
+		)
+	}, nil
+}
+
 func NewAuthMiddleware(jwtSecret string) gin.HandlerFunc {
 	secret := []byte(jwtSecret)
 	return func(c *gin.Context) {

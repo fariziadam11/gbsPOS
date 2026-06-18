@@ -152,8 +152,16 @@ cat > .env << 'EOF'
 POSTGRES_USER=gbs_prod
 POSTGRES_PASSWORD=<generate_a_32+_char_random_password>
 
-# JWT (must be >= 32 characters; 64 hex chars recommended)
+# GitHub Container Registry owner
+GHCR_OWNER=YOUR_GITHUB_USERNAME
+
+# Keycloak
+KEYCLOAK_BASE_URL=https://auth.armmada.id
+KEYCLOAK_REALM=gbs-pos
+
+# JWT (only required when ENABLE_DEMO_AUTH=true)
 JWT_SECRET=<generate_a_64_char_random_hex>
+ENABLE_DEMO_AUTH=false
 EOF
 ```
 
@@ -329,20 +337,27 @@ curl https://api-cms.yourdomain.com/health
 # Expected: "ok"
 ```
 
-### Login Test
+### Auth Test
+
+If `ENABLE_DEMO_AUTH=true`, the legacy login endpoints are available:
 
 ```bash
 # POS API login
 curl -X POST https://api-pos.yourdomain.com/v1/login \
   -H "Content-Type: application/json" \
   -d '{"username":"admin","password":"admin123"}'
-# Expected: JSON with token
 
 # CMS API login
 curl -X POST https://api-cms.yourdomain.com/v1/login \
   -H "Content-Type: application/json" \
   -d '{"username":"admin","password":"admin123"}'
-# Expected: JSON with token
+```
+
+With Keycloak enabled, log in through the Android app or obtain an access token from Keycloak directly and call a protected endpoint, for example:
+
+```bash
+curl https://api-pos.yourdomain.com/v1/products \
+  -H "Authorization: Bearer <KEYCLOAK_ACCESS_TOKEN>"
 ```
 
 ### Database
@@ -473,7 +488,8 @@ docker exec gbs-pos-api /app/gbs-pos-api migrate up
 
 | Symptom | Likely Cause | Fix |
 |---------|-------------|-----|
-| `JWT_SECRET is required` | `.env` not loaded | Ensure `.env` exists in `/opt/gbs` and `docker-compose.prod.yml` references it |
+| `JWT_SECRET is required` | `.env` not loaded or demo auth misconfigured | Ensure `.env` exists in `/opt/gbs`; if `ENABLE_DEMO_AUTH=true`, `JWT_SECRET` must be >= 32 chars |
+| `Keycloak token validation failed` | JWKS unreachable or wrong realm | Verify `KEYCLOAK_BASE_URL` and `KEYCLOAK_REALM` in `/opt/gbs/.env` and that Keycloak is running |
 | `connection refused` to API | Service not ready | Wait for `depends_on` healthcheck; check `docker logs` |
 | `401 Unauthorized` | Token missing or expired | Ensure `Authorization: Bearer <token>` header is sent |
 | Video preview not loading | CMS download endpoint 401 | Fixed in `VideoPlayer.vue` — fetches blob via Axios with auth |

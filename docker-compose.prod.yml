@@ -31,6 +31,9 @@ services:
       DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/gbs_pos?sslmode=disable
       JWT_SECRET: ${JWT_SECRET}
       JWT_EXPIRY_HOURS: 24
+      KEYCLOAK_BASE_URL: ${KEYCLOAK_BASE_URL}
+      KEYCLOAK_REALM: ${KEYCLOAK_REALM}
+      ENABLE_DEMO_AUTH: ${ENABLE_DEMO_AUTH:-false}
       LOG_LEVEL: info
     volumes:
       - pos-uploads:/app/uploads
@@ -58,6 +61,9 @@ services:
       DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/gbs_pos?sslmode=disable
       JWT_SECRET: ${JWT_SECRET}
       JWT_EXPIRY_HOURS: 24
+      KEYCLOAK_BASE_URL: ${KEYCLOAK_BASE_URL}
+      KEYCLOAK_REALM: ${KEYCLOAK_REALM}
+      ENABLE_DEMO_AUTH: ${ENABLE_DEMO_AUTH:-false}
       UPLOAD_DIR: /app/uploads
       LOG_LEVEL: info
     volumes:

@@ -85,9 +85,16 @@ func main() {
 
 	v1 := r.Group("/v1")
 	{
-		v1.POST("/login", authHandler.Login)
+		if !cfg.UseKeycloak() || cfg.EnableDemoAuth {
+			v1.POST("/login", authHandler.Login)
+		}
 
-		auth := v1.Group("", middleware.NewAuthMiddleware(cfg.JWTSecret))
+		authMiddleware, err := buildAuthMiddleware(cfg)
+		if err != nil {
+			log.Fatal("failed to build auth middleware: ", err)
+		}
+
+		auth := v1.Group("", authMiddleware)
 		{
 			auth.POST("/ads/upload", middleware.RequireRole("ADMIN"), cmsHandler.UploadAd)
 			auth.GET("/ads", middleware.RequireRole("ADMIN"), cmsHandler.ListAds)
@@ -138,6 +145,13 @@ func main() {
 		log.Fatal("forced shutdown: ", err)
 	}
 	log.Println("CMS API stopped")
+}
+
+func buildAuthMiddleware(cfg *config.Config) (gin.HandlerFunc, error) {
+	if cfg.UseKeycloak() {
+		return middleware.NewCompositeAuthMiddleware(cfg.KeycloakJWKSURL(), cfg.JWTSecret)
+	}
+	return middleware.NewAuthMiddleware(cfg.JWTSecret), nil
 }
 
 func seedData(db *gorm.DB) {
