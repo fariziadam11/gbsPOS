@@ -5,6 +5,7 @@ import (
 	"gbs-pos-api/internal/service"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -19,7 +20,9 @@ func NewDashboardHandler(dashboardService *service.DashboardService) *DashboardH
 
 func (h *DashboardHandler) Summary(c *gin.Context) {
 	storeType := c.Query("storeType")
-	summary, err := h.dashboardService.GetSummary(storeType)
+	startDate, endDate := parseDashboardDateRange(c)
+
+	summary, err := h.dashboardService.GetSummary(storeType, startDate, endDate)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, response.Error("INTERNAL_SERVER_ERROR", err.Error()))
 		return
@@ -27,10 +30,26 @@ func (h *DashboardHandler) Summary(c *gin.Context) {
 	c.JSON(http.StatusOK, response.Success(summary))
 }
 
+func parseDashboardDateRange(c *gin.Context) (startDate, endDate *time.Time) {
+	if startStr := c.Query("startDate"); startStr != "" {
+		if parsed, err := time.Parse("2006-01-02", startStr); err == nil {
+			startDate = &parsed
+		}
+	}
+	if endStr := c.Query("endDate"); endStr != "" {
+		if parsed, err := time.Parse("2006-01-02", endStr); err == nil {
+			endDate = &parsed
+		}
+	}
+	return
+}
+
 func (h *DashboardHandler) Revenue(c *gin.Context) {
 	storeType := c.Query("storeType")
+	startDate, endDate := parseDashboardDateRange(c)
 	days, _ := strconv.Atoi(c.DefaultQuery("days", "7"))
-	points, err := h.dashboardService.GetRevenueTrend(storeType, days)
+
+	points, err := h.dashboardService.GetRevenueTrend(storeType, startDate, endDate, days)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, response.Error("INTERNAL_SERVER_ERROR", err.Error()))
 		return

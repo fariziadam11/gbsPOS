@@ -15,13 +15,30 @@ func NewDashboardRepository(db *gorm.DB) *DashboardRepository {
 	return &DashboardRepository{db: db}
 }
 
-func (r *DashboardRepository) GetSummary(storeType string, since time.Time) (*dto.DashboardSummary, error) {
+// dateExpr returns a SQL expression that extracts the date as a YYYY-MM-DD string
+// from the order's business timestamp (milliseconds since epoch).
+func (r *DashboardRepository) dateExpr() string {
+	if r.db.Dialector.Name() == "sqlite" {
+		return "DATE(timestamp / 1000, 'unixepoch')"
+	}
+	return "TO_CHAR(TO_TIMESTAMP(timestamp / 1000)::DATE, 'YYYY-MM-DD')"
+}
+
+func dayBounds(startDate, endDate time.Time) (startMs, endMs int64) {
+	start := startDate.UTC().Truncate(24 * time.Hour)
+	end := endDate.UTC().Truncate(24 * time.Hour).Add(24*time.Hour - time.Millisecond)
+	return start.UnixMilli(), end.UnixMilli()
+}
+
+func (r *DashboardRepository) GetSummary(storeType string, startDate, endDate time.Time) (*dto.DashboardSummary, error) {
 	summary := &dto.DashboardSummary{}
+	startMs, endMs := dayBounds(startDate, endDate)
 
 	q := r.db.Table("orders").
 		Where("is_voided = ?", false).
 		Where("is_settled = ?", true).
-		Where("created_at >= ?", since)
+		Where("timestamp >= ?", startMs).
+		Where("timestamp <= ?", endMs)
 
 	if storeType != "" {
 		q = q.Where("store_type = ?", storeType)
@@ -44,7 +61,8 @@ func (r *DashboardRepository) GetSummary(storeType string, since time.Time) (*dt
 	var voidedCount int64
 	vq := r.db.Table("orders").
 		Where("is_voided = ?", true).
-		Where("created_at >= ?", since)
+		Where("timestamp >= ?", startMs).
+		Where("timestamp <= ?", endMs)
 	if storeType != "" {
 		vq = vq.Where("store_type = ?", storeType)
 	}
@@ -54,8 +72,10 @@ func (r *DashboardRepository) GetSummary(storeType string, since time.Time) (*dt
 	return summary, nil
 }
 
-func (r *DashboardRepository) GetRevenueTrend(storeType string, days int) ([]dto.RevenuePoint, error) {
-	since := time.Now().AddDate(0, 0, -days)
+func (r *DashboardRepository) GetRevenueTrend(storeType string, startDate, endDate time.Time) ([]dto.RevenuePoint, error) {
+	startMs, endMs := dayBounds(startDate, endDate)
+	dateExpr := r.dateExpr()
+
 	var results []struct {
 		Date    string
 		Revenue float64
@@ -63,26 +83,39 @@ func (r *DashboardRepository) GetRevenueTrend(storeType string, days int) ([]dto
 	}
 
 	q := r.db.Table("orders").
-		Select("TO_CHAR(DATE(created_at), 'YYYY-MM-DD') as date, COALESCE(SUM(total), 0) as revenue, COUNT(*) as orders").
+		Select(dateExpr+" as date, COALESCE(SUM(total), 0) as revenue, COUNT(*) as orders").
 		Where("is_voided = ?", false).
-		Where("created_at >= ?", since)
+		Where("timestamp >= ?", startMs).
+		Where("timestamp <= ?", endMs)
 
 	if storeType != "" {
 		q = q.Where("store_type = ?", storeType)
 	}
 
-	if err := q.Group("DATE(created_at)").Order("date ASC").Scan(&results).Error; err != nil {
+	if err := q.Group(dateExpr).Order("date ASC").Scan(&results).Error; err != nil {
 		return nil, err
 	}
 
-	points := make([]dto.RevenuePoint, len(results))
-	for i, r := range results {
-		points[i] = dto.RevenuePoint{
-			Date:    r.Date,
-			Revenue: r.Revenue,
-			Orders:  r.Orders,
+	dataMap := make(map[string]dto.RevenuePoint, len(results))
+	for _, res := range results {
+		dataMap[res.Date] = dto.RevenuePoint{
+			Date:    res.Date,
+			Revenue: res.Revenue,
+			Orders:  res.Orders,
 		}
 	}
+
+	days := int(endDate.Sub(startDate).Hours()/24) + 1
+	points := make([]dto.RevenuePoint, 0, days)
+	for d := startDate; !d.After(endDate); d = d.AddDate(0, 0, 1) {
+		dateKey := d.Format("2006-01-02")
+		if point, ok := dataMap[dateKey]; ok {
+			points = append(points, point)
+		} else {
+			points = append(points, dto.RevenuePoint{Date: dateKey, Revenue: 0, Orders: 0})
+		}
+	}
+
 	return points, nil
 }
 
