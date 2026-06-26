@@ -12,6 +12,7 @@
     "@primevue/themes": "^4.5.4",
     "@tanstack/vue-query": "^5.100.11",
     "axios": "^1.16.1",
+    "chart.js": "^4.5.1",
     "oidc-client-ts": "^3.5.0",
     "pinia": "^3.0.4",
     "primeicons": "^7.0.0",
