@@ -340,6 +340,81 @@
       ]
     },
     {
+      "endpoint": "/pos/v1/discounts/{id}",
+      "method": "PUT",
+      "output_encoding": "no-op",
+      "input_headers": [
+        "Authorization",
+        "Content-Type"
+      ],
+      "backend": [
+        {
+          "host": [
+            "http://pos-api:8080"
+          ],
+          "url_pattern": "/v1/discounts/{id}",
+          "method": "PUT",
+          "encoding": "no-op"
+        }
+      ]
+    },
+    {
+      "endpoint": "/pos/v1/discounts/{id}/stop",
+      "method": "PATCH",
+      "output_encoding": "no-op",
+      "input_headers": [
+        "Authorization",
+        "Content-Type"
+      ],
+      "backend": [
+        {
+          "host": [
+            "http://pos-api:8080"
+          ],
+          "url_pattern": "/v1/discounts/{id}/stop",
+          "method": "PATCH",
+          "encoding": "no-op"
+        }
+      ]
+    },
+    {
+      "endpoint": "/pos/v1/discounts/{id}/cancel",
+      "method": "PATCH",
+      "output_encoding": "no-op",
+      "input_headers": [
+        "Authorization",
+        "Content-Type"
+      ],
+      "backend": [
+        {
+          "host": [
+            "http://pos-api:8080"
+          ],
+          "url_pattern": "/v1/discounts/{id}/cancel",
+          "method": "PATCH",
+          "encoding": "no-op"
+        }
+      ]
+    },
+    {
+      "endpoint": "/pos/v1/discounts/{id}",
+      "method": "DELETE",
+      "output_encoding": "no-op",
+      "input_headers": [
+        "Authorization"
+      ],
+      "backend": [
+        {
+          "host": [
+            "http://pos-api:8080"
+          ],
+          "url_pattern": "/v1/discounts/{id}",
+          "method": "DELETE",
+          "encoding": "no-op"
+        }
+      ]
+    },
+    {
       "endpoint": "/pos/v1/customers",
       "method": "GET",
       "output_encoding": "no-op",
