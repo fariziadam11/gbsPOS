@@ -285,6 +285,61 @@
       ]
     },
     {
+      "endpoint": "/pos/v1/discounts",
+      "method": "GET",
+      "output_encoding": "no-op",
+      "input_headers": [
+        "Authorization"
+      ],
+      "backend": [
+        {
+          "host": [
+            "http://pos-api:8080"
+          ],
+          "url_pattern": "/v1/discounts",
+          "method": "GET",
+          "encoding": "no-op"
+        }
+      ]
+    },
+    {
+      "endpoint": "/pos/v1/discounts/{id}",
+      "method": "GET",
+      "output_encoding": "no-op",
+      "input_headers": [
+        "Authorization"
+      ],
+      "backend": [
+        {
+          "host": [
+            "http://pos-api:8080"
+          ],
+          "url_pattern": "/v1/discounts/{id}",
+          "method": "GET",
+          "encoding": "no-op"
+        }
+      ]
+    },
+    {
+      "endpoint": "/pos/v1/discounts",
+      "method": "POST",
+      "output_encoding": "no-op",
+      "input_headers": [
+        "Authorization",
+        "Content-Type"
+      ],
+      "backend": [
+        {
+          "host": [
+            "http://pos-api:8080"
+          ],
+          "url_pattern": "/v1/discounts",
+          "method": "POST",
+          "encoding": "no-op"
+        }
+      ]
+    },
+    {
       "endpoint": "/pos/v1/customers",
       "method": "GET",
       "output_encoding": "no-op",
