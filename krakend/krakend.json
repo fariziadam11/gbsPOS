@@ -99,6 +99,116 @@
       ]
     },
     {
+      "endpoint": "/cms/v1/ads/{id}",
+      "method": "GET",
+      "output_encoding": "no-op",
+      "input_headers": [
+        "Authorization"
+      ],
+      "backend": [
+        {
+          "host": [
+            "http://cms-api:8081"
+          ],
+          "url_pattern": "/v1/ads/{id}",
+          "method": "GET",
+          "encoding": "no-op"
+        }
+      ]
+    },
+    {
+      "endpoint": "/cms/v1/ads/{id}",
+      "method": "PUT",
+      "output_encoding": "no-op",
+      "input_headers": [
+        "Authorization",
+        "Content-Type"
+      ],
+      "backend": [
+        {
+          "host": [
+            "http://cms-api:8081"
+          ],
+          "url_pattern": "/v1/ads/{id}",
+          "method": "PUT",
+          "encoding": "no-op"
+        }
+      ]
+    },
+    {
+      "endpoint": "/cms/v1/ads/{id}",
+      "method": "DELETE",
+      "output_encoding": "no-op",
+      "input_headers": [
+        "Authorization"
+      ],
+      "backend": [
+        {
+          "host": [
+            "http://cms-api:8081"
+          ],
+          "url_pattern": "/v1/ads/{id}",
+          "method": "DELETE",
+          "encoding": "no-op"
+        }
+      ]
+    },
+    {
+      "endpoint": "/cms/v1/ads/{id}/toggle",
+      "method": "POST",
+      "output_encoding": "no-op",
+      "input_headers": [
+        "Authorization"
+      ],
+      "backend": [
+        {
+          "host": [
+            "http://cms-api:8081"
+          ],
+          "url_pattern": "/v1/ads/{id}/toggle",
+          "method": "POST",
+          "encoding": "no-op"
+        }
+      ]
+    },
+    {
+      "endpoint": "/cms/v1/ads/download/{id}",
+      "method": "GET",
+      "output_encoding": "no-op",
+      "input_headers": [
+        "Authorization"
+      ],
+      "backend": [
+        {
+          "host": [
+            "http://cms-api:8081"
+          ],
+          "url_pattern": "/v1/ads/download/{id}",
+          "method": "GET",
+          "encoding": "no-op"
+        }
+      ]
+    },
+    {
+      "endpoint": "/cms/v1/ads/{id}/play",
+      "method": "POST",
+      "output_encoding": "no-op",
+      "input_headers": [
+        "Authorization",
+        "Content-Type"
+      ],
+      "backend": [
+        {
+          "host": [
+            "http://cms-api:8081"
+          ],
+          "url_pattern": "/v1/ads/{id}/play",
+          "method": "POST",
+          "encoding": "no-op"
+        }
+      ]
+    },
+    {
       "endpoint": "/cms/v1/settings",
       "method": "GET",
       "output_encoding": "no-op",
