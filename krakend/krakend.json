@@ -192,6 +192,99 @@
       ]
     },
     {
+      "endpoint": "/pos/v1/orders",
+      "method": "POST",
+      "output_encoding": "no-op",
+      "input_headers": [
+        "Authorization",
+        "Content-Type"
+      ],
+      "backend": [
+        {
+          "host": [
+            "http://pos-api:8080"
+          ],
+          "url_pattern": "/v1/orders",
+          "method": "POST",
+          "encoding": "no-op"
+        }
+      ]
+    },
+    {
+      "endpoint": "/pos/v1/orders/{id}",
+      "method": "GET",
+      "output_encoding": "no-op",
+      "input_headers": [
+        "Authorization"
+      ],
+      "backend": [
+        {
+          "host": [
+            "http://pos-api:8080"
+          ],
+          "url_pattern": "/v1/orders/{id}",
+          "method": "GET",
+          "encoding": "no-op"
+        }
+      ]
+    },
+    {
+      "endpoint": "/pos/v1/orders/unsettled/summary",
+      "method": "GET",
+      "output_encoding": "no-op",
+      "input_headers": [
+        "Authorization"
+      ],
+      "backend": [
+        {
+          "host": [
+            "http://pos-api:8080"
+          ],
+          "url_pattern": "/v1/orders/unsettled/summary",
+          "method": "GET",
+          "encoding": "no-op"
+        }
+      ]
+    },
+    {
+      "endpoint": "/pos/v1/orders/{id}/void",
+      "method": "PATCH",
+      "output_encoding": "no-op",
+      "input_headers": [
+        "Authorization",
+        "Content-Type"
+      ],
+      "backend": [
+        {
+          "host": [
+            "http://pos-api:8080"
+          ],
+          "url_pattern": "/v1/orders/{id}/void",
+          "method": "PATCH",
+          "encoding": "no-op"
+        }
+      ]
+    },
+    {
+      "endpoint": "/pos/v1/orders/settle",
+      "method": "POST",
+      "output_encoding": "no-op",
+      "input_headers": [
+        "Authorization",
+        "Content-Type"
+      ],
+      "backend": [
+        {
+          "host": [
+            "http://pos-api:8080"
+          ],
+          "url_pattern": "/v1/orders/settle",
+          "method": "POST",
+          "encoding": "no-op"
+        }
+      ]
+    },
+    {
       "endpoint": "/pos/v1/customers",
       "method": "GET",
       "output_encoding": "no-op",
