@@ -78,6 +78,61 @@
           "encoding": "no-op"
         }
       ]
+    },
+    {
+      "endpoint": "/cms/v1/ads/upload",
+      "method": "POST",
+      "output_encoding": "no-op",
+      "input_headers": [
+        "Authorization",
+        "Content-Type"
+      ],
+      "backend": [
+        {
+          "host": [
+            "http://cms-api:8081"
+          ],
+          "url_pattern": "/v1/ads/upload",
+          "method": "POST",
+          "encoding": "no-op"
+        }
+      ]
+    },
+    {
+      "endpoint": "/cms/v1/settings",
+      "method": "GET",
+      "output_encoding": "no-op",
+      "input_headers": [
+        "Authorization"
+      ],
+      "backend": [
+        {
+          "host": [
+            "http://cms-api:8081"
+          ],
+          "url_pattern": "/v1/settings",
+          "method": "GET",
+          "encoding": "no-op"
+        }
+      ]
+    },
+    {
+      "endpoint": "/cms/v1/users",
+      "method": "GET",
+      "output_encoding": "no-op",
+      "input_headers": [
+        "Authorization"
+      ],
+      "backend": [
+        {
+          "host": [
+            "http://cms-api:8081"
+          ],
+          "url_pattern": "/v1/users",
+          "method": "GET",
+          "encoding": "no-op"
+        }
+      ]
     }
   ]
 }
