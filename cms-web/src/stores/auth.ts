@@ -2,6 +2,20 @@ import { defineStore } from 'pinia'
 import { userManager, extractRoles, parseTokenExpiry, getKeycloakLogoutUrl, clientId } from '../keycloak'
 import type { User } from 'oidc-client-ts'
 
+function storeUser(user: User) {
+  const stored = parseUserFromKeycloak(user)
+  localStorage.setItem(TOKEN_KEY, user.access_token)
+  if (user.id_token) {
+    localStorage.setItem(ID_TOKEN_KEY, user.id_token)
+  }
+  localStorage.setItem(USER_KEY, JSON.stringify(stored))
+  const expiry = parseTokenExpiry(user.access_token)
+  if (expiry) {
+    localStorage.setItem(EXPIRES_AT_KEY, String(expiry))
+  }
+  return { token: user.access_token, idToken: user.id_token ?? null, user: stored, expiresAt: expiry }
+}
+
 interface StoredUser {
   username: string
   name: string
@@ -56,20 +70,11 @@ export const useAuthStore = defineStore('auth', {
   },
   actions: {
     setUserSession(user: User) {
-      const stored = parseUserFromKeycloak(user)
-      this.token = user.access_token
-      this.idToken = user.id_token ?? null
-      this.user = stored
-      this.expiresAt = parseTokenExpiry(user.access_token)
-
-      localStorage.setItem(TOKEN_KEY, user.access_token)
-      if (user.id_token) {
-        localStorage.setItem(ID_TOKEN_KEY, user.id_token)
-      }
-      localStorage.setItem(USER_KEY, JSON.stringify(stored))
-      if (this.expiresAt) {
-        localStorage.setItem(EXPIRES_AT_KEY, String(this.expiresAt))
-      }
+      const session = storeUser(user)
+      this.token = session.token
+      this.idToken = session.idToken
+      this.user = session.user
+      this.expiresAt = session.expiresAt
     },
     clearSession() {
       this.token = null
@@ -136,8 +141,23 @@ export const useAuthStore = defineStore('auth', {
         }
       }
     },
+    startTokenSync() {
+      userManager.events.addUserLoaded((user) => {
+        this.setUserSession(user)
+      })
+      userManager.events.addUserUnloaded(() => {
+        this.clearSession()
+      })
+      userManager.events.addAccessTokenExpired(() => {
+        this.clearSession()
+      })
+      userManager.events.addSilentRenewError(() => {
+        this.clearSession()
+      })
+    },
     init() {
       this.restoreFromStorage()
+      this.startTokenSync()
     },
   },
 })

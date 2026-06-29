@@ -132,17 +132,20 @@ function formatFileSize(bytes: number): string {
 </script>
 
 <template>
-  <div class="upload-page">
-    <div class="page-header">
-      <h1 class="page-title">Upload New Ad</h1>
-      <p class="page-subtitle">Upload a video advertisement and configure its settings</p>
+  <div class="flex flex-column gap-3 lg:gap-4">
+    <div class="flex flex-column md:flex-row md:align-items-start justify-content-between gap-3">
+      <div>
+        <h1 class="text-2xl lg:text-3xl font-semibold text-color m-0">Upload New Ad</h1>
+        <p class="text-sm text-color-secondary mt-1 mb-0">Upload a video advertisement and configure its settings</p>
+      </div>
+      <div class="flex flex-wrap align-items-center gap-2"></div>
     </div>
 
-    <Card class="upload-card">
+    <Card>
       <template #content>
-        <form @submit.prevent="handleSubmit" class="upload-form">
-          <div class="form-section">
-            <label class="section-label">Video File</label>
+        <form @submit.prevent="handleSubmit" class="flex flex-column gap-4">
+          <div class="flex flex-column gap-2">
+            <label class="text-xs font-semibold uppercase text-color-secondary">Video File</label>
             <input
               ref="fileInputRef"
               type="file"
@@ -169,90 +172,104 @@ function formatFileSize(bytes: number): string {
             </div>
           </div>
 
-          <div class="form-section">
-            <label class="section-label">Ad Name</label>
+          <div class="flex flex-column gap-2">
+            <label class="text-xs font-semibold uppercase text-color-secondary">Ad Name</label>
             <InputText
               v-model="form.name"
               placeholder="Enter ad name"
-              style="width: 100%"
+              class="w-full"
             />
           </div>
 
-          <div class="form-row">
-            <div class="form-section flex-1">
-              <label class="section-label">Store Types</label>
-              <MultiSelect
-                v-model="form.storeTypes"
-                :options="storeTypeOptions"
-                placeholder="Select store types"
-                display="chip"
-                style="width: 100%"
-              />
+          <div class="flex flex-wrap gap-3">
+            <div class="flex-1" style="min-width: 200px">
+              <div class="flex flex-column gap-2">
+                <label class="text-xs font-semibold uppercase text-color-secondary">Store Types</label>
+                <MultiSelect
+                  v-model="form.storeTypes"
+                  :options="storeTypeOptions"
+                  placeholder="Select store types"
+                  display="chip"
+                  class="w-full"
+                />
+              </div>
             </div>
-            <div class="form-section flex-1" style="min-width: 140px">
-              <label class="section-label">Playlist Order</label>
-              <InputNumber
-                v-model="form.playlistOrder"
-                :min="0"
-                style="width: 100%"
-              />
+            <div class="flex-1" style="min-width: 140px">
+              <div class="flex flex-column gap-2">
+                <label class="text-xs font-semibold uppercase text-color-secondary">Playlist Order</label>
+                <InputNumber
+                  v-model="form.playlistOrder"
+                  :min="0"
+                  class="w-full"
+                />
+              </div>
             </div>
-            <div class="form-section flex-none">
-              <label class="section-label">Active</label>
-              <div class="switch-wrapper">
-                <ToggleSwitch v-model="form.isActive" />
-                <span class="switch-label">{{ form.isActive ? 'Yes' : 'No' }}</span>
+            <div class="flex-none" style="min-width: 120px">
+              <div class="flex flex-column gap-2">
+                <label class="text-xs font-semibold uppercase text-color-secondary">Active</label>
+                <div class="flex align-items-center gap-2" style="min-height: 40px">
+                  <ToggleSwitch v-model="form.isActive" />
+                  <span class="text-sm font-medium text-color">{{ form.isActive ? 'Yes' : 'No' }}</span>
+                </div>
               </div>
             </div>
           </div>
 
-          <div class="form-row">
-            <div class="form-section flex-1">
-              <label class="section-label">Schedule Start Date</label>
-              <DatePicker
-                v-model="form.startDate"
-                dateFormat="yy-mm-dd"
-                placeholder="Start date"
-                showIcon
-                style="width: 100%"
-              />
+          <div class="flex flex-wrap gap-3">
+            <div class="flex-1" style="min-width: 200px">
+              <div class="flex flex-column gap-2">
+                <label class="text-xs font-semibold uppercase text-color-secondary">Schedule Start Date</label>
+                <DatePicker
+                  v-model="form.startDate"
+                  dateFormat="yy-mm-dd"
+                  placeholder="Start date"
+                  showIcon
+                  class="w-full"
+                />
+              </div>
             </div>
-            <div class="form-section flex-1">
-              <label class="section-label">Schedule End Date</label>
-              <DatePicker
-                v-model="form.endDate"
-                dateFormat="yy-mm-dd"
-                placeholder="End date"
-                showIcon
-                style="width: 100%"
-              />
-            </div>
-          </div>
-
-          <div class="form-row">
-            <div class="form-section flex-1">
-              <label class="section-label">Start Time</label>
-              <DatePicker
-                v-model="form.startTime"
-                timeOnly
-                hourFormat="24"
-                placeholder="Start time"
-                style="width: 100%"
-              />
-            </div>
-            <div class="form-section flex-1">
-              <label class="section-label">End Time</label>
-              <DatePicker
-                v-model="form.endTime"
-                timeOnly
-                hourFormat="24"
-                placeholder="End time"
-                style="width: 100%"
-              />
+            <div class="flex-1" style="min-width: 200px">
+              <div class="flex flex-column gap-2">
+                <label class="text-xs font-semibold uppercase text-color-secondary">Schedule End Date</label>
+                <DatePicker
+                  v-model="form.endDate"
+                  dateFormat="yy-mm-dd"
+                  placeholder="End date"
+                  showIcon
+                  class="w-full"
+                />
+              </div>
             </div>
           </div>
 
-          <div class="form-actions">
+          <div class="flex flex-wrap gap-3">
+            <div class="flex-1" style="min-width: 200px">
+              <div class="flex flex-column gap-2">
+                <label class="text-xs font-semibold uppercase text-color-secondary">Start Time</label>
+                <DatePicker
+                  v-model="form.startTime"
+                  timeOnly
+                  hourFormat="24"
+                  placeholder="Start time"
+                  class="w-full"
+                />
+              </div>
+            </div>
+            <div class="flex-1" style="min-width: 200px">
+              <div class="flex flex-column gap-2">
+                <label class="text-xs font-semibold uppercase text-color-secondary">End Time</label>
+                <DatePicker
+                  v-model="form.endTime"
+                  timeOnly
+                  hourFormat="24"
+                  placeholder="End time"
+                  class="w-full"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div class="flex justify-content-end gap-2 pt-3 border-top-1 surface-border">
             <Button
               type="button"
               label="Cancel"
@@ -274,88 +291,15 @@ function formatFileSize(bytes: number): string {
 </template>
 
 <style scoped>
-.upload-page {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  max-width: 800px;
-}
-
-.page-header {
-  margin-bottom: 4px;
-}
-
-.page-title {
-  margin: 0;
-  font-size: 24px;
-  font-weight: 600;
-}
-
-.page-subtitle {
-  margin: 4px 0 0;
-  color: var(--p-text-secondary-color);
-  font-size: 14px;
-}
-
-.upload-form {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-.form-section {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.section-label {
-  font-size: 13px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  color: var(--p-text-secondary-color);
-}
-
-.form-row {
-  display: flex;
-  gap: 16px;
-  flex-wrap: wrap;
-}
-
-.flex-1 {
-  flex: 1;
-  min-width: 200px;
-}
-
-.flex-none {
-  flex: 0 0 auto;
-  min-width: 120px;
-}
-
-.switch-wrapper {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-height: 40px;
-}
-
-.switch-label {
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--p-text-color);
-  user-select: none;
-}
-
 .file-area {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   gap: 12px;
   padding: 24px;
-  border: 2px dashed var(--p-surface-300);
+  border: 2px dashed light-dark(var(--p-surface-300), var(--p-surface-600));
   border-radius: 10px;
-  background: var(--p-surface-50);
+  background: light-dark(var(--p-surface-50), var(--p-surface-900));
 }
 
 .file-info {
@@ -378,13 +322,5 @@ function formatFileSize(bytes: number): string {
   margin: 0;
   font-size: 13px;
   color: var(--p-text-secondary-color);
-}
-
-.form-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-  padding-top: 12px;
-  border-top: 1px solid var(--p-surface-200);
 }
 </style>

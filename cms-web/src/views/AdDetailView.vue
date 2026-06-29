@@ -158,51 +158,57 @@ function formatFileSize(bytes: number): string {
 </script>
 
 <template>
-  <div class="detail-page">
-    <div class="page-header">
-      <Button icon="pi pi-arrow-left" text label="Back" @click="goBack" />
-      <div v-if="!isLoading && ad && !isEditing" class="header-actions">
-        <Button icon="pi pi-pencil" label="Edit" @click="startEdit" />
+  <div class="flex flex-column gap-3 lg:gap-4">
+    <div class="flex flex-column md:flex-row md:align-items-start justify-content-between gap-3">
+      <div>
+        <h1 class="text-2xl lg:text-3xl font-semibold text-color m-0">Ad Detail</h1>
+        <p class="text-sm text-color-secondary mt-1 mb-0">View and edit advertisement details</p>
       </div>
-      <div v-if="isEditing" class="header-actions">
-        <Button
-          icon="pi pi-check"
-          label="Save"
-          :loading="isSaving"
-          @click="saveEdit"
-        />
-        <Button
-          icon="pi pi-times"
-          label="Cancel"
-          severity="secondary"
-          outlined
-          @click="cancelEdit"
-        />
+      <div class="flex flex-wrap align-items-center gap-2">
+        <Button icon="pi pi-arrow-left" text label="Back" @click="goBack" />
+        <template v-if="!isLoading && ad && !isEditing">
+          <Button icon="pi pi-pencil" label="Edit" @click="startEdit" />
+        </template>
+        <template v-if="isEditing">
+          <Button
+            icon="pi pi-check"
+            label="Save"
+            :loading="isSaving"
+            @click="saveEdit"
+          />
+          <Button
+            icon="pi pi-times"
+            label="Cancel"
+            severity="secondary"
+            outlined
+            @click="cancelEdit"
+          />
+        </template>
       </div>
     </div>
 
-    <div v-if="isLoading" class="loading-state">
+    <div v-if="isLoading" class="flex flex-column align-items-center justify-content-center gap-3 p-8 text-color-secondary">
       <i class="pi pi-spinner pi-spin" style="font-size: 2rem"></i>
       <p>Loading ad details...</p>
     </div>
 
-    <div v-else-if="ad" class="detail-layout">
-      <div class="detail-main">
+    <div v-else-if="ad" class="grid">
+      <div class="col-12 lg:col-8">
         <Card>
           <template #title>
-            <div class="detail-title">
+            <div class="text-xl font-semibold">
               <span v-if="!isEditing">{{ ad.name }}</span>
               <InputText
                 v-else
                 v-model="editForm.name"
                 placeholder="Ad name"
-                style="width: 100%"
+                class="w-full"
               />
             </div>
           </template>
           <template #content>
-            <div class="detail-grid">
-              <div class="detail-field">
+            <div class="grid">
+              <div class="col-12 md:col-6 detail-field">
                 <label>Status</label>
                 <div v-if="!isEditing" class="field-value">
                   <Tag
@@ -213,7 +219,7 @@ function formatFileSize(bytes: number): string {
                 <ToggleSwitch v-else v-model="editForm.isActive" />
               </div>
 
-              <div class="detail-field">
+              <div class="col-12 md:col-6 detail-field">
                 <label>Store Types</label>
                 <div v-if="!isEditing" class="field-value">
                   <Tag
@@ -221,7 +227,7 @@ function formatFileSize(bytes: number): string {
                     :key="st"
                     :value="st"
                     severity="info"
-                    class="store-tag"
+                    class="mr-1 mb-1"
                   />
                 </div>
                 <MultiSelect
@@ -230,11 +236,11 @@ function formatFileSize(bytes: number): string {
                   :options="storeTypeOptions"
                   placeholder="Select store types"
                   display="chip"
-                  style="width: 100%"
+                  class="w-full"
                 />
               </div>
 
-              <div class="detail-field">
+              <div class="col-12 md:col-6 detail-field">
                 <label>Playlist Order</label>
                 <div v-if="!isEditing" class="field-value">
                   {{ ad.playlistOrder }}
@@ -243,18 +249,18 @@ function formatFileSize(bytes: number): string {
                   v-else
                   v-model="editForm.playlistOrder"
                   :min="0"
-                  style="width: 100%"
+                  class="w-full"
                 />
               </div>
 
-              <div class="detail-field">
+              <div class="col-12 md:col-6 detail-field">
                 <label>File</label>
                 <div class="field-value">
                   {{ ad.filename }} ({{ formatFileSize(ad.fileSize) }})
                 </div>
               </div>
 
-              <div class="detail-field">
+              <div class="col-12 md:col-6 detail-field">
                 <label>Schedule Start</label>
                 <div v-if="!isEditing" class="field-value">
                   {{ formatDate(ad.startDate) }}
@@ -265,11 +271,11 @@ function formatFileSize(bytes: number): string {
                   dateFormat="yy-mm-dd"
                   placeholder="Start date"
                   showIcon
-                  style="width: 100%"
+                  class="w-full"
                 />
               </div>
 
-              <div class="detail-field">
+              <div class="col-12 md:col-6 detail-field">
                 <label>Schedule End</label>
                 <div v-if="!isEditing" class="field-value">
                   {{ formatDate(ad.endDate) }}
@@ -280,11 +286,11 @@ function formatFileSize(bytes: number): string {
                   dateFormat="yy-mm-dd"
                   placeholder="End date"
                   showIcon
-                  style="width: 100%"
+                  class="w-full"
                 />
               </div>
 
-              <div class="detail-field">
+              <div class="col-12 md:col-6 detail-field">
                 <label>Time Start</label>
                 <div v-if="!isEditing" class="field-value">
                   {{ formatTime(ad.startTime) }}
@@ -295,11 +301,11 @@ function formatFileSize(bytes: number): string {
                   timeOnly
                   hourFormat="24"
                   placeholder="Start time"
-                  style="width: 100%"
+                  class="w-full"
                 />
               </div>
 
-              <div class="detail-field">
+              <div class="col-12 md:col-6 detail-field">
                 <label>Time End</label>
                 <div v-if="!isEditing" class="field-value">
                   {{ formatTime(ad.endTime) }}
@@ -310,18 +316,18 @@ function formatFileSize(bytes: number): string {
                   timeOnly
                   hourFormat="24"
                   placeholder="End time"
-                  style="width: 100%"
+                  class="w-full"
                 />
               </div>
 
-              <div class="detail-field">
+              <div class="col-12 md:col-6 detail-field">
                 <label>Created</label>
                 <div class="field-value">
                   {{ new Date(ad.createdAt).toLocaleString() }}
                 </div>
               </div>
 
-              <div class="detail-field">
+              <div class="col-12 md:col-6 detail-field">
                 <label>Updated</label>
                 <div class="field-value">
                   {{ new Date(ad.updatedAt).toLocaleString() }}
@@ -332,7 +338,7 @@ function formatFileSize(bytes: number): string {
         </Card>
       </div>
 
-      <div class="detail-side">
+      <div class="col-12 lg:col-4">
         <Card>
           <template #title>Preview</template>
           <template #content>
@@ -345,56 +351,6 @@ function formatFileSize(bytes: number): string {
 </template>
 
 <style scoped>
-.detail-page {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-.page-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.header-actions {
-  display: flex;
-  gap: 8px;
-}
-
-.loading-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 16px;
-  padding: 80px 0;
-  color: var(--p-text-secondary-color);
-}
-
-.detail-layout {
-  display: grid;
-  grid-template-columns: 1fr 420px;
-  gap: 20px;
-}
-
-@media (max-width: 1024px) {
-  .detail-layout {
-    grid-template-columns: 1fr;
-  }
-}
-
-.detail-title {
-  font-size: 20px;
-  font-weight: 600;
-}
-
-.detail-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: 20px;
-}
-
 .detail-field {
   display: flex;
   flex-direction: column;
@@ -413,10 +369,5 @@ function formatFileSize(bytes: number): string {
   font-size: 14px;
   color: var(--p-text-color);
   min-height: 20px;
-}
-
-.store-tag {
-  margin-right: 4px;
-  margin-bottom: 4px;
 }
 </style>

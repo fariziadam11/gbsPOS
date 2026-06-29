@@ -51,7 +51,7 @@ func main() {
 	userManagementService := service.NewUserService(userRepo)
 
 	authHandler := handler.NewAuthHandler(authService)
-	cmsHandler := handler.NewCMSHandler(cmsService)
+	cmsHandler := handler.NewCMSHandler(cmsService, userManagementService)
 	settingsHandler := handler.NewSettingsHandler(settingsService)
 	userHandler := handler.NewUserHandler(userManagementService)
 

@@ -9,6 +9,14 @@ import router from './router'
 import App from './App.vue'
 import { useAuthStore } from './stores/auth'
 import 'primeicons/primeicons.css'
+import 'primeflex/primeflex.css'
+
+const savedTheme = localStorage.getItem('gbs-theme')
+const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+const isDark = savedTheme === 'dark' || (savedTheme !== 'light' && systemDark)
+if (isDark) {
+  document.documentElement.classList.add('dark-mode')
+}
 
 const app = createApp(App)
 

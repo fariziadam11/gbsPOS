@@ -1,4 +1,5 @@
 import apiClient from './client'
+import { getApiError } from './client'
 import type {
   Ad,
   AdListResponse,
@@ -34,10 +35,30 @@ export async function createAd(data: CreateAdRequest): Promise<ApiResponse<Ad>> 
   if (data.startTime) formData.append('startTime', data.startTime)
   if (data.endTime) formData.append('endTime', data.endTime)
 
-  const response = await apiClient.post<ApiResponse<Ad>>('/v1/ads/upload', formData, {
-    headers: { 'Content-Type': 'multipart/form-data' },
+  const token = localStorage.getItem('token')
+  const baseURL = import.meta.env.VITE_API_BASE_URL || ''
+  const response = await fetch(`${baseURL}/v1/ads/upload`, {
+    method: 'POST',
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: formData,
   })
-  return response.data
+
+  if (response.status === 401) {
+    localStorage.removeItem('token')
+    localStorage.removeItem('user')
+    window.location.href = '/login'
+    throw new Error('Session expired. Please log in again.')
+  }
+
+  const result = (await response.json()) as ApiResponse<Ad>
+  if (!response.ok) {
+    const apiError = getApiError({ response: { data: result, status: response.status } } as any)
+    throw new Error(apiError?.error.message || `Upload failed (${response.status})`)
+  }
+
+  return result
 }
 
 export async function updateAd(id: number, data: UpdateAdRequest): Promise<ApiResponse<Ad>> {

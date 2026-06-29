@@ -257,27 +257,27 @@ watch([revenueLoading, summaryLoading], ([r, s]) => {
 </script>
 
 <template>
-  <div class="dashboard-page">
+  <div class="flex flex-column gap-3 lg:gap-4">
     <!-- Header -->
-    <div class="page-header">
+    <div class="flex flex-column md:flex-row md:align-items-start justify-content-between gap-3">
       <div>
-        <h1 class="page-title">Dashboard</h1>
-        <p class="page-subtitle">Sales overview and key metrics</p>
+        <h1 class="text-2xl lg:text-3xl font-semibold text-color m-0">Dashboard</h1>
+        <p class="text-sm text-color-secondary mt-1 mb-0">Sales overview and key metrics</p>
       </div>
-      <div class="header-filters">
+      <div class="flex flex-column sm:flex-row gap-2 w-full md:w-auto">
         <Select
           v-model="storeType"
           :options="storeTypes"
           showClear
           placeholder="All Stores"
-          class="filter-select"
+          class="w-full sm:w-10rem"
         />
         <Select
           v-model="selectedRange"
           :options="dateRangeOptions"
           optionLabel="label"
           placeholder="Date Range"
-          class="filter-select"
+          class="w-full sm:w-10rem"
         />
         <DatePicker
           v-if="isCustom"
@@ -285,199 +285,215 @@ watch([revenueLoading, summaryLoading], ([r, s]) => {
           selectionMode="range"
           showClear
           placeholder="Custom Range"
-          class="filter-select date-picker"
+          class="w-full sm:w-13rem"
         />
       </div>
     </div>
 
     <!-- KPI Cards -->
-    <div class="stat-grid">
-      <Card class="stat-card">
-        <template #content>
-          <div class="stat-label">Revenue</div>
-          <div v-if="summaryLoading" class="stat-value"><Skeleton width="140px" height="36px" /></div>
-          <div v-else class="stat-value revenue">{{ formatCurrency(summary?.totalRevenue || 0) }}</div>
-        </template>
-      </Card>
-      <Card class="stat-card">
-        <template #content>
-          <div class="stat-label">Total Orders</div>
-          <div v-if="summaryLoading" class="stat-value"><Skeleton width="80px" height="36px" /></div>
-          <div v-else class="stat-value">{{ formatNumber(summary?.totalOrders || 0) }}</div>
-        </template>
-      </Card>
-      <Card class="stat-card">
-        <template #content>
-          <div class="stat-label">Avg Order Value</div>
-          <div v-if="summaryLoading" class="stat-value"><Skeleton width="120px" height="36px" /></div>
-          <div v-else class="stat-value">{{ formatCurrency(summary?.avgOrderValue || 0) }}</div>
-        </template>
-      </Card>
-      <Card class="stat-card">
-        <template #content>
-          <div class="stat-label">Voided</div>
-          <div v-if="summaryLoading" class="stat-value"><Skeleton width="60px" height="36px" /></div>
-          <div v-else class="stat-value void">{{ formatNumber(summary?.voidedCount || 0) }}</div>
-        </template>
-      </Card>
+    <div class="grid">
+      <div class="col-12 md:col-6 lg:col-3">
+        <Card class="h-full border-round-xl shadow-1">
+          <template #content>
+            <div class="text-xs lg:text-sm text-color-secondary font-medium mb-2">Revenue</div>
+            <div v-if="summaryLoading"><Skeleton width="8rem" height="2rem" /></div>
+            <div v-else class="text-xl lg:text-2xl font-bold text-primary">{{ formatCurrency(summary?.totalRevenue || 0) }}</div>
+          </template>
+        </Card>
+      </div>
+      <div class="col-12 md:col-6 lg:col-3">
+        <Card class="h-full border-round-xl shadow-1">
+          <template #content>
+            <div class="text-xs lg:text-sm text-color-secondary font-medium mb-2">Total Orders</div>
+            <div v-if="summaryLoading"><Skeleton width="5rem" height="2rem" /></div>
+            <div v-else class="text-xl lg:text-2xl font-bold text-color">{{ formatNumber(summary?.totalOrders || 0) }}</div>
+          </template>
+        </Card>
+      </div>
+      <div class="col-12 md:col-6 lg:col-3">
+        <Card class="h-full border-round-xl shadow-1">
+          <template #content>
+            <div class="text-xs lg:text-sm text-color-secondary font-medium mb-2">Avg Order Value</div>
+            <div v-if="summaryLoading"><Skeleton width="7rem" height="2rem" /></div>
+            <div v-else class="text-xl lg:text-2xl font-bold text-color">{{ formatCurrency(summary?.avgOrderValue || 0) }}</div>
+          </template>
+        </Card>
+      </div>
+      <div class="col-12 md:col-6 lg:col-3">
+        <Card class="h-full border-round-xl shadow-1">
+          <template #content>
+            <div class="text-xs lg:text-sm text-color-secondary font-medium mb-2">Voided</div>
+            <div v-if="summaryLoading"><Skeleton width="3rem" height="2rem" /></div>
+            <div v-else class="text-xl lg:text-2xl font-bold text-red-500">{{ formatNumber(summary?.voidedCount || 0) }}</div>
+          </template>
+        </Card>
+      </div>
     </div>
 
     <!-- Charts Row -->
-    <div class="charts-grid">
+    <div class="grid">
       <!-- Revenue Trend -->
-      <Card class="chart-card trend-card">
-        <template #title>
-          <div class="card-title-row">
-            <span>Revenue Trend</span>
-          </div>
-        </template>
-        <template #content>
-          <div v-if="showSkeletonCharts || revenueLoading" class="chart-skeleton">
-            <Skeleton width="100%" height="100%" />
-          </div>
-          <div v-else-if="revenueError" class="chart-empty error">
-            Failed to load revenue trend.
-          </div>
-          <div v-else-if="!hasRevenueData" class="chart-empty">
-            <div>
-              <div class="empty-title">No revenue data</div>
-              <div class="empty-subtitle">{{ formattedDateRange }}</div>
-              <div class="empty-hint">Try selecting a wider date range.</div>
+      <div class="col-12 lg:col-8">
+        <Card class="h-full border-round-xl shadow-1">
+          <template #title>
+            <div class="flex align-items-center justify-content-between gap-2 text-base font-semibold">
+              <span>Revenue Trend</span>
             </div>
-          </div>
-          <div v-else class="chart-wrapper">
-            <Chart type="bar" :data="revenueChartData" :options="revenueChartOptions" class="revenue-chart" />
-          </div>
-        </template>
-      </Card>
+          </template>
+          <template #content>
+            <div v-if="showSkeletonCharts || revenueLoading" class="h-16rem lg:h-20rem">
+              <Skeleton width="100%" height="100%" />
+            </div>
+            <div v-else-if="revenueError" class="h-16rem lg:h-20rem flex align-items-center justify-content-center text-red-500 text-center p-3">
+              Failed to load revenue trend.
+            </div>
+            <div v-else-if="!hasRevenueData" class="h-16rem lg:h-20rem flex align-items-center justify-content-center text-color-secondary text-center p-3">
+              <div>
+                <div class="font-semibold text-color mb-1">No revenue data</div>
+                <div class="text-color-secondary text-sm mb-2">{{ formattedDateRange }}</div>
+                <div class="text-color-secondary text-xs">Try selecting a wider date range.</div>
+              </div>
+            </div>
+            <div v-else class="h-16rem lg:h-20rem relative">
+              <Chart type="bar" :data="revenueChartData" :options="revenueChartOptions" class="h-full" />
+            </div>
+          </template>
+        </Card>
+      </div>
 
       <!-- Payment Mix -->
-      <Card class="chart-card payment-card">
-        <template #title>
-          <div class="card-title-row">
-            <span>Payment Mix</span>
-          </div>
-        </template>
-        <template #content>
-          <div v-if="showSkeletonCharts || summaryLoading" class="chart-skeleton">
-            <Skeleton width="100%" height="100%" />
-          </div>
-          <div v-else-if="summaryError" class="chart-empty error">
-            Failed to load payment data.
-          </div>
-          <div v-else-if="!hasAnyPayment" class="chart-empty">
-            <div>
-              <div class="empty-title">No payment data</div>
-              <div class="empty-subtitle">{{ formattedDateRange }}</div>
-              <div class="empty-hint">Try selecting a wider date range.</div>
+      <div class="col-12 lg:col-4">
+        <Card class="h-full border-round-xl shadow-1">
+          <template #title>
+            <div class="flex align-items-center justify-content-between gap-2 text-base font-semibold">
+              <span>Payment Mix</span>
             </div>
-          </div>
-          <div v-else class="chart-wrapper payment-wrapper">
-            <Chart type="doughnut" :data="paymentChartData" :options="paymentChartOptions" class="payment-chart" />
-            <div class="payment-totals">
-              <div class="payment-total-item">
-                <span class="dot cash" />
-                <span class="payment-total-label">Cash</span>
-                <span class="payment-total-value">{{ formatCurrency(summary?.cashTotal || 0) }}</span>
-              </div>
-              <div class="payment-total-item">
-                <span class="dot card" />
-                <span class="payment-total-label">Card</span>
-                <span class="payment-total-value">{{ formatCurrency(summary?.cardTotal || 0) }}</span>
-              </div>
-              <div class="payment-total-item">
-                <span class="dot qris" />
-                <span class="payment-total-label">QRIS</span>
-                <span class="payment-total-value">{{ formatCurrency(summary?.qrisTotal || 0) }}</span>
+          </template>
+          <template #content>
+            <div v-if="showSkeletonCharts || summaryLoading" class="h-16rem lg:h-20rem">
+              <Skeleton width="100%" height="100%" />
+            </div>
+            <div v-else-if="summaryError" class="h-16rem lg:h-20rem flex align-items-center justify-content-center text-red-500 text-center p-3">
+              Failed to load payment data.
+            </div>
+            <div v-else-if="!hasAnyPayment" class="h-16rem lg:h-20rem flex align-items-center justify-content-center text-color-secondary text-center p-3">
+              <div>
+                <div class="font-semibold text-color mb-1">No payment data</div>
+                <div class="text-color-secondary text-sm mb-2">{{ formattedDateRange }}</div>
+                <div class="text-color-secondary text-xs">Try selecting a wider date range.</div>
               </div>
             </div>
-          </div>
-        </template>
-      </Card>
+            <div v-else class="h-16rem lg:h-20rem flex flex-column align-items-center justify-content-center gap-3">
+              <Chart type="doughnut" :data="paymentChartData" :options="paymentChartOptions" class="h-10rem lg:h-12rem max-w-15rem" />
+              <div class="w-full flex flex-column gap-2">
+                <div class="flex align-items-center gap-2 text-sm">
+                  <span class="dot cash" />
+                  <span class="text-color-secondary w-3rem">Cash</span>
+                  <span class="font-semibold text-color ml-auto">{{ formatCurrency(summary?.cashTotal || 0) }}</span>
+                </div>
+                <div class="flex align-items-center gap-2 text-sm">
+                  <span class="dot card" />
+                  <span class="text-color-secondary w-3rem">Card</span>
+                  <span class="font-semibold text-color ml-auto">{{ formatCurrency(summary?.cardTotal || 0) }}</span>
+                </div>
+                <div class="flex align-items-center gap-2 text-sm">
+                  <span class="dot qris" />
+                  <span class="text-color-secondary w-3rem">QRIS</span>
+                  <span class="font-semibold text-color ml-auto">{{ formatCurrency(summary?.qrisTotal || 0) }}</span>
+                </div>
+              </div>
+            </div>
+          </template>
+        </Card>
+      </div>
     </div>
 
     <!-- Bottom Row -->
-    <div class="bottom-grid">
+    <div class="grid">
       <!-- Top Products -->
-      <Card class="table-card">
-        <template #title>
-          <div class="card-title-row">
-            <span>Top Products</span>
-          </div>
-        </template>
-        <template #content>
-          <DataTable
-            :value="topProducts || []"
-            :loading="topLoading"
-            tableStyle="min-width: 24rem"
-            stripedRows
-            size="small"
-            class="dashboard-table"
-          >
-            <Column header="#" style="width: 40px">
-              <template #body="{ index }">{{ index + 1 }}</template>
-            </Column>
-            <Column field="productName" header="Product" sortable />
-            <Column field="totalSold" header="Sold" sortable style="width: 80px">
-              <template #body="{ data }: { data: TopProduct }">{{ formatNumber(data.totalSold) }}</template>
-            </Column>
-            <Column field="revenue" header="Revenue" sortable style="width: 140px">
-              <template #body="{ data }: { data: TopProduct }">{{ formatCurrency(data.revenue) }}</template>
-            </Column>
-            <template #empty>
-              <div class="empty-state">No top products yet.</div>
-            </template>
-          </DataTable>
-        </template>
-      </Card>
+      <div class="col-12 lg:col-6">
+        <Card class="h-full border-round-xl shadow-1">
+          <template #title>
+            <div class="flex align-items-center justify-content-between gap-2 text-base font-semibold">
+              <span>Top Products</span>
+            </div>
+          </template>
+          <template #content>
+            <DataTable
+              :value="topProducts || []"
+              :loading="topLoading"
+              tableStyle="min-width: 20rem"
+              stripedRows
+              size="small"
+              class="dashboard-table"
+            >
+              <Column header="#" style="width: 40px">
+                <template #body="{ index }">{{ index + 1 }}</template>
+              </Column>
+              <Column field="productName" header="Product" sortable />
+              <Column field="totalSold" header="Sold" sortable style="width: 80px">
+                <template #body="{ data }: { data: TopProduct }">{{ formatNumber(data.totalSold) }}</template>
+              </Column>
+              <Column field="revenue" header="Revenue" sortable style="width: 120px">
+                <template #body="{ data }: { data: TopProduct }">{{ formatCurrency(data.revenue) }}</template>
+              </Column>
+              <template #empty>
+                <div class="text-center p-4 text-color-secondary">No top products yet.</div>
+              </template>
+            </DataTable>
+          </template>
+        </Card>
+      </div>
 
       <!-- Recent Transactions -->
-      <Card class="table-card">
-        <template #title>
-          <div class="card-title-row">
-            <span>Recent Transactions</span>
-            <Button as="router-link" to="/orders" label="View All" link size="small" />
-          </div>
-        </template>
-        <template #content>
-          <DataTable
-            :value="recentOrders"
-            :loading="ordersLoading"
-            tableStyle="min-width: 24rem"
-            size="small"
-            class="dashboard-table"
-          >
-            <Column header="Order" style="width: 80px">
-              <template #body="{ data }: { data: Order }">
-                <span class="mono">{{ data.id.length > 8 ? data.id.substring(0, 8) : data.id }}</span>
+      <div class="col-12 lg:col-6">
+        <Card class="h-full border-round-xl shadow-1">
+          <template #title>
+            <div class="flex align-items-center justify-content-between gap-2 text-base font-semibold">
+              <span>Recent Transactions</span>
+              <Button as="router-link" to="/orders" label="View All" link size="small" />
+            </div>
+          </template>
+          <template #content>
+            <DataTable
+              :value="recentOrders"
+              :loading="ordersLoading"
+              tableStyle="min-width: 20rem"
+              size="small"
+              class="dashboard-table"
+            >
+              <Column header="Order" style="width: 80px">
+                <template #body="{ data }: { data: Order }">
+                  <span class="mono">{{ data.id.length > 8 ? data.id.substring(0, 8) : data.id }}</span>
+                </template>
+              </Column>
+              <Column header="Date" style="width: 120px">
+                <template #body="{ data }: { data: Order }">{{ formatOrderDate(data.timestamp) }}</template>
+              </Column>
+              <Column header="Total" style="width: 100px">
+                <template #body="{ data }: { data: Order }">{{ formatCurrency(data.total) }}</template>
+              </Column>
+              <Column header="Payment" style="width: 80px">
+                <template #body="{ data }: { data: Order }">
+                  <Tag :value="data.paymentMethod" :severity="getPaymentSeverity(data.paymentMethod)" />
+                </template>
+              </Column>
+              <Column header="Status" style="width: 90px">
+                <template #body="{ data }: { data: Order }">
+                  <Tag :value="getOrderStatus(data).label" :severity="getOrderStatus(data).severity" />
+                </template>
+              </Column>
+              <template #empty>
+                <div class="text-center p-4 text-color-secondary">No recent transactions.</div>
               </template>
-            </Column>
-            <Column header="Date" style="width: 130px">
-              <template #body="{ data }: { data: Order }">{{ formatOrderDate(data.timestamp) }}</template>
-            </Column>
-            <Column header="Total" style="width: 110px">
-              <template #body="{ data }: { data: Order }">{{ formatCurrency(data.total) }}</template>
-            </Column>
-            <Column header="Payment" style="width: 80px">
-              <template #body="{ data }: { data: Order }">
-                <Tag :value="data.paymentMethod" :severity="getPaymentSeverity(data.paymentMethod)" />
-              </template>
-            </Column>
-            <Column header="Status" style="width: 90px">
-              <template #body="{ data }: { data: Order }">
-                <Tag :value="getOrderStatus(data).label" :severity="getOrderStatus(data).severity" />
-              </template>
-            </Column>
-            <template #empty>
-              <div class="empty-state">No recent transactions.</div>
-            </template>
-          </DataTable>
-        </template>
-      </Card>
+            </DataTable>
+          </template>
+        </Card>
+      </div>
     </div>
 
     <!-- Debug / Error banner -->
-    <div v-if="summaryError || revenueError" class="error-banner">
+    <div v-if="summaryError || revenueError" class="error-banner flex align-items-center gap-2 p-3 border-round-lg text-sm">
       <i class="pi pi-exclamation-circle" />
       <span>Some dashboard data could not be loaded. {{ summaryErrorObj?.message || '' }}</span>
     </div>
@@ -485,115 +501,9 @@ watch([revenueLoading, summaryLoading], ([r, s]) => {
 </template>
 
 <style scoped>
-.dashboard-page {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-}
-.page-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 16px;
-}
-.page-title {
-  margin: 0;
-  font-size: 28px;
-  font-weight: 600;
-  color: var(--p-text-color);
-}
-.page-subtitle {
-  margin: 4px 0 0;
-  color: var(--p-text-muted-color);
-  font-size: 14px;
-}
-.header-filters {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  flex-wrap: wrap;
-}
-.filter-select {
-  width: 160px;
-}
-.stat-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 16px;
-}
-.stat-card {
-  border-radius: 12px;
-}
-.stat-card :deep(.p-card-content) {
-  padding: 20px;
-}
-.stat-label {
-  font-size: 13px;
-  color: var(--p-text-muted-color);
-  margin-bottom: 8px;
-  font-weight: 500;
-}
-.stat-value {
-  font-size: 28px;
-  font-weight: 700;
-  color: var(--p-text-color);
-}
-.stat-value.revenue {
-  color: var(--p-primary-500);
-}
-.stat-value.void {
-  color: var(--p-red-500);
-}
-
-.charts-grid {
-  display: grid;
-  grid-template-columns: 2fr 1fr;
-  gap: 16px;
-}
-.chart-card {
-  border-radius: 12px;
-}
-.chart-card :deep(.p-card-title) {
-  margin: 0;
-  font-size: 16px;
-  font-weight: 600;
-}
-.card-title-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
-.chart-wrapper {
-  height: 320px;
-  position: relative;
-}
-.revenue-chart {
-  height: 100%;
-}
-.payment-wrapper {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 16px;
-}
-.payment-chart {
-  height: 200px;
-  max-width: 240px;
-}
-.payment-totals {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.payment-total-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 13px;
+.error-banner {
+  background-color: light-dark(var(--p-red-50), var(--p-red-900));
+  color: light-dark(var(--p-red-600), var(--p-red-300));
 }
 .dot {
   width: 10px;
@@ -604,110 +514,11 @@ watch([revenueLoading, summaryLoading], ([r, s]) => {
 .dot.cash { background: var(--p-green-500); }
 .dot.card { background: var(--p-blue-500); }
 .dot.qris { background: var(--p-purple-500); }
-.payment-total-label {
-  color: var(--p-text-muted-color);
-  width: 40px;
-}
-.payment-total-value {
-  margin-left: auto;
-  font-weight: 600;
-  color: var(--p-text-color);
-}
-.chart-skeleton {
-  height: 320px;
-}
-.chart-empty {
-  height: 320px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--p-text-muted-color);
-  text-align: center;
-  padding: 20px;
-}
-.chart-empty.error {
-  color: var(--p-red-500);
-}
-.empty-title {
-  font-weight: 600;
-  color: var(--p-text-color);
-  margin-bottom: 4px;
-}
-.empty-subtitle {
-  color: var(--p-text-muted-color);
-  font-size: 13px;
-  margin-bottom: 8px;
-}
-.empty-hint {
-  color: var(--p-text-muted-color);
-  font-size: 12px;
-}
-
-.bottom-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-}
-.table-card {
-  border-radius: 12px;
-}
-.table-card :deep(.p-card-title) {
-  margin: 0;
-  font-size: 16px;
-  font-weight: 600;
-}
-.table-card :deep(.p-card-content) {
-  padding-top: 8px;
-}
-.dashboard-table :deep(.p-datatable-header) {
-  display: none;
-}
-.empty-state {
-  text-align: center;
-  padding: 32px;
-  color: var(--p-text-muted-color);
-}
 .mono {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 12px;
 }
-.error-banner {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 12px 16px;
-  border-radius: 8px;
-  background: var(--p-red-50);
-  color: var(--p-red-600);
-  font-size: 14px;
-}
-
-@media (max-width: 1024px) {
-  .stat-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-  .charts-grid {
-    grid-template-columns: 1fr;
-  }
-  .bottom-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-@media (max-width: 640px) {
-  .stat-grid {
-    grid-template-columns: 1fr;
-  }
-  .filter-select {
-    width: 100%;
-  }
-  .header-filters {
-    width: 100%;
-  }
-  .chart-wrapper,
-  .chart-skeleton,
-  .chart-empty {
-    height: 260px;
-  }
+.dashboard-table :deep(.p-datatable-header) {
+  display: none;
 }
 </style>

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, ref } from "vue";
 import { useRoute } from "vue-router";
 
 import Toast from "primevue/toast";
@@ -9,23 +9,35 @@ import AppHeader from "./components/AppHeader.vue";
 import AppSidebar from "./components/AppSidebar.vue";
 
 const route = useRoute();
+const sidebarVisible = ref(false);
 
 const isAuthenticatedPage = computed(() => {
   return route.meta.requiresAuth;
 });
+
+function toggleSidebar() {
+  sidebarVisible.value = !sidebarVisible.value;
+}
 </script>
 
 <template>
-  <div class="app-layout">
+  <div class="app-layout flex flex-column min-h-screen">
     <Toast position="top-right" />
     <ConfirmDialog />
 
-    <AppHeader v-if="isAuthenticatedPage" />
+    <AppHeader
+      v-if="isAuthenticatedPage"
+      :show-menu-toggle="true"
+      @toggle-sidebar="toggleSidebar"
+    />
 
-    <div class="app-body">
-      <AppSidebar v-if="isAuthenticatedPage" />
+    <div class="app-body flex flex-1">
+      <AppSidebar
+        v-if="isAuthenticatedPage"
+        v-model:visible="sidebarVisible"
+      />
 
-      <main class="app-main">
+      <main class="app-main flex-1 p-3 lg:p-4 overflow-y-auto surface-ground">
         <RouterView />
       </main>
     </div>
@@ -33,21 +45,4 @@ const isAuthenticatedPage = computed(() => {
 </template>
 
 <style>
-.app-layout {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-}
-
-.app-body {
-  display: flex;
-  flex: 1;
-}
-
-.app-main {
-  flex: 1;
-  padding: 24px;
-  overflow-y: auto;
-  background: var(--p-surface-50);
-}
 </style>

@@ -84,27 +84,29 @@ function formatFileSize(bytes: number): string {
 </script>
 
 <template>
-  <div class="ads-page">
-    <div class="page-header">
+  <div class="flex flex-column gap-3 lg:gap-4">
+    <div class="flex flex-column md:flex-row md:align-items-start justify-content-between gap-3">
       <div>
-        <h1 class="page-title">Ads</h1>
-        <p class="page-subtitle">Manage advertisement videos and playlist</p>
+        <h1 class="text-2xl lg:text-3xl font-semibold text-color m-0">Ads</h1>
+        <p class="text-sm text-color-secondary mt-1 mb-0">Manage advertisement videos and playlist</p>
       </div>
-      <Button
-        v-if="authStore.isAdmin"
-        label="Upload Ad"
-        icon="pi pi-upload"
-        @click="router.push('/upload')"
-      />
+      <div class="flex flex-wrap align-items-center gap-2">
+        <Button
+          v-if="authStore.isAdmin"
+          label="Upload Ad"
+          icon="pi pi-upload"
+          @click="router.push('/upload')"
+        />
+      </div>
     </div>
 
-    <div class="card">
+    <div class="surface-0 border-round-xl border-1 surface-border p-3">
       <DataTable
         :value="adsData?.ads || []"
         :loading="isLoading"
         stripedRows
         size="small"
-        tableStyle="min-width: 60rem"
+        tableStyle="min-width: 40rem"
       >
         <Column field="id" header="ID" style="width: 60px" />
         <Column field="name" header="Name" sortable />
@@ -123,7 +125,7 @@ function formatFileSize(bytes: number): string {
               :key="st"
               :value="st"
               severity="info"
-              class="store-tag"
+              class="mr-1 mb-1"
             />
           </template>
         </Column>
@@ -132,7 +134,7 @@ function formatFileSize(bytes: number): string {
             <span v-if="data.startDate || data.endDate">
               {{ formatDate(data.startDate) }} - {{ formatDate(data.endDate) }}
             </span>
-            <span v-else class="text-secondary">Always</span>
+            <span v-else class="text-color-secondary">Always</span>
           </template>
         </Column>
         <Column field="playlistOrder" header="Order" sortable style="width: 90px" />
@@ -148,7 +150,7 @@ function formatFileSize(bytes: number): string {
         </Column>
         <Column header="Actions" style="width: 160px">
           <template #body="{ data }: { data: Ad }">
-            <div class="action-buttons">
+            <div class="flex align-items-center gap-2">
               <Button
                 icon="pi pi-eye"
                 text
@@ -174,66 +176,9 @@ function formatFileSize(bytes: number): string {
           </template>
         </Column>
         <template #empty>
-          <div class="empty-state">No ads found.</div>
+          <div class="text-center py-5 text-color-secondary">No ads found.</div>
         </template>
       </DataTable>
     </div>
   </div>
 </template>
-
-<style scoped>
-.ads-page {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-}
-
-.page-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 16px;
-}
-
-.page-title {
-  margin: 0;
-  font-size: 28px;
-  font-weight: 600;
-  color: var(--p-text-color);
-}
-
-.page-subtitle {
-  margin: 4px 0 0;
-  color: var(--p-text-secondary-color);
-  font-size: 14px;
-}
-
-.card {
-  background: var(--p-surface-0);
-  border-radius: 12px;
-  border: 1px solid var(--p-surface-200);
-  padding: 20px;
-}
-
-.store-tag {
-  margin-right: 4px;
-  margin-bottom: 4px;
-}
-
-.action-buttons {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.empty-state {
-  padding: 40px 0;
-  text-align: center;
-  color: var(--p-text-secondary-color);
-}
-
-.text-secondary {
-  color: var(--p-text-secondary-color);
-}
-</style>

@@ -17,11 +17,35 @@ import (
 )
 
 type CMSHandler struct {
-	cmsService *service.CMSService
+	cmsService  *service.CMSService
+	userService *service.UserService
 }
 
-func NewCMSHandler(cmsService *service.CMSService) *CMSHandler {
-	return &CMSHandler{cmsService: cmsService}
+func NewCMSHandler(cmsService *service.CMSService, userService *service.UserService) *CMSHandler {
+	return &CMSHandler{cmsService: cmsService, userService: userService}
+}
+
+func (h *CMSHandler) resolveCreatedBy(c *gin.Context) (uint, error) {
+	userID, ok := c.Get("userID")
+	if !ok {
+		return 0, fmt.Errorf("missing userID claim")
+	}
+
+	// Local JWT tokens set sub as a numeric user ID.
+	if numericID, ok := userID.(float64); ok {
+		return uint(numericID), nil
+	}
+
+	// Keycloak tokens set sub as a string UUID; resolve via username.
+	username := c.GetString("username")
+	if username == "" {
+		return 0, fmt.Errorf("missing username claim")
+	}
+	user, err := h.userService.FindByUsername(username)
+	if err != nil {
+		return 0, fmt.Errorf("user not found")
+	}
+	return user.ID, nil
 }
 
 func (h *CMSHandler) UploadAd(c *gin.Context) {
@@ -69,14 +93,9 @@ func (h *CMSHandler) UploadAd(c *gin.Context) {
 	endDate := service.ParseDatePointer(c.PostForm("endDate"))
 	startTime := service.ParseTimePointer(c.PostForm("startTime"))
 	endTime := service.ParseTimePointer(c.PostForm("endTime"))
-	createdBy, ok := c.Get("userID")
-	if !ok {
-		c.JSON(http.StatusUnauthorized, response.Error("UNAUTHORIZED", "Invalid token claims"))
-		return
-	}
-	createdByUint, ok := createdBy.(float64)
-	if !ok {
-		c.JSON(http.StatusUnauthorized, response.Error("UNAUTHORIZED", "Invalid token claims"))
+	createdBy, err := h.resolveCreatedBy(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, response.Error("UNAUTHORIZED", err.Error()))
 		return
 	}
 	ad, err := h.cmsService.CreateAd(
@@ -90,7 +109,7 @@ func (h *CMSHandler) UploadAd(c *gin.Context) {
 		endDate,
 		startTime,
 		endTime,
-		uint(createdByUint),
+		createdBy,
 	)
 	if err != nil {
 		if err.Error() == "INVALID_SCHEDULE" {

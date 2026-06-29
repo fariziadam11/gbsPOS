@@ -105,16 +105,18 @@ function confirmDelete(user: UserListItem) {
 </script>
 
 <template>
-  <div class="users-page">
-    <div class="page-header">
+  <div class="flex flex-column gap-3 lg:gap-4">
+    <div class="flex flex-column md:flex-row md:align-items-start justify-content-between gap-3">
       <div>
-        <h1 class="page-title">Users</h1>
-        <p class="page-subtitle">Manage POS user accounts</p>
+        <h1 class="text-2xl lg:text-3xl font-semibold text-color m-0">Users</h1>
+        <p class="text-sm text-color-secondary mt-1 mb-0">Manage POS user accounts</p>
       </div>
-      <Button label="Add User" icon="pi pi-plus" @click="openCreate" />
+      <div class="flex flex-wrap align-items-center gap-2">
+        <Button label="Add User" icon="pi pi-plus" @click="openCreate" />
+      </div>
     </div>
 
-    <div class="card">
+    <div class="surface-0 border-round-xl border-1 surface-border p-3">
       <DataTable :value="users || []" :loading="isLoading" tableStyle="min-width: 40rem" stripedRows size="small" paginator :rows="20">
         <Column field="username" header="Username" sortable />
         <Column field="name" header="Name" sortable />
@@ -131,59 +133,59 @@ function confirmDelete(user: UserListItem) {
         </Column>
         <Column header="Actions" style="width: 120px">
           <template #body="{ data }">
-            <div class="actions">
+            <div class="flex gap-1">
               <Button icon="pi pi-pencil" text rounded size="small" @click="openEdit(data)" />
               <Button icon="pi pi-trash" text rounded size="small" severity="danger" @click="confirmDelete(data)" />
             </div>
           </template>
         </Column>
         <template #empty>
-          <div class="empty-state">No users found.</div>
+          <div class="text-center p-5 text-color-secondary">No users found.</div>
         </template>
       </DataTable>
     </div>
 
     <!-- User Form Dialog -->
-    <Dialog v-model:visible="showDialog" :header="dialogTitle" :modal="true" :style="{ width: '450px' }">
+    <Dialog v-model:visible="showDialog" :header="dialogTitle" :modal="true" :style="{ width: '95vw', maxWidth: '450px' }">
       <template v-if="!editingUser">
-        <div class="form-grid">
-          <div class="form-field">
+        <div class="grid">
+          <div class="col-12 md:col-6 form-field">
             <label>Username *</label>
             <InputText v-model="form.username" fluid />
           </div>
-          <div class="form-field">
+          <div class="col-12 md:col-6 form-field">
             <label>Password *</label>
             <InputText v-model="form.password" type="password" fluid />
           </div>
-          <div class="form-field">
+          <div class="col-12 md:col-6 form-field">
             <label>Name</label>
             <InputText v-model="form.name" fluid />
           </div>
-          <div class="form-field">
+          <div class="col-12 md:col-6 form-field">
             <label>Role</label>
             <Select v-model="form.role" :options="roles" fluid />
           </div>
-          <div class="form-field">
+          <div class="col-12 md:col-6 form-field">
             <label>Gender</label>
             <InputText v-model="form.gender" fluid />
           </div>
         </div>
       </template>
       <template v-else>
-        <div class="form-grid">
-          <div class="form-field">
+        <div class="grid">
+          <div class="col-12 md:col-6 form-field">
             <label>Name</label>
             <InputText v-model="editForm.name" fluid />
           </div>
-          <div class="form-field">
+          <div class="col-12 md:col-6 form-field">
             <label>Role</label>
             <Select v-model="editForm.role" :options="roles" fluid />
           </div>
-          <div class="form-field">
+          <div class="col-12 md:col-6 form-field">
             <label>New Password (leave blank to keep)</label>
             <InputText v-model="editForm.password" type="password" fluid />
           </div>
-          <div class="form-field">
+          <div class="col-12 md:col-6 form-field">
             <label>Gender</label>
             <InputText v-model="editForm.gender" fluid />
           </div>
@@ -200,14 +202,6 @@ function confirmDelete(user: UserListItem) {
 </template>
 
 <style scoped>
-.users-page { display: flex; flex-direction: column; gap: 24px; }
-.page-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; }
-.page-title { margin: 0; font-size: 28px; font-weight: 600; color: var(--p-text-color); }
-.page-subtitle { margin: 4px 0 0; color: var(--p-text-secondary-color); font-size: 14px; }
-.card { background: var(--p-surface-0); border-radius: 12px; border: 1px solid var(--p-surface-200); padding: 16px; }
-.actions { display: flex; gap: 4px; }
-.empty-state { text-align: center; padding: 40px; color: var(--p-text-secondary-color); }
-.form-grid { display: flex; flex-direction: column; gap: 16px; }
 .form-field { display: flex; flex-direction: column; gap: 4px; }
 .form-field label { font-size: 14px; font-weight: 500; color: var(--p-text-color); }
 </style>

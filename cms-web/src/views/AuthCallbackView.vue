@@ -20,44 +20,15 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="callback-page">
-    <div v-if="error" class="error-message">
-      <h2>Authentication failed</h2>
+  <div class="min-h-screen flex align-items-center justify-content-center surface-50 p-4">
+    <div v-if="error" class="flex flex-column align-items-center gap-3 text-center">
+      <h2 class="text-red-500 m-0">Authentication failed</h2>
       <p>{{ error }}</p>
-      <router-link to="/login" class="login-link">Back to login</router-link>
+      <router-link to="/login" class="text-primary underline">Back to login</router-link>
     </div>
-    <div v-else class="loading-message">
+    <div v-else class="flex flex-column align-items-center gap-3 text-center">
       <i class="pi pi-spin pi-spinner" style="font-size: 2rem"></i>
       <p>Completing sign in...</p>
     </div>
   </div>
 </template>
-
-<style scoped>
-.callback-page {
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--p-surface-50);
-  padding: 24px;
-}
-
-.loading-message,
-.error-message {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 16px;
-  text-align: center;
-}
-
-.error-message h2 {
-  color: var(--p-red-500);
-}
-
-.login-link {
-  color: var(--p-primary-color);
-  text-decoration: underline;
-}
-</style>

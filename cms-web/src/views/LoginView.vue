@@ -22,22 +22,22 @@ async function handleLogin() {
 </script>
 
 <template>
-  <div class="login-page">
-    <Card class="login-card">
+  <div class="min-h-screen flex align-items-center justify-content-center surface-50 p-4">
+    <Card class="w-full max-w-30rem">
       <template #title>
-        <div class="login-title">
-          <i class="pi pi-play-circle"></i>
+        <div class="flex align-items-center gap-2 text-2xl font-semibold text-primary">
+          <i class="pi pi-play-circle text-3xl"></i>
           <span>GBS CMS</span>
         </div>
       </template>
       <template #subtitle>Sign in to manage ads</template>
       <template #content>
-        <div class="login-form">
+        <div class="flex flex-column gap-3">
           <Message
             v-if="errorMsg"
             severity="error"
             :closable="false"
-            style="width: 100%"
+            class="w-full"
           >
             {{ errorMsg }}
           </Message>
@@ -45,7 +45,7 @@ async function handleLogin() {
             type="button"
             label="Sign in with Keycloak"
             icon="pi pi-sign-in"
-            style="width: 100%"
+            class="w-full"
             :loading="isPending"
             @click="handleLogin"
           />
@@ -54,38 +54,3 @@ async function handleLogin() {
     </Card>
   </div>
 </template>
-
-<style scoped>
-.login-page {
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--p-surface-50);
-  padding: 24px;
-}
-
-.login-card {
-  width: 100%;
-  max-width: 420px;
-}
-
-.login-title {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  font-size: 24px;
-  font-weight: 600;
-  color: var(--p-primary-color);
-}
-
-.login-title i {
-  font-size: 32px;
-}
-
-.login-form {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-</style>
