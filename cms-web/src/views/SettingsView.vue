@@ -35,20 +35,22 @@ function save() {
 </script>
 
 <template>
-  <div class="settings-page">
-    <div class="page-header">
+  <div class="flex flex-column gap-3 lg:gap-4">
+    <div class="flex flex-column md:flex-row md:align-items-start justify-content-between gap-3">
       <div>
-        <h1 class="page-title">Settings</h1>
-        <p class="page-subtitle">Configure POS application settings</p>
+        <h1 class="text-2xl lg:text-3xl font-semibold text-color m-0">Settings</h1>
+        <p class="text-sm text-color-secondary mt-1 mb-0">Configure POS application settings</p>
       </div>
-      <Button label="Save Changes" icon="pi pi-check" :loading="saving" @click="save" />
+      <div class="flex flex-wrap align-items-center gap-2">
+        <Button label="Save Changes" icon="pi pi-check" :loading="saving" @click="save" />
+      </div>
     </div>
 
     <Message v-if="isLoading" severity="info" style="margin-bottom: 16px;">Loading settings...</Message>
 
-    <div class="card">
-      <h2 class="section-title">General</h2>
-      <div class="form-grid">
+    <div class="surface-0 border-round-xl border-1 surface-border p-4">
+      <h2 class="text-base font-semibold text-color mt-0 mb-3">General</h2>
+      <div class="flex flex-column gap-3">
         <div class="form-field">
           <label>Store Name</label>
           <InputText v-model="form.store_name" fluid />
@@ -60,20 +62,20 @@ function save() {
       </div>
     </div>
 
-    <div class="card">
-      <h2 class="section-title">Tax</h2>
-      <div class="form-grid">
+    <div class="surface-0 border-round-xl border-1 surface-border p-4">
+      <h2 class="text-base font-semibold text-color mt-0 mb-3">Tax</h2>
+      <div class="flex flex-column gap-3">
         <div class="form-field">
           <label>Tax Rate</label>
           <InputText v-model="form.tax_rate" placeholder="0.10" fluid />
         </div>
       </div>
-      <p class="hint">Tax rate in decimal format. 0.10 = 10% PPN.</p>
+      <p class="text-xs text-color-secondary mt-2 mb-0">Tax rate in decimal format. 0.10 = 10% PPN.</p>
     </div>
 
-    <div class="card">
-      <h2 class="section-title">Receipt</h2>
-      <div class="form-grid">
+    <div class="surface-0 border-round-xl border-1 surface-border p-4">
+      <h2 class="text-base font-semibold text-color mt-0 mb-3">Receipt</h2>
+      <div class="flex flex-column gap-3">
         <div class="form-field">
           <label>Receipt Header</label>
           <InputText v-model="form.receipt_header" fluid />
@@ -88,14 +90,6 @@ function save() {
 </template>
 
 <style scoped>
-.settings-page { display: flex; flex-direction: column; gap: 24px; max-width: 680px; }
-.page-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; }
-.page-title { margin: 0; font-size: 28px; font-weight: 600; color: var(--p-text-color); }
-.page-subtitle { margin: 4px 0 0; color: var(--p-text-secondary-color); font-size: 14px; }
-.card { background: var(--p-surface-0); border-radius: 12px; border: 1px solid var(--p-surface-200); padding: 20px; }
-.section-title { margin: 0 0 16px; font-size: 16px; font-weight: 600; color: var(--p-text-color); }
-.form-grid { display: flex; flex-direction: column; gap: 16px; }
 .form-field { display: flex; flex-direction: column; gap: 4px; }
 .form-field label { font-size: 14px; font-weight: 500; color: var(--p-text-color); }
-.hint { font-size: 12px; color: var(--p-text-secondary-color); margin-top: 8px; }
 </style>

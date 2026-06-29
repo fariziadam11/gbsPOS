@@ -3,8 +3,18 @@ import Button from 'primevue/button'
 import Menu from 'primevue/menu'
 import { ref } from 'vue'
 import { useAuthStore } from '../stores/auth'
+import { useTheme } from '../composables/useTheme'
+
+const props = defineProps<{
+  showMenuToggle?: boolean
+}>()
+
+const emit = defineEmits<{
+  toggleSidebar: []
+}>()
 
 const authStore = useAuthStore()
+const { isDark, toggle } = useTheme()
 const userMenu = ref<InstanceType<typeof Menu> | null>(null)
 
 const userMenuItems = ref([
@@ -27,20 +37,45 @@ async function logout() {
 </script>
 
 <template>
-  <header class="app-header">
-    <div class="header-brand">
-      <i class="pi pi-play-circle brand-icon"></i>
-      <span class="brand-text">GBS CMS</span>
+  <header class="app-header flex justify-content-between align-items-center px-3 lg:px-4 surface-section border-bottom-1 surface-border">
+    <div class="header-brand flex align-items-center gap-2 lg:gap-3">
+      <Button
+        v-if="showMenuToggle"
+        icon="pi pi-bars"
+        text
+        class="md:hidden mr-2"
+        @click="emit('toggleSidebar')"
+        title="Menu"
+      />
+      <i class="pi pi-play-circle brand-icon text-2xl lg:text-3xl text-primary"></i>
+      <span class="brand-text text-lg lg:text-xl font-semibold text-color">GBS CMS</span>
     </div>
 
-    <div class="header-actions">
-      <div class="user-info">
+    <div class="header-actions flex align-items-center gap-2">
+      <Button
+        :icon="isDark ? 'pi pi-sun' : 'pi pi-moon'"
+        text
+        severity="secondary"
+        @click="toggle"
+        title="Toggle theme"
+        class="theme-toggle"
+      />
+
+      <div class="user-info flex align-items-center">
         <Button
           type="button"
           :label="authStore.username || 'User'"
           icon="pi pi-user"
           text
           @click="toggleUserMenu"
+          class="hidden md:inline-flex"
+        />
+        <Button
+          type="button"
+          icon="pi pi-user"
+          text
+          @click="toggleUserMenu"
+          class="md:hidden"
         />
         <Menu ref="userMenu" :model="userMenuItems" popup />
       </div>
@@ -58,42 +93,16 @@ async function logout() {
 <style scoped>
 .app-header {
   height: 64px;
-  background: var(--p-surface-0);
-  border-bottom: 1px solid var(--p-surface-200);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 24px;
   position: sticky;
   top: 0;
   z-index: 100;
 }
 
-.header-brand {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
 .brand-icon {
-  font-size: 28px;
   color: var(--p-primary-color);
 }
 
 .brand-text {
-  font-size: 20px;
-  font-weight: 600;
   color: var(--p-text-color);
-}
-
-.header-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.user-info {
-  display: flex;
-  align-items: center;
 }
 </style>

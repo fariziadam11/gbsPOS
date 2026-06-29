@@ -43,6 +43,18 @@ func (s *UserService) Get(id uint) (*dto.UserResponse, error) {
 	if err != nil {
 		return nil, err
 	}
+	return mapUserToResponse(user), nil
+}
+
+func (s *UserService) FindByUsername(username string) (*dto.UserResponse, error) {
+	user, err := s.repo.FindByUsername(username)
+	if err != nil {
+		return nil, err
+	}
+	return mapUserToResponse(user), nil
+}
+
+func mapUserToResponse(user *model.User) *dto.UserResponse {
 	return &dto.UserResponse{
 		ID:        user.ID,
 		Username:  user.Username,
@@ -51,7 +63,7 @@ func (s *UserService) Get(id uint) (*dto.UserResponse, error) {
 		Gender:    user.Gender,
 		CreatedAt: user.CreatedAt.Format(time.RFC3339),
 		UpdatedAt: user.UpdatedAt.Format(time.RFC3339),
-	}, nil
+	}
 }
 
 func (s *UserService) Create(req dto.CreateUserRequest) (*dto.UserResponse, error) {

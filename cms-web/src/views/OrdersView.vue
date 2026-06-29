@@ -63,24 +63,22 @@ watch(dateRange, (val) => {
 </script>
 
 <template>
-  <div class="orders-page">
-    <div class="page-header">
+  <div class="flex flex-column gap-3 lg:gap-4">
+    <div class="flex flex-column md:flex-row md:align-items-start justify-content-between gap-3">
       <div>
-        <h1 class="page-title">Transactions</h1>
-        <p class="page-subtitle">View and audit all orders</p>
+        <h1 class="text-2xl lg:text-3xl font-semibold text-color m-0">Transactions</h1>
+        <p class="text-sm text-color-secondary mt-1 mb-0">View and audit all orders</p>
+      </div>
+      <div class="flex flex-column sm:flex-row flex-wrap align-items-stretch sm:align-items-center gap-2">
+        <Select v-model="filters.storeType" :options="storeTypes" showClear placeholder="Store" class="w-full sm:w-8rem" />
+        <Select v-model="filters.paymentMethod" :options="paymentMethods" showClear placeholder="Payment" class="w-full sm:w-8rem" />
+        <Select v-model="filters.isVoided" :options="[{ label: 'Active', value: false }, { label: 'Voided', value: true }]" optionLabel="label" optionValue="value" showClear placeholder="Status" class="w-full sm:w-8rem" />
+        <DatePicker v-model="dateRange" selectionMode="range" showClear placeholder="Date Range" class="w-full sm:w-15rem" />
       </div>
     </div>
 
-    <!-- Filters -->
-    <div class="filter-bar">
-      <Select v-model="filters.storeType" :options="storeTypes" showClear placeholder="Store" style="width: 130px" />
-      <Select v-model="filters.paymentMethod" :options="paymentMethods" showClear placeholder="Payment" style="width: 130px" />
-      <Select v-model="filters.isVoided" :options="[{ label: 'Active', value: false }, { label: 'Voided', value: true }]" optionLabel="label" optionValue="value" showClear placeholder="Status" style="width: 130px" />
-      <DatePicker v-model="dateRange" selectionMode="range" showClear placeholder="Date Range" style="width: 240px" />
-    </div>
-
-    <div class="card">
-      <DataTable :value="orders || []" :loading="isLoading" tableStyle="min-width: 50rem" stripedRows size="small" paginator :rows="20" :rowsPerPageOptions="[10, 20, 50]">
+    <div class="surface-0 border-round-xl border-1 surface-border p-3">
+      <DataTable :value="orders || []" :loading="isLoading" tableStyle="min-width: 40rem" stripedRows size="small" paginator :rows="20" :rowsPerPageOptions="[10, 20, 50]">
         <Column header="Order ID" style="width: 80px">
           <template #body="{ data }: { data: Order }">
             <span class="order-id">{{ data.id.length > 8 ? data.id.substring(0, 8) : data.id }}</span>
@@ -117,41 +115,43 @@ watch(dateRange, (val) => {
           </template>
         </Column>
         <template #empty>
-          <div class="empty-state">No transactions found.</div>
+          <div class="text-center p-5 text-color-secondary">No transactions found.</div>
         </template>
       </DataTable>
     </div>
 
     <!-- Order Detail Dialog -->
-    <Dialog v-model:visible="showDetail" :modal="true" :style="{ width: '600px' }" :header="`Order #${selectedOrder?.id?.substring(0, 8)}`">
+    <Dialog v-model:visible="showDetail" :modal="true" :style="{ width: '95vw', maxWidth: '600px' }" :header="`Order #${selectedOrder?.id?.substring(0, 8)}`">
       <div v-if="selectedOrder" class="order-detail">
-        <div class="detail-grid">
-          <div class="detail-item"><strong>Date:</strong> {{ formatTimestamp(selectedOrder.timestamp) }}</div>
-          <div class="detail-item"><strong>Payment:</strong> {{ selectedOrder.paymentMethod }}</div>
-          <div class="detail-item"><strong>Store:</strong> {{ selectedOrder.storeType }}</div>
-          <div class="detail-item"><strong>Status:</strong> {{ selectedOrder.isVoided ? 'Voided' : selectedOrder.isSettled ? 'Settled' : 'Active' }}</div>
-          <div class="detail-item" v-if="selectedOrder.cashReceived"><strong>Cash:</strong> {{ formatCurrency(selectedOrder.cashReceived) }}</div>
-          <div class="detail-item" v-if="selectedOrder.changeAmount !== null"><strong>Change:</strong> {{ formatCurrency(selectedOrder.changeAmount) }}</div>
-          <div class="detail-item" v-if="selectedOrder.customerName"><strong>Customer:</strong> {{ selectedOrder.customerName }} ({{ selectedOrder.customerPhone }})</div>
-          <div class="detail-item" v-if="selectedOrder.bankName"><strong>Bank:</strong> {{ selectedOrder.bankName }}</div>
-          <div class="detail-item" v-if="selectedOrder.transactionId"><strong>Tx ID:</strong> {{ selectedOrder.transactionId }}</div>
-          <div class="detail-item" v-if="selectedOrder.voidReason"><strong>Void Reason:</strong> {{ selectedOrder.voidReason }}</div>
+        <div class="grid">
+          <div class="col-12 md:col-6"><strong>Date:</strong> {{ formatTimestamp(selectedOrder.timestamp) }}</div>
+          <div class="col-12 md:col-6"><strong>Payment:</strong> {{ selectedOrder.paymentMethod }}</div>
+          <div class="col-12 md:col-6"><strong>Store:</strong> {{ selectedOrder.storeType }}</div>
+          <div class="col-12 md:col-6"><strong>Status:</strong> {{ selectedOrder.isVoided ? 'Voided' : selectedOrder.isSettled ? 'Settled' : 'Active' }}</div>
+          <div class="col-12 md:col-6" v-if="selectedOrder.cashReceived"><strong>Cash:</strong> {{ formatCurrency(selectedOrder.cashReceived) }}</div>
+          <div class="col-12 md:col-6" v-if="selectedOrder.changeAmount !== null"><strong>Change:</strong> {{ formatCurrency(selectedOrder.changeAmount) }}</div>
+          <div class="col-12 md:col-6" v-if="selectedOrder.customerName"><strong>Customer:</strong> {{ selectedOrder.customerName }} ({{ selectedOrder.customerPhone }})</div>
+          <div class="col-12 md:col-6" v-if="selectedOrder.bankName"><strong>Bank:</strong> {{ selectedOrder.bankName }}</div>
+          <div class="col-12 md:col-6" v-if="selectedOrder.transactionId"><strong>Tx ID:</strong> {{ selectedOrder.transactionId }}</div>
+          <div class="col-12 md:col-6" v-if="selectedOrder.voidReason"><strong>Void Reason:</strong> {{ selectedOrder.voidReason }}</div>
         </div>
-        <div class="order-items">
-          <h3>Items</h3>
-          <table class="items-table">
-            <thead>
-              <tr><th>Product</th><th>Qty</th><th>Price</th><th>Subtotal</th></tr>
-            </thead>
-            <tbody>
-              <tr v-for="item in selectedOrder.items" :key="item.id">
-                <td>{{ item.productName }}</td>
-                <td>{{ item.qty }}</td>
-                <td>{{ formatCurrency(item.productPrice) }}</td>
-                <td>{{ formatCurrency(item.subtotal) }}</td>
-              </tr>
-            </tbody>
-          </table>
+        <div class="order-items mt-3">
+          <h3 class="m-0 mb-2 text-base">Items</h3>
+          <div class="overflow-x-auto">
+            <table class="items-table w-full">
+              <thead>
+                <tr><th>Product</th><th>Qty</th><th>Price</th><th>Subtotal</th></tr>
+              </thead>
+              <tbody>
+                <tr v-for="item in selectedOrder.items" :key="item.id">
+                  <td>{{ item.productName }}</td>
+                  <td>{{ item.qty }}</td>
+                  <td>{{ formatCurrency(item.productPrice) }}</td>
+                  <td>{{ formatCurrency(item.subtotal) }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
         <div class="order-totals">
           <div class="total-row"><span>Subtotal</span><span>{{ formatCurrency(selectedOrder.subtotal) }}</span></div>
@@ -168,22 +168,14 @@ watch(dateRange, (val) => {
 </template>
 
 <style scoped>
-.orders-page { display: flex; flex-direction: column; gap: 24px; }
-.page-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; }
-.page-title { margin: 0; font-size: 28px; font-weight: 600; color: var(--p-text-color); }
-.page-subtitle { margin: 4px 0 0; color: var(--p-text-secondary-color); font-size: 14px; }
-.filter-bar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
-.card { background: var(--p-surface-0); border-radius: 12px; border: 1px solid var(--p-surface-200); padding: 16px; }
 .order-id { font-family: monospace; font-size: 13px; }
-.empty-state { text-align: center; padding: 40px; color: var(--p-text-secondary-color); }
-.detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px; }
-.detail-item { font-size: 14px; }
 .order-items { margin: 16px 0; }
 .order-items h3 { margin: 0 0 8px; font-size: 16px; }
 .items-table { width: 100%; border-collapse: collapse; }
-.items-table th, .items-table td { padding: 8px; text-align: left; border-bottom: 1px solid var(--p-surface-200); font-size: 13px; }
+.items-table { border-collapse: collapse; }
+.items-table th, .items-table td { padding: 8px; text-align: left; border-bottom: 1px solid light-dark(var(--p-surface-200), var(--p-surface-700)); font-size: 13px; }
 .items-table th { font-weight: 600; color: var(--p-text-secondary-color); }
-.order-totals { border-top: 1px solid var(--p-surface-300); padding-top: 12px; }
+.order-totals { border-top: 1px solid light-dark(var(--p-surface-300), var(--p-surface-600)); padding-top: 12px; }
 .total-row { display: flex; justify-content: space-between; padding: 4px 0; font-size: 14px; }
 .total-row.grand { font-weight: 700; font-size: 16px; padding-top: 8px; }
 </style>
