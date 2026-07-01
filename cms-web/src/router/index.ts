@@ -71,6 +71,24 @@ const router = createRouter({
       meta: { requiresAuth: true, requiresAdmin: true },
     },
     {
+      path: '/fuel-prices',
+      name: 'fuel-prices',
+      component: () => import('../views/FuelPricesView.vue'),
+      meta: { requiresAuth: true, requiresAdmin: true },
+    },
+    {
+      path: '/pumps',
+      name: 'pumps',
+      component: () => import('../views/PumpsView.vue'),
+      meta: { requiresAuth: true, requiresAdmin: true },
+    },
+    {
+      path: '/fuel-reports',
+      name: 'fuel-reports',
+      component: () => import('../views/FuelReportsView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
       path: '/:pathMatch(.*)*',
       redirect: '/',
     },

@@ -3,11 +3,15 @@ package database
 import (
 	"gbs-pos-api/internal/model"
 	"log"
+	"time"
 
 	"gorm.io/gorm"
 )
 
 func Seed(db *gorm.DB) {
+	// Fuel master data can be seeded independently even on existing deployments.
+	seedFuelData(db)
+
 	var count int64
 	db.Model(&model.User{}).Count(&count)
 	if count > 0 {
@@ -134,5 +138,49 @@ func Seed(db *gorm.DB) {
 	}
 	for _, p := range products {
 		db.Create(&p)
+	}
+}
+
+func seedFuelData(db *gorm.DB) {
+	var fuelPriceCount int64
+	db.Model(&model.FuelPrice{}).Count(&fuelPriceCount)
+	if fuelPriceCount == 0 {
+		prices := []model.FuelPrice{
+			{Code: "PERTALITE", Name: "Pertalite", PricePerLiter: 10000, UpdatedAt: time.Now()},
+			{Code: "PERTAMAX", Name: "Pertamax", PricePerLiter: 12500, UpdatedAt: time.Now()},
+			{Code: "PERTAMAX_GREEN", Name: "Pertamax Green", PricePerLiter: 13000, UpdatedAt: time.Now()},
+			{Code: "PERTAMAX_TURBO", Name: "Pertamax Turbo", PricePerLiter: 14000, UpdatedAt: time.Now()},
+			{Code: "PERTAMINA_DEX", Name: "Pertamina Dex", PricePerLiter: 15000, UpdatedAt: time.Now()},
+			{Code: "PERTAMINA_DEXLITE", Name: "Pertamina Dexlite", PricePerLiter: 14500, UpdatedAt: time.Now()},
+		}
+		for _, p := range prices {
+			db.Create(&p)
+		}
+		log.Println("Seeded fuel prices")
+	}
+
+	var pumpCount int64
+	db.Model(&model.Pump{}).Count(&pumpCount)
+	if pumpCount == 0 {
+		pumps := []model.Pump{
+			{ID: "P01", Name: "Pompa 1", IsActive: true},
+			{ID: "P02", Name: "Pompa 2", IsActive: true},
+			{ID: "P03", Name: "Pompa 3", IsActive: true},
+		}
+		nozzles := []model.Nozzle{
+			{ID: "P01N01", PumpID: "P01", Name: "Nozzle 1", FuelCode: "PERTALITE", IsActive: true},
+			{ID: "P01N02", PumpID: "P01", Name: "Nozzle 2", FuelCode: "PERTAMAX", IsActive: true},
+			{ID: "P02N01", PumpID: "P02", Name: "Nozzle 1", FuelCode: "PERTAMAX_GREEN", IsActive: true},
+			{ID: "P02N02", PumpID: "P02", Name: "Nozzle 2", FuelCode: "PERTAMAX_TURBO", IsActive: true},
+			{ID: "P03N01", PumpID: "P03", Name: "Nozzle 1", FuelCode: "PERTAMINA_DEX", IsActive: true},
+			{ID: "P03N02", PumpID: "P03", Name: "Nozzle 2", FuelCode: "PERTAMINA_DEXLITE", IsActive: true},
+		}
+		for _, p := range pumps {
+			db.Create(&p)
+		}
+		for _, n := range nozzles {
+			db.Create(&n)
+		}
+		log.Println("Seeded pumps and nozzles")
 	}
 }

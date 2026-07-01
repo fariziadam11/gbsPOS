@@ -270,6 +270,72 @@ export interface UpdateUserRequest {
   gender?: string;
 }
 
+// Fuel types
+export interface FuelPrice {
+  code: string;
+  name: string;
+  pricePerLiter: number;
+  updatedAt: number;
+}
+
+export interface UpdateFuelPriceRequest {
+  pricePerLiter: number;
+}
+
+export interface Pump {
+  id: string;
+  name: string;
+  isActive: boolean;
+}
+
+export interface CreatePumpRequest {
+  id: string;
+  name: string;
+}
+
+export interface UpdatePumpRequest {
+  name?: string;
+  isActive?: boolean;
+}
+
+export interface Nozzle {
+  id: string;
+  pumpId: string;
+  name: string;
+  fuelCode: string;
+  isActive: boolean;
+}
+
+export interface CreateNozzleRequest {
+  id: string;
+  pumpId: string;
+  name: string;
+  fuelCode: string;
+}
+
+export interface UpdateNozzleRequest {
+  name?: string;
+  fuelCode?: string;
+  isActive?: boolean;
+}
+
+export interface FuelReportItem {
+  fuelCode: string;
+  liters: number;
+  totalAmount: number;
+}
+
+export interface PumpReportItem {
+  pumpId: string;
+  liters: number;
+  totalAmount: number;
+}
+
+export interface FuelSalesReport {
+  summary: FuelReportItem[];
+  pumpTotals: PumpReportItem[];
+}
+
 export interface UserListItem {
   id: number;
   username: string;

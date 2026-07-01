@@ -45,14 +45,18 @@ func main() {
 		}
 	} else {
 		if err := database.Migrate(db,
-			&model.User{},
-			&model.Product{},
-			&model.Customer{},
-			&model.StockMovement{},
-			&model.ProductVariant{},
-			&model.Order{},
-			&model.OrderItem{},
-			&model.Settlement{},
+		&model.User{},
+		&model.Product{},
+		&model.Customer{},
+		&model.StockMovement{},
+		&model.ProductVariant{},
+		&model.Order{},
+		&model.OrderItem{},
+		&model.Settlement{},
+		&model.FuelPrice{},
+		&model.Pump{},
+		&model.Nozzle{},
+		&model.FuelSale{},
 		); err != nil {
 			log.Fatal("failed to migrate database: ", err)
 		}
@@ -67,6 +71,10 @@ func main() {
 	customerRepo := repository.NewCustomerRepository(db)
 	stockMovementRepo := repository.NewStockMovementRepository(db)
 	variantRepo := repository.NewProductVariantRepository(db)
+	fuelPriceRepo := repository.NewFuelPriceRepository(db)
+	pumpRepo := repository.NewPumpRepository(db)
+	nozzleRepo := repository.NewNozzleRepository(db)
+	fuelSaleRepo := repository.NewFuelSaleRepository(db)
 
 	dashboardRepo := repository.NewDashboardRepository(db)
 
@@ -77,6 +85,7 @@ func main() {
 	orderService := service.NewOrderService(orderRepo, productService, customerService, variantService)
 	settlementService := service.NewSettlementService(orderRepo, settlementRepo)
 	dashboardService := service.NewDashboardService(dashboardRepo)
+	fuelService := service.NewFuelService(fuelPriceRepo, pumpRepo, nozzleRepo, fuelSaleRepo)
 
 	authHandler := handler.NewAuthHandler(authService)
 	productHandler := handler.NewProductHandler(productService)
@@ -85,6 +94,7 @@ func main() {
 	customerHandler := handler.NewCustomerHandler(customerService)
 	dashboardHandler := handler.NewDashboardHandler(dashboardService)
 	variantHandler := handler.NewProductVariantHandler(variantService)
+	fuelHandler := handler.NewFuelHandler(fuelService)
 
 	if cfg.Env == "production" {
 		gin.SetMode(gin.ReleaseMode)
@@ -100,6 +110,7 @@ func main() {
 			Customer:       customerHandler,
 			Dashboard:      dashboardHandler,
 			ProductVariant: variantHandler,
+			Fuel:           fuelHandler,
 		},
 	)
 
