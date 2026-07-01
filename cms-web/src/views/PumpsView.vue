@@ -115,55 +115,59 @@ function confirmDeleteNozzle(nozzle: Nozzle) {
     <h1 class="text-2xl font-bold mb-4">Pumps & Nozzles</h1>
 
     <div class="mb-6">
-      <div class="flex justify-between items-center mb-2">
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-2">
         <h2 class="text-lg font-semibold">Pumps</h2>
         <Button label="Add Pump" icon="pi pi-plus" @click="openCreatePump" />
       </div>
-      <DataTable :value="pumps || []" :loading="pumpsLoading" class="p-datatable-sm" stripedRows>
-        <Column field="id" header="ID" />
-        <Column field="name" header="Name" />
-        <Column field="isActive" header="Active">
-          <template #body="{ data }">
-            <Checkbox :modelValue="data.isActive" :binary="true" disabled />
-          </template>
-        </Column>
-        <Column header="Actions">
-          <template #body="{ data }">
-            <Button icon="pi pi-pencil" severity="secondary" text @click="openEditPump(data)" />
-            <Button icon="pi pi-trash" severity="danger" text @click="confirmDeletePump(data)" />
-          </template>
-        </Column>
-      </DataTable>
+      <div class="overflow-x-auto">
+        <DataTable :value="pumps || []" :loading="pumpsLoading" class="p-datatable-sm min-w-[24rem]" stripedRows>
+          <Column field="id" header="ID" />
+          <Column field="name" header="Name" />
+          <Column field="isActive" header="Active">
+            <template #body="{ data }">
+              <Checkbox :modelValue="data.isActive" :binary="true" disabled />
+            </template>
+          </Column>
+          <Column header="Actions">
+            <template #body="{ data }">
+              <Button icon="pi pi-pencil" severity="secondary" text @click="openEditPump(data)" />
+              <Button icon="pi pi-trash" severity="danger" text @click="confirmDeletePump(data)" />
+            </template>
+          </Column>
+        </DataTable>
+      </div>
     </div>
 
     <div>
-      <div class="flex justify-between items-center mb-2 gap-2 flex-wrap">
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-2">
         <h2 class="text-lg font-semibold">Nozzles</h2>
-        <div class="flex gap-2">
-          <Select v-model="selectedPump" :options="pumps || []" optionLabel="name" optionValue="id" placeholder="Filter by pump" showClear class="w-48" />
+        <div class="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+          <Select v-model="selectedPump" :options="pumps || []" optionLabel="name" optionValue="id" placeholder="Filter by pump" showClear class="w-full sm:w-48" />
           <Button label="Add Nozzle" icon="pi pi-plus" @click="openCreateNozzle" />
         </div>
       </div>
-      <DataTable :value="filteredNozzles" :loading="nozzlesLoading" class="p-datatable-sm" stripedRows>
-        <Column field="id" header="ID" />
-        <Column field="pumpId" header="Pump" />
-        <Column field="name" header="Name" />
-        <Column field="fuelCode" header="Fuel" />
-        <Column field="isActive" header="Active">
-          <template #body="{ data }">
-            <Checkbox :modelValue="data.isActive" :binary="true" disabled />
-          </template>
-        </Column>
-        <Column header="Actions">
-          <template #body="{ data }">
-            <Button icon="pi pi-pencil" severity="secondary" text @click="openEditNozzle(data)" />
-            <Button icon="pi pi-trash" severity="danger" text @click="confirmDeleteNozzle(data)" />
-          </template>
-        </Column>
-      </DataTable>
+      <div class="overflow-x-auto">
+        <DataTable :value="filteredNozzles" :loading="nozzlesLoading" class="p-datatable-sm min-w-[30rem]" stripedRows>
+          <Column field="id" header="ID" />
+          <Column field="pumpId" header="Pump" />
+          <Column field="name" header="Name" />
+          <Column field="fuelCode" header="Fuel" />
+          <Column field="isActive" header="Active">
+            <template #body="{ data }">
+              <Checkbox :modelValue="data.isActive" :binary="true" disabled />
+            </template>
+          </Column>
+          <Column header="Actions">
+            <template #body="{ data }">
+              <Button icon="pi pi-pencil" severity="secondary" text @click="openEditNozzle(data)" />
+              <Button icon="pi pi-trash" severity="danger" text @click="confirmDeleteNozzle(data)" />
+            </template>
+          </Column>
+        </DataTable>
+      </div>
     </div>
 
-    <Dialog v-model:visible="showPumpDialog" :header="editingPump ? 'Edit Pump' : 'Add Pump'" modal :style="{ width: '400px' }">
+    <Dialog v-model:visible="showPumpDialog" :header="editingPump ? 'Edit Pump' : 'Add Pump'" modal class="w-full max-w-md">
       <div class="flex flex-col gap-4">
         <div>
           <label class="block text-sm font-medium mb-1">ID</label>
@@ -177,7 +181,7 @@ function confirmDeleteNozzle(nozzle: Nozzle) {
       </div>
     </Dialog>
 
-    <Dialog v-model:visible="showNozzleDialog" :header="editingNozzle ? 'Edit Nozzle' : 'Add Nozzle'" modal :style="{ width: '400px' }">
+    <Dialog v-model:visible="showNozzleDialog" :header="editingNozzle ? 'Edit Nozzle' : 'Add Nozzle'" modal class="w-full max-w-md">
       <div class="flex flex-col gap-4">
         <div>
           <label class="block text-sm font-medium mb-1">ID</label>

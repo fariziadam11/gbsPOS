@@ -25,43 +25,47 @@ function loadReport() {
   <div class="p-4">
     <h1 class="text-2xl font-bold mb-4">Fuel Sales Report</h1>
 
-    <div class="flex gap-2 items-end mb-4 flex-wrap">
-      <div>
+    <div class="flex flex-col sm:flex-row gap-2 items-start sm:items-end mb-4">
+      <div class="w-full sm:w-auto">
         <label class="block text-sm font-medium mb-1">From</label>
-        <DatePicker v-model="fromDate" dateFormat="yy-mm-dd" showIcon />
+        <DatePicker v-model="fromDate" dateFormat="yy-mm-dd" showIcon class="w-full" />
       </div>
-      <div>
+      <div class="w-full sm:w-auto">
         <label class="block text-sm font-medium mb-1">To</label>
-        <DatePicker v-model="toDate" dateFormat="yy-mm-dd" showIcon />
+        <DatePicker v-model="toDate" dateFormat="yy-mm-dd" showIcon class="w-full" />
       </div>
       <Button label="Load" icon="pi pi-search" @click="loadReport" />
     </div>
 
-    <div v-if="triggered && report" class="grid gap-4">
+    <div v-if="triggered && report" class="grid grid-cols-1 xl:grid-cols-2 gap-4">
       <div>
         <h2 class="text-lg font-semibold mb-2">By Fuel Type</h2>
-        <DataTable :value="report.summary" class="p-datatable-sm" stripedRows>
-          <Column field="fuelCode" header="Fuel Code" />
-          <Column field="liters" header="Liters" />
-          <Column header="Total">
-            <template #body="{ data }">
-              {{ formatRupiah(data.totalAmount) }}
-            </template>
-          </Column>
-        </DataTable>
+        <div class="overflow-x-auto">
+          <DataTable :value="report.summary" class="p-datatable-sm min-w-[20rem]" stripedRows>
+            <Column field="fuelCode" header="Fuel Code" />
+            <Column field="liters" header="Liters" />
+            <Column header="Total">
+              <template #body="{ data }">
+                {{ formatRupiah(data.totalAmount) }}
+              </template>
+            </Column>
+          </DataTable>
+        </div>
       </div>
 
       <div>
         <h2 class="text-lg font-semibold mb-2">By Pump</h2>
-        <DataTable :value="report.pumpTotals" class="p-datatable-sm" stripedRows>
-          <Column field="pumpId" header="Pump ID" />
-          <Column field="liters" header="Liters" />
-          <Column header="Total">
-            <template #body="{ data }">
-              {{ formatRupiah(data.totalAmount) }}
-            </template>
-          </Column>
-        </DataTable>
+        <div class="overflow-x-auto">
+          <DataTable :value="report.pumpTotals" class="p-datatable-sm min-w-[20rem]" stripedRows>
+            <Column field="pumpId" header="Pump ID" />
+            <Column field="liters" header="Liters" />
+            <Column header="Total">
+              <template #body="{ data }">
+                {{ formatRupiah(data.totalAmount) }}
+              </template>
+            </Column>
+          </DataTable>
+        </div>
       </div>
     </div>
 

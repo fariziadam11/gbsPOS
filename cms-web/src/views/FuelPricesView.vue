@@ -44,22 +44,24 @@ function savePrice() {
 <template>
   <div class="p-4">
     <h1 class="text-2xl font-bold mb-4">Fuel Prices</h1>
-    <DataTable :value="prices || []" :loading="isLoading" class="p-datatable-sm" stripedRows>
-      <Column field="code" header="Code" />
-      <Column field="name" header="Fuel Type" />
-      <Column header="Price / Liter">
-        <template #body="{ data }">
-          {{ formatRupiah(data.pricePerLiter) }}
-        </template>
-      </Column>
-      <Column header="Actions">
-        <template #body="{ data }">
-          <Button icon="pi pi-pencil" severity="secondary" text @click="openEdit(data)" />
-        </template>
-      </Column>
-    </DataTable>
+    <div class="overflow-x-auto">
+      <DataTable :value="prices || []" :loading="isLoading" class="p-datatable-sm min-w-[24rem]" stripedRows>
+        <Column field="code" header="Code" />
+        <Column field="name" header="Fuel Type" />
+        <Column header="Price / Liter">
+          <template #body="{ data }">
+            {{ formatRupiah(data.pricePerLiter) }}
+          </template>
+        </Column>
+        <Column header="Actions">
+          <template #body="{ data }">
+            <Button icon="pi pi-pencil" severity="secondary" text @click="openEdit(data)" />
+          </template>
+        </Column>
+      </DataTable>
+    </div>
 
-    <Dialog v-model:visible="showDialog" header="Edit Fuel Price" modal :style="{ width: '400px' }">
+    <Dialog v-model:visible="showDialog" header="Edit Fuel Price" modal class="w-full max-w-md">
       <div class="flex flex-col gap-4">
         <div>
           <label class="block text-sm font-medium mb-1">{{ editingPrice?.name }}</label>
