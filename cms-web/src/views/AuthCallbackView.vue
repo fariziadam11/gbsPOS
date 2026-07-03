@@ -2,6 +2,7 @@
 import { onMounted, ref } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
+import { isKeycloakEnabled } from '../keycloak'
 
 const router = useRouter()
 const route = useRoute()
@@ -9,6 +10,12 @@ const authStore = useAuthStore()
 const error = ref('')
 
 onMounted(async () => {
+  if (!isKeycloakEnabled) {
+    authStore.clearSession()
+    router.replace({ name: 'login' })
+    return
+  }
+
   try {
     await authStore.handleLoginCallback(window.location.href)
     const redirect = route.query.redirect as string | undefined

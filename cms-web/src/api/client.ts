@@ -22,7 +22,9 @@ apiClient.interceptors.response.use(
     const isLoginRequest = error.config?.url?.endsWith('/login')
     if (error.response?.status === 401 && !isLoginRequest) {
       localStorage.removeItem('token')
+      localStorage.removeItem('id_token')
       localStorage.removeItem('user')
+      localStorage.removeItem('expires_at')
       window.location.href = '/login'
     }
     return Promise.reject(error)

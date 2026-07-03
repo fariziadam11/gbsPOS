@@ -1,17 +1,31 @@
 import { defineStore } from 'pinia'
-import { userManager, extractRoles, parseTokenExpiry, getKeycloakLogoutUrl, clientId } from '../keycloak'
+import {
+  authMode,
+  clientId,
+  extractRoles,
+  getKeycloakLogoutUrl,
+  getUserManager,
+  isKeycloakEnabled,
+  parseTokenExpiry,
+} from '../keycloak'
+import { login as basicAuthLogin } from '../api/auth'
+import type { LoginRequest, LoginResponse } from '../types/api'
 import type { User } from 'oidc-client-ts'
 
-function storeUser(user: User) {
+function storeKeycloakUser(user: User) {
   const stored = parseUserFromKeycloak(user)
   localStorage.setItem(TOKEN_KEY, user.access_token)
   if (user.id_token) {
     localStorage.setItem(ID_TOKEN_KEY, user.id_token)
+  } else {
+    localStorage.removeItem(ID_TOKEN_KEY)
   }
   localStorage.setItem(USER_KEY, JSON.stringify(stored))
   const expiry = parseTokenExpiry(user.access_token)
   if (expiry) {
     localStorage.setItem(EXPIRES_AT_KEY, String(expiry))
+  } else {
+    localStorage.removeItem(EXPIRES_AT_KEY)
   }
   return { token: user.access_token, idToken: user.id_token ?? null, user: stored, expiresAt: expiry }
 }
@@ -33,6 +47,26 @@ const TOKEN_KEY = 'token'
 const ID_TOKEN_KEY = 'id_token'
 const USER_KEY = 'user'
 const EXPIRES_AT_KEY = 'expires_at'
+
+function storeBasicUser(result: LoginResponse) {
+  const stored: StoredUser = {
+    username: result.user.username,
+    name: result.user.name,
+    role: result.user.role,
+  }
+  const expiry = parseTokenExpiry(result.token)
+
+  localStorage.setItem(TOKEN_KEY, result.token)
+  localStorage.removeItem(ID_TOKEN_KEY)
+  localStorage.setItem(USER_KEY, JSON.stringify(stored))
+  if (expiry) {
+    localStorage.setItem(EXPIRES_AT_KEY, String(expiry))
+  } else {
+    localStorage.removeItem(EXPIRES_AT_KEY)
+  }
+
+  return { token: result.token, idToken: null, user: stored, expiresAt: expiry }
+}
 
 function parseUserFromKeycloak(user: User): StoredUser {
   const username =
@@ -70,7 +104,14 @@ export const useAuthStore = defineStore('auth', {
   },
   actions: {
     setUserSession(user: User) {
-      const session = storeUser(user)
+      const session = storeKeycloakUser(user)
+      this.token = session.token
+      this.idToken = session.idToken
+      this.user = session.user
+      this.expiresAt = session.expiresAt
+    },
+    setBasicSession(result: LoginResponse) {
+      const session = storeBasicUser(result)
       this.token = session.token
       this.idToken = session.idToken
       this.user = session.user
@@ -86,19 +127,39 @@ export const useAuthStore = defineStore('auth', {
       localStorage.removeItem(USER_KEY)
       localStorage.removeItem(EXPIRES_AT_KEY)
     },
-    async login() {
-      await userManager.signinRedirect()
+    async login(credentials?: LoginRequest) {
+      if (authMode === 'keycloak') {
+        await getUserManager().signinRedirect()
+        return
+      }
+
+      if (!credentials) {
+        throw new Error('Username and password are required')
+      }
+
+      const response = await basicAuthLogin(credentials)
+      this.setBasicSession(response.data)
     },
     async handleLoginCallback(url?: string) {
-      const user = await userManager.signinRedirectCallback(url)
+      if (!isKeycloakEnabled) {
+        throw new Error('Keycloak authentication is not configured')
+      }
+
+      const user = await getUserManager().signinRedirectCallback(url)
       this.setUserSession(user)
       return user
     },
     async logout() {
+      if (authMode === 'basic') {
+        this.clearSession()
+        window.location.href = '/login'
+        return
+      }
+
       const idToken = this.idToken
       this.clearSession()
       try {
-        await userManager.removeUser()
+        await getUserManager().removeUser()
       } catch {
         // ignore
       }
@@ -142,16 +203,21 @@ export const useAuthStore = defineStore('auth', {
       }
     },
     startTokenSync() {
-      userManager.events.addUserLoaded((user) => {
+      if (!isKeycloakEnabled) {
+        return
+      }
+
+      const manager = getUserManager()
+      manager.events.addUserLoaded((user) => {
         this.setUserSession(user)
       })
-      userManager.events.addUserUnloaded(() => {
+      manager.events.addUserUnloaded(() => {
         this.clearSession()
       })
-      userManager.events.addAccessTokenExpired(() => {
+      manager.events.addAccessTokenExpired(() => {
         this.clearSession()
       })
-      userManager.events.addSilentRenewError(() => {
+      manager.events.addSilentRenewError(() => {
         this.clearSession()
       })
     },
