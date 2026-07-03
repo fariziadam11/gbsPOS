@@ -475,6 +475,228 @@
       ]
     },
     {
+      "endpoint": "/pos/v1/fuel-prices",
+      "method": "GET",
+      "output_encoding": "no-op",
+      "input_headers": [
+        "Authorization"
+      ],
+      "backend": [
+        {
+          "host": [
+            "http://pos-api:8080"
+          ],
+          "url_pattern": "/v1/fuel-prices",
+          "method": "GET",
+          "encoding": "no-op"
+        }
+      ]
+    },
+    {
+      "endpoint": "/pos/v1/fuel-prices/{code}",
+      "method": "PUT",
+      "output_encoding": "no-op",
+      "input_headers": [
+        "Authorization",
+        "Content-Type"
+      ],
+      "backend": [
+        {
+          "host": [
+            "http://pos-api:8080"
+          ],
+          "url_pattern": "/v1/fuel-prices/{code}",
+          "method": "PUT",
+          "encoding": "no-op"
+        }
+      ]
+    },
+    {
+      "endpoint": "/pos/v1/pumps",
+      "method": "GET",
+      "output_encoding": "no-op",
+      "input_headers": [
+        "Authorization"
+      ],
+      "backend": [
+        {
+          "host": [
+            "http://pos-api:8080"
+          ],
+          "url_pattern": "/v1/pumps",
+          "method": "GET",
+          "encoding": "no-op"
+        }
+      ]
+    },
+    {
+      "endpoint": "/pos/v1/pumps",
+      "method": "POST",
+      "output_encoding": "no-op",
+      "input_headers": [
+        "Authorization",
+        "Content-Type"
+      ],
+      "backend": [
+        {
+          "host": [
+            "http://pos-api:8080"
+          ],
+          "url_pattern": "/v1/pumps",
+          "method": "POST",
+          "encoding": "no-op"
+        }
+      ]
+    },
+    {
+      "endpoint": "/pos/v1/pumps/{id}",
+      "method": "PUT",
+      "output_encoding": "no-op",
+      "input_headers": [
+        "Authorization",
+        "Content-Type"
+      ],
+      "backend": [
+        {
+          "host": [
+            "http://pos-api:8080"
+          ],
+          "url_pattern": "/v1/pumps/{id}",
+          "method": "PUT",
+          "encoding": "no-op"
+        }
+      ]
+    },
+    {
+      "endpoint": "/pos/v1/pumps/{id}",
+      "method": "DELETE",
+      "output_encoding": "no-op",
+      "input_headers": [
+        "Authorization"
+      ],
+      "backend": [
+        {
+          "host": [
+            "http://pos-api:8080"
+          ],
+          "url_pattern": "/v1/pumps/{id}",
+          "method": "DELETE",
+          "encoding": "no-op"
+        }
+      ]
+    },
+    {
+      "endpoint": "/pos/v1/nozzles",
+      "method": "GET",
+      "output_encoding": "no-op",
+      "input_headers": [
+        "Authorization"
+      ],
+      "backend": [
+        {
+          "host": [
+            "http://pos-api:8080"
+          ],
+          "url_pattern": "/v1/nozzles",
+          "method": "GET",
+          "encoding": "no-op"
+        }
+      ]
+    },
+    {
+      "endpoint": "/pos/v1/nozzles",
+      "method": "POST",
+      "output_encoding": "no-op",
+      "input_headers": [
+        "Authorization",
+        "Content-Type"
+      ],
+      "backend": [
+        {
+          "host": [
+            "http://pos-api:8080"
+          ],
+          "url_pattern": "/v1/nozzles",
+          "method": "POST",
+          "encoding": "no-op"
+        }
+      ]
+    },
+    {
+      "endpoint": "/pos/v1/nozzles/{id}",
+      "method": "PUT",
+      "output_encoding": "no-op",
+      "input_headers": [
+        "Authorization",
+        "Content-Type"
+      ],
+      "backend": [
+        {
+          "host": [
+            "http://pos-api:8080"
+          ],
+          "url_pattern": "/v1/nozzles/{id}",
+          "method": "PUT",
+          "encoding": "no-op"
+        }
+      ]
+    },
+    {
+      "endpoint": "/pos/v1/nozzles/{id}",
+      "method": "DELETE",
+      "output_encoding": "no-op",
+      "input_headers": [
+        "Authorization"
+      ],
+      "backend": [
+        {
+          "host": [
+            "http://pos-api:8080"
+          ],
+          "url_pattern": "/v1/nozzles/{id}",
+          "method": "DELETE",
+          "encoding": "no-op"
+        }
+      ]
+    },
+    {
+      "endpoint": "/pos/v1/fuel-sales",
+      "method": "POST",
+      "output_encoding": "no-op",
+      "input_headers": [
+        "Authorization",
+        "Content-Type"
+      ],
+      "backend": [
+        {
+          "host": [
+            "http://pos-api:8080"
+          ],
+          "url_pattern": "/v1/fuel-sales",
+          "method": "POST",
+          "encoding": "no-op"
+        }
+      ]
+    },
+    {
+      "endpoint": "/pos/v1/fuel-sales/report",
+      "method": "GET",
+      "output_encoding": "no-op",
+      "input_headers": [
+        "Authorization"
+      ],
+      "backend": [
+        {
+          "host": [
+            "http://pos-api:8080"
+          ],
+          "url_pattern": "/v1/fuel-sales/report",
+          "method": "GET",
+          "encoding": "no-op"
+        }
+      ]
+    },
+    {
       "endpoint": "/pos/v1/dashboard/summary",
       "method": "GET",
       "output_encoding": "no-op",
