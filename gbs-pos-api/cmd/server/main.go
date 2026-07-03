@@ -54,6 +54,10 @@ func main() {
 		&model.Order{},
 		&model.OrderItem{},
 		&model.Settlement{},
+		&model.FuelPrice{},
+		&model.Pump{},
+		&model.Nozzle{},
+		&model.FuelSale{},
 	); err != nil {
 		log.Fatal("failed to migrate database: ", err)
 	}
@@ -69,6 +73,10 @@ func main() {
 	stockMovementRepo := repository.NewStockMovementRepository(db)
 	variantRepo := repository.NewProductVariantRepository(db)
 	holdRepo := repository.NewHoldRepository(db)
+	fuelPriceRepo := repository.NewFuelPriceRepository(db)
+	pumpRepo := repository.NewPumpRepository(db)
+	nozzleRepo := repository.NewNozzleRepository(db)
+	fuelSaleRepo := repository.NewFuelSaleRepository(db)
 
 	dashboardRepo := repository.NewDashboardRepository(db)
 
@@ -80,9 +88,15 @@ func main() {
 	customerService := service.NewCustomerService(customerRepo)
 	variantService := service.NewProductVariantService(variantRepo)
 	holdService := service.NewHoldService(holdRepo)
-	orderService := service.NewOrderService(orderRepo, productService, customerService, variantService)
+	orderService := service.NewOrderService(
+		orderRepo,
+		productService,
+		customerService,
+		variantService,
+	)
 	settlementService := service.NewSettlementService(orderRepo, settlementRepo)
 	dashboardService := service.NewDashboardService(dashboardRepo)
+	fuelService := service.NewFuelService(fuelPriceRepo, pumpRepo, nozzleRepo, fuelSaleRepo)
 
 	authHandler := handler.NewAuthHandler(authService)
 	productHandler := handler.NewProductHandler(productService)
@@ -93,6 +107,7 @@ func main() {
 	dashboardHandler := handler.NewDashboardHandler(dashboardService)
 	variantHandler := handler.NewProductVariantHandler(variantService)
 	holdHandler := handler.NewHoldHandler(holdService)
+	fuelHandler := handler.NewFuelHandler(fuelService)
 
 	if cfg.Env == "production" {
 		gin.SetMode(gin.ReleaseMode)
@@ -110,6 +125,7 @@ func main() {
 			Dashboard:      dashboardHandler,
 			ProductVariant: variantHandler,
 			Hold:           holdHandler,
+			Fuel:           fuelHandler,
 		},
 	)
 

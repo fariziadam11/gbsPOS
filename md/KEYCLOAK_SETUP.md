@@ -311,6 +311,8 @@ JWT_SECRET=<only required when ENABLE_DEMO_AUTH=true>
 
 When `KEYCLOAK_BASE_URL` and `KEYCLOAK_REALM` are set, the backend validates RS256 Keycloak access tokens via JWKS and falls back to the legacy HS256 middleware only when `ENABLE_DEMO_AUTH=true`.
 
+CMS Web only starts the OIDC redirect flow when `VITE_KEYCLOAK_BASE_URL`, `VITE_KEYCLOAK_REALM`, and `VITE_KEYCLOAK_CLIENT_ID` are all set. Leave those frontend env values empty to show the local username/password form backed by `/v1/login`.
+
 ## 14. Next Steps
 
 1. Ensure Keycloak is running and reachable at `https://auth.armmada.id`.

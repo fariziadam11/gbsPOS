@@ -60,6 +60,7 @@ type Handlers struct {
 	Dashboard      *handler.DashboardHandler
 	ProductVariant *handler.ProductVariantHandler
 	Hold           *handler.HoldHandler
+	Fuel           *handler.FuelHandler
 }
 
 func buildAuthMiddleware(cfg *config.Config) (gin.HandlerFunc, error) {
@@ -108,6 +109,7 @@ func Setup(
 	setupDashboardRoutes(auth, h.Dashboard)
 	setupVariantRoutes(auth, h.ProductVariant)
 	setupHoldRoutes(auth, h.Hold)
+	setupFuelRoutes(v1, h.Fuel)
 
 	return r
 }

@@ -125,6 +125,7 @@ This section is maintained by AI agents. It must be updated after each completed
 - 2026-06-12 (context update): added Stock Management + POS Hold/Resume planning phase
 - 2026-06-15
 - 2026-06-17
+- 2026-07-03
 
 ### Active Development Focus
 
@@ -141,6 +142,7 @@ This section is maintained by AI agents. It must be updated after each completed
 - Pricing calculation service applies PRODUCT -> TRANSACTION -> VOUCHER discounts and selects highest monetary TRANSACTION/VOUCHER discount per scope/code.
 - CMS Web Discount management page centralizes PRODUCT / TRANSACTION / VOUCHER CRUD and product-page discount icons now deep-link to filtered discount management.
 - Hold module reworked with lifecycle ACTIVE -> RESUMED.
+- CMS Web auth now falls back to local username/password JWT login when frontend Keycloak env is empty.
 
 ### Known System Rules (Runtime)
 

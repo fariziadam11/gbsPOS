@@ -559,6 +559,9 @@ VITE_KEYCLOAK_REALM=gbs-pos
 VITE_KEYCLOAK_CLIENT_ID=gbs-cms-web
 ```
 
+CMS Web only enables Keycloak when all three `VITE_KEYCLOAK_*` values are non-empty.
+Leave them empty to use the local username/password login against `VITE_API_BASE_URL/v1/login`.
+
 ---
 
 ## Akun Default
@@ -570,7 +573,7 @@ Tersedia setelah migration `008_seed_data`:
 | `admin` | `admin123` | ADMIN |
 | `cashier` | `cashier123` | CASHIER |
 
-> Ketika `ENABLE_DEMO_AUTH=true`, akun ini bisa digunakan langsung via `/v1/login`.
+> Akun ini bisa digunakan langsung via `/v1/login` ketika backend Keycloak env kosong, atau ketika Keycloak aktif dan `ENABLE_DEMO_AUTH=true`.
 > Dalam production dengan Keycloak, buat user di realm Keycloak.
 
 ---
