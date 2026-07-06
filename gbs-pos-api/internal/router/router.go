@@ -111,5 +111,7 @@ func Setup(
 	setupHoldRoutes(auth, h.Hold)
 	setupFuelRoutes(v1, h.Fuel)
 
+	r.Static("/public", "./public")
+
 	return r
 }

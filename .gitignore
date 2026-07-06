@@ -30,3 +30,8 @@ cms-web/.env.production
 # Uploads
 uploads/
 test-uploads/
+
+**/trx-*.json
+**/public/**
+# **/public/trx/**
+!**/trx/
