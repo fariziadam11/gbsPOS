@@ -558,6 +558,92 @@
           ]
         },
         {
+          "name": "Cart Display",
+          "item": [
+            {
+              "name": "Save Cart Display",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Authorization", "value": "Bearer {{pos_token}}" },
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"terminalId\": \"POS-001\",\n  \"Initial\": {\n    \"NamaKasir\": \"DOMAR\",\n    \"KodeToko\": \"T14AB\",\n    \"NamaToko\": \"Indomaret Pusat\",\n    \"JenisToko\": \"POINT\"\n  },\n  \"DaftarBelanja\": [\n    { \"name\": \"Chitato\", \"qty\": 2, \"price\": 11500 }\n  ],\n  \"Summary\": {\n    \"Hemat\": \"0\",\n    \"Total\": \"23000\",\n    \"Bayar\": \"23000\",\n    \"Kembali\": \"0\"\n  },\n  \"TeksSelesai\": \"Transaksi\"\n}"
+                },
+                "url": {
+                  "raw": "{{pos_base_url}}/v1/display/cart",
+                  "host": ["{{pos_base_url}}"],
+                  "path": ["v1", "display", "cart"]
+                },
+                "description": "Store or update the cart display JSON for a terminal. Protected endpoint."
+              }
+            },
+            {
+              "name": "Save Cart Display (Update)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Authorization", "value": "Bearer {{pos_token}}" },
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"terminalId\": \"POS-001\",\n  \"Initial\": {\n    \"NamaKasir\": \"DOMAR\",\n    \"KodeToko\": \"T14AB\",\n    \"NamaToko\": \"Indomaret Pusat\",\n    \"JenisToko\": \"POINT\"\n  },\n  \"DaftarBelanja\": [\n    { \"name\": \"Indomie Goreng\", \"qty\": 3, \"price\": 3500 },\n    { \"name\": \"Teh Botol\", \"qty\": 1, \"price\": 5000 }\n  ],\n  \"Summary\": {\n    \"Hemat\": \"1000\",\n    \"Total\": \"15500\",\n    \"Bayar\": \"20000\",\n    \"Kembali\": \"4500\"\n  },\n  \"TeksSelesai\": \"Terima Kasih\"\n}"
+                },
+                "url": {
+                  "raw": "{{pos_base_url}}/v1/display/cart",
+                  "host": ["{{pos_base_url}}"],
+                  "path": ["v1", "display", "cart"]
+                },
+                "description": "Update the cart display JSON for the same terminal (UPSERT)."
+              }
+            },
+            {
+              "name": "Get Cart Display",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{pos_base_url}}/v1/display/cart?terminalId=POS-001",
+                  "host": ["{{pos_base_url}}"],
+                  "path": ["v1", "display", "cart"],
+                  "query": [{ "key": "terminalId", "value": "POS-001" }]
+                },
+                "description": "Get the latest cart display JSON for a terminal. Public endpoint; returns raw JSON."
+              }
+            },
+            {
+              "name": "Get Cart Display (Default)",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{pos_base_url}}/v1/display/cart?terminalId=UNKNOWN",
+                  "host": ["{{pos_base_url}}"],
+                  "path": ["v1", "display", "cart"],
+                  "query": [{ "key": "terminalId", "value": "UNKNOWN" }]
+                },
+                "description": "Request an unknown terminal to receive the default cart display JSON."
+              }
+            },
+            {
+              "name": "Delete Cart Display",
+              "request": {
+                "method": "DELETE",
+                "header": [{ "key": "Authorization", "value": "Bearer {{pos_token}}" }],
+                "url": {
+                  "raw": "{{pos_base_url}}/v1/display/cart/POS-001",
+                  "host": ["{{pos_base_url}}"],
+                  "path": ["v1", "display", "cart", "POS-001"]
+                },
+                "description": "Delete the stored cart display for a terminal. Protected endpoint. Returns 204 No Content."
+              }
+            }
+          ]
+        },
+        {
           "name": "Orders",
           "item": [
             {
