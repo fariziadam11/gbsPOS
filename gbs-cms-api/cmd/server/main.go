@@ -1,3 +1,29 @@
+// Package main GBS CMS API
+//
+// Point of Sale & Content Management System API
+//
+// This API provides endpoints for managing advertisements, users, settings,
+// and cart display for the GBS POS system.
+//
+//	Schemes: http, https
+//	BasePath: /v1
+//	Version: 1.0.0
+//	Host: localhost:8081
+//
+//	SecurityDefinitions:
+//	BearerAuth:
+//	  type: apiKey
+//	  name: Authorization
+//	  in: header
+//	  description: JWT Bearer token. For Keycloak auth, obtain token from:
+//	  {KEYCLOAK_BASE_URL}/realms/{KEYCLOAK_REALM}/protocol/openid-connect/token
+//
+//	Responses:
+//	401: Unauthorized - Invalid or missing token
+//	403: Forbidden - Insufficient permissions
+//	422: ValidationError - Request validation failed
+//
+// swagger:meta
 package main
 
 import (
@@ -16,7 +42,11 @@ import (
 	"gbs-cms-api/internal/service"
 	"gbs-common/middleware"
 
+	_ "gbs-cms-api/docs" // Swagger docs
+
 	"github.com/gin-gonic/gin"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 	"github.com/joho/godotenv"
 	"github.com/rs/zerolog"
 	"gorm.io/gorm"
@@ -83,6 +113,14 @@ func main() {
 		c.String(http.StatusOK, "ok")
 	})
 
+	// Swagger UI
+	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+	r.GET("/swagger/doc.json", func(c *gin.Context) {
+		c.Header("Access-Control-Allow-Origin", "*")
+		c.Header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		c.Header("Access-Control-Allow-Headers", "Authorization, Content-Type")
+	})
+
 	v1 := r.Group("/v1")
 	{
 		if !cfg.UseKeycloak() || cfg.EnableDemoAuth {
@@ -137,6 +175,7 @@ func main() {
 
 	go func() {
 		log.Println("CMS API starting on port", cfg.Port)
+		log.Println("Swagger UI available at http://localhost:" + cfg.Port + "/swagger/index.html")
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Fatal("server failed: ", err)
 		}

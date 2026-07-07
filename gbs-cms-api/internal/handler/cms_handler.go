@@ -48,6 +48,26 @@ func (h *CMSHandler) resolveCreatedBy(c *gin.Context) (uint, error) {
 	return user.ID, nil
 }
 
+// UploadAd godoc
+//
+//	@Summary		Upload advertisement
+//	@Description	Upload a new video advertisement. Only ADMIN role can upload ads.
+//	@Tags			Ads
+//	@Accept		multipart/form-data
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			file		formData	file	true	"Video file (mp4, webm, quicktime)"
+//	@Param			name		formData	string	true	"Ad name"
+//	@Param			storeTypes	formData	[]string	false	"Store types"	collectionFormat(multi)
+//	@Param			playlistOrder	formData	int		false	"Playlist order"
+//	@Param			startDate	formData	string	false	"Start date (YYYY-MM-DD)"
+//	@Param			endDate		formData	string	false	"End date (YYYY-MM-DD)"
+//	@Success		201
+//	@Failure		400
+//	@Failure		401
+//	@Failure		403
+//	@Failure		413
+//	@Router			/v1/ads/upload [post]
 func (h *CMSHandler) UploadAd(c *gin.Context) {
 	file, header, err := c.Request.FormFile("file")
 	if err != nil {
@@ -133,6 +153,19 @@ func (h *CMSHandler) UploadAd(c *gin.Context) {
 	c.JSON(http.StatusCreated, response.Success(ad))
 }
 
+// ListAds godoc
+//
+//	@Summary		List all advertisements
+//	@Description	Get paginated list of all advertisements. Only ADMIN role.
+//	@Tags			Ads
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			page	query		int	false	"Page number (default: 1)"
+//	@Param			limit	query		int	false	"Items per page (default: 20)"
+//	@Success		200
+//	@Failure		401
+//	@Failure		403
+//	@Router			/v1/ads [get]
 func (h *CMSHandler) ListAds(c *gin.Context) {
 	page, _ := strconv.Atoi(c.Query("page"))
 	if page == 0 {
@@ -150,6 +183,20 @@ func (h *CMSHandler) ListAds(c *gin.Context) {
 	c.JSON(http.StatusOK, response.Success(result))
 }
 
+// GetAd godoc
+//
+//	@Summary		Get advertisement by ID
+//	@Description	Get a single advertisement by its ID. Only ADMIN role.
+//	@Tags			Ads
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			id	path		int	true	"Ad ID"
+//	@Success		200
+//	@Failure		400
+//	@Failure		401
+//	@Failure		403
+//	@Failure		404
+//	@Router			/v1/ads/{id} [get]
 func (h *CMSHandler) GetAd(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
@@ -171,6 +218,22 @@ func (h *CMSHandler) GetAd(c *gin.Context) {
 	c.JSON(http.StatusOK, response.Success(ad))
 }
 
+// UpdateAd godoc
+//
+//	@Summary		Update advertisement
+//	@Description	Update an existing advertisement. Only ADMIN role.
+//	@Tags			Ads
+//	@Accept		json
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			id		path		int	true	"Ad ID"
+//	@Success		200
+//	@Failure		400
+//	@Failure		401
+//	@Failure		403
+//	@Failure		404
+//	@Failure		422
+//	@Router			/v1/ads/{id} [put]
 func (h *CMSHandler) UpdateAd(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
@@ -210,6 +273,20 @@ func (h *CMSHandler) UpdateAd(c *gin.Context) {
 	c.JSON(http.StatusOK, response.Success(ad))
 }
 
+// DeleteAd godoc
+//
+//	@Summary		Delete advertisement
+//	@Description	Delete an advertisement by ID. Only ADMIN role.
+//	@Tags			Ads
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			id	path	int	true	"Ad ID"
+//	@Success		204
+//	@Failure		400
+//	@Failure		401
+//	@Failure		403
+//	@Failure		404
+//	@Router			/v1/ads/{id} [delete]
 func (h *CMSHandler) DeleteAd(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
@@ -230,6 +307,20 @@ func (h *CMSHandler) DeleteAd(c *gin.Context) {
 	c.Status(http.StatusNoContent)
 }
 
+// ToggleAd godoc
+//
+//	@Summary		Toggle advertisement status
+//	@Description	Activate or deactivate an advertisement. Only ADMIN role.
+//	@Tags			Ads
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			id	path	int	true	"Ad ID"
+//	@Success		200
+//	@Failure		400
+//	@Failure		401
+//	@Failure		403
+//	@Failure		404
+//	@Router			/v1/ads/{id}/toggle [post]
 func (h *CMSHandler) ToggleAd(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
@@ -255,6 +346,16 @@ func (h *CMSHandler) ToggleAd(c *gin.Context) {
 	}))
 }
 
+// ActivePlaylist godoc
+//
+//	@Summary		Get active playlist
+//	@Description	Get list of active ads for a specific store type. Public endpoint.
+//	@Tags			Ads
+//	@Produce		json
+//	@Param			storeType	query	string	true	"Store type (e.g., RETAIL, FOOD)"
+//	@Success		200
+//	@Failure		400
+//	@Router			/v1/ads/active [get]
 func (h *CMSHandler) ActivePlaylist(c *gin.Context) {
 	storeType := c.Query("storeType")
 	if storeType == "" {
@@ -291,6 +392,17 @@ func (h *CMSHandler) ActivePlaylist(c *gin.Context) {
 	}))
 }
 
+// DownloadAd godoc
+//
+//	@Summary		Download advertisement video
+//	@Description	Download the video file for an advertisement. Public endpoint.
+//	@Tags			Ads
+//	@Produce		video/mp4
+//	@Param			id	path	int	true	"Ad ID"
+//	@Success		200	"Video file"
+//	@Failure		400
+//	@Failure		404
+//	@Router			/v1/ads/download/{id} [get]
 func (h *CMSHandler) DownloadAd(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
@@ -325,6 +437,18 @@ func (h *CMSHandler) DownloadAd(c *gin.Context) {
 	c.File(ad.StoragePath)
 }
 
+// LogPlay godoc
+//
+//	@Summary		Log ad play
+//	@Description	Log when an ad is played on a terminal. Used for analytics.
+//	@Tags			Ads
+//	@Accept		json
+//	@Produce		json
+//	@Param			id			path		int		true	"Ad ID"
+//	@Success		200
+//	@Failure		400
+//	@Failure		422
+//	@Router			/v1/ads/{id}/play [post]
 func (h *CMSHandler) LogPlay(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {

@@ -19,6 +19,18 @@ func NewSettlementHandler(settlementService *service.SettlementService) *Settlem
 	return &SettlementHandler{settlementService: settlementService}
 }
 
+// List godoc
+//
+//	@Summary		List settlements
+//	@Description	Get paginated list of settlements
+//	@Tags			Settlements
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			limit	query	int		false	"Limit (default: 20)"
+//	@Param			storeType	query	string	false	"Store type filter"
+//	@Success		200
+//	@Failure		401
+//	@Router				/v1/settlements [get]
 func (h *SettlementHandler) List(c *gin.Context) {
 	limit, _ := strconv.Atoi(c.Query("limit"))
 	if limit == 0 {
@@ -33,6 +45,18 @@ func (h *SettlementHandler) List(c *gin.Context) {
 	c.JSON(http.StatusOK, response.Success(settlements))
 }
 
+// Get godoc
+//
+//	@Summary		Get settlement by ID
+//	@Description	Get a single settlement by ID
+//	@Tags			Settlements
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			id	path	string	true	"Settlement ID"
+//	@Success		200
+//	@Failure		401
+//	@Failure		404
+//	@Router				/v1/settlements/{id} [get]
 func (h *SettlementHandler) Get(c *gin.Context) {
 	id := c.Param("id")
 	settlement, err := h.settlementService.Get(id)

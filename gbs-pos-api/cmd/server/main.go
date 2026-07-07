@@ -16,10 +16,33 @@ import (
 	"gbs-pos-api/internal/router"
 	"gbs-pos-api/internal/service"
 
+	_ "gbs-pos-api/docs" // Swagger docs
+
 	"github.com/gin-gonic/gin"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 	"github.com/joho/godotenv"
 	"github.com/rs/zerolog"
 )
+
+// @title GBS POS API
+// @version 1.0
+// @description Point of Sale REST API for retail, F&B, and fuel station operations
+// @termsOfService http://swagger.io/terms/
+
+// @contact.name GBS Support
+// @contact.email support@gbs.local
+
+// @license.name Apache 2.0
+// @license.url http://www.apache.org/licenses/LICENSE-2.0.html
+
+// @host localhost:8080
+// @BasePath /v1
+
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
+// @description Type "Bearer" followed by a space and JWT token. For Keycloak, obtain token from {KEYCLOAK_BASE_URL}/realms/{KEYCLOAK_REALM}/protocol/openid-connect/token
 
 func main() {
 	_ = godotenv.Load("../../.env")
@@ -113,10 +136,6 @@ func main() {
 	cartDisplayHandler := handler.NewCartDisplayHandler(cartDisplayService)
 	fuelHandler := handler.NewFuelHandler(fuelService)
 
-	if cfg.Env == "production" {
-		gin.SetMode(gin.ReleaseMode)
-	}
-
 	r := router.Setup(
 		cfg,
 		router.Handlers{
@@ -134,6 +153,14 @@ func main() {
 		},
 	)
 
+	// Add Swagger UI
+	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+	r.GET("/swagger/doc.json", func(c *gin.Context) {
+		c.Header("Access-Control-Allow-Origin", "*")
+		c.Header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		c.Header("Access-Control-Allow-Headers", "Authorization, Content-Type")
+	})
+
 	srv := &http.Server{
 		Addr:           ":" + cfg.Port,
 		Handler:        r,
@@ -148,6 +175,7 @@ func main() {
 
 	go func() {
 		log.Println("POS API starting on port", cfg.Port)
+		log.Println("Swagger UI available at http://localhost:" + cfg.Port + "/swagger/index.html")
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Fatal("server failed: ", err)
 		}

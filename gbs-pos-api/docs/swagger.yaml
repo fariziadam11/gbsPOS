@@ -1,0 +1,1826 @@
+basePath: /v1
+definitions:
+  dto.AdjustStockRequest:
+    properties:
+      quantity:
+        minimum: 1
+        type: integer
+      reason:
+        type: string
+      type:
+        enum:
+        - IN
+        - OUT
+        - ADJUSTMENT
+        type: string
+    required:
+    - quantity
+    - type
+    type: object
+  dto.BulkSyncOrderRequest:
+    properties:
+      orders:
+        items:
+          $ref: '#/definitions/model.Order'
+        type: array
+      terminalId:
+        type: string
+    required:
+    - orders
+    type: object
+  dto.CreateCustomerRequest:
+    properties:
+      address:
+        type: string
+      email:
+        type: string
+      name:
+        type: string
+      phone:
+        type: string
+    required:
+    - phone
+    type: object
+  dto.CreateHoldRequest:
+    type: object
+  dto.CreateNozzleRequest:
+    properties:
+      fuelCode:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      pumpId:
+        type: string
+    required:
+    - fuelCode
+    - id
+    - name
+    - pumpId
+    type: object
+  dto.CreateOrderRequest:
+    properties:
+      acqMid:
+        type: string
+      acqTid:
+        type: string
+      approvalCode:
+        type: string
+      bankName:
+        type: string
+      cashReceived:
+        type: number
+      changeAmount:
+        type: number
+      customerId:
+        type: integer
+      customerName:
+        type: string
+      customerPhone:
+        type: string
+      discountType:
+        type: string
+      discountValue:
+        type: number
+      entryMode:
+        type: string
+      id:
+        type: string
+      items:
+        items:
+          properties:
+            productId:
+              type: integer
+            productName:
+              type: string
+            productPrice:
+              type: number
+            qty:
+              type: integer
+            sku:
+              type: string
+            subtotal:
+              type: number
+            variantId:
+              type: integer
+            variantName:
+              type: string
+          required:
+          - productId
+          - productName
+          - productPrice
+          - qty
+          - subtotal
+          type: object
+        type: array
+      maskedAccount:
+        type: string
+      paymentMethod:
+        type: string
+      posMessageId:
+        type: string
+      storeType:
+        type: string
+      subtotal:
+        type: number
+      tax:
+        type: number
+      terminalId:
+        type: string
+      timestamp:
+        type: integer
+      total:
+        type: number
+      transactionId:
+        type: string
+    required:
+    - id
+    - items
+    - paymentMethod
+    - subtotal
+    - tax
+    - timestamp
+    - total
+    type: object
+  dto.CreatePumpRequest:
+    properties:
+      id:
+        type: string
+      name:
+        type: string
+    required:
+    - id
+    - name
+    type: object
+  dto.CreateVariantRequest:
+    properties:
+      attributes:
+        additionalProperties: true
+        type: object
+      isActive:
+        type: boolean
+      lowStockThreshold:
+        type: integer
+      name:
+        type: string
+      price:
+        type: number
+      sku:
+        type: string
+      sortOrder:
+        type: integer
+      stockQuantity:
+        type: integer
+    type: object
+  dto.FuelSaleRequest:
+    properties:
+      fuelCode:
+        type: string
+      id:
+        type: string
+      liters:
+        minimum: 0
+        type: number
+      nozzleId:
+        type: string
+      paymentMethod:
+        type: string
+      posMessageId:
+        type: string
+      pricePerLiter:
+        minimum: 0
+        type: number
+      pumpId:
+        type: string
+      timestamp:
+        type: integer
+      totalAmount:
+        minimum: 0
+        type: number
+      transactionId:
+        type: string
+    required:
+    - fuelCode
+    - id
+    - liters
+    - nozzleId
+    - paymentMethod
+    - pricePerLiter
+    - pumpId
+    - totalAmount
+    type: object
+  dto.LoginRequest:
+    properties:
+      password:
+        type: string
+      username:
+        type: string
+    required:
+    - password
+    - username
+    type: object
+  dto.SaveCartDisplayRequest:
+    properties:
+      terminalId:
+        type: string
+    required:
+    - terminalId
+    type: object
+  dto.SettleOrderRequest:
+    properties:
+      settlementId:
+        type: string
+      storeType:
+        type: string
+      terminalId:
+        type: string
+      timestamp:
+        type: integer
+    required:
+    - settlementId
+    - timestamp
+    type: object
+  dto.UpdateFuelPriceRequest:
+    properties:
+      pricePerLiter:
+        minimum: 0
+        type: number
+    required:
+    - pricePerLiter
+    type: object
+  dto.UpdateNozzleRequest:
+    properties:
+      fuelCode:
+        type: string
+      isActive:
+        type: boolean
+      name:
+        type: string
+    type: object
+  dto.UpdatePumpRequest:
+    properties:
+      isActive:
+        type: boolean
+      name:
+        type: string
+    type: object
+  dto.UpdateVariantRequest:
+    properties:
+      attributes:
+        additionalProperties: true
+        type: object
+      isActive:
+        type: boolean
+      lowStockThreshold:
+        type: integer
+      name:
+        type: string
+      price:
+        type: number
+      sku:
+        type: string
+      sortOrder:
+        type: integer
+      stockQuantity:
+        type: integer
+    type: object
+  dto.VoidOrderRequest:
+    properties:
+      reason:
+        type: string
+    type: object
+  model.Customer:
+    properties:
+      address:
+        type: string
+      createdAt:
+        type: string
+      email:
+        type: string
+      id:
+        type: integer
+      loyaltyPoints:
+        type: integer
+      name:
+        type: string
+      phone:
+        type: string
+      updatedAt:
+        type: string
+    type: object
+  model.Order:
+    properties:
+      acqMid:
+        type: string
+      acqTid:
+        type: string
+      approvalCode:
+        type: string
+      bankName:
+        type: string
+      cashReceived:
+        type: number
+      changeAmount:
+        type: number
+      createdAt:
+        type: string
+      customerId:
+        type: integer
+      customerName:
+        type: string
+      customerPhone:
+        type: string
+      discountAmount:
+        type: number
+      discountType:
+        type: string
+      discountValue:
+        type: number
+      entryMode:
+        type: string
+      id:
+        type: string
+      isSettled:
+        type: boolean
+      isVoided:
+        type: boolean
+      items:
+        items:
+          $ref: '#/definitions/model.OrderItem'
+        type: array
+      loyaltyPointsEarned:
+        type: integer
+      maskedAccount:
+        type: string
+      paymentMethod:
+        type: string
+      posMessageId:
+        type: string
+      storeType:
+        type: string
+      subtotal:
+        type: number
+      tax:
+        type: number
+      terminalId:
+        type: string
+      timestamp:
+        type: integer
+      total:
+        type: number
+      transactionId:
+        type: string
+      updatedAt:
+        type: string
+      voidReason:
+        type: string
+      voidedAt:
+        type: string
+      voidedBy:
+        type: string
+    type: object
+  model.OrderItem:
+    properties:
+      productId:
+        type: integer
+      productName:
+        type: string
+      productPrice:
+        type: number
+      qty:
+        type: integer
+      sku:
+        type: string
+      subtotal:
+        type: number
+      variantId:
+        type: integer
+      variantName:
+        type: string
+    type: object
+  model.Product:
+    properties:
+      category:
+        type: string
+      createdAt:
+        type: string
+      id:
+        type: integer
+      imageUrl:
+        type: string
+      lowStockThreshold:
+        type: integer
+      name:
+        type: string
+      price:
+        type: number
+      stockQuantity:
+        type: integer
+      storeType:
+        type: string
+      updatedAt:
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact:
+    email: support@gbs.local
+    name: GBS Support
+  description: Point of Sale REST API for retail, F&B, and fuel station operations
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  termsOfService: http://swagger.io/terms/
+  title: GBS POS API
+  version: "1.0"
+paths:
+  /v1/customers:
+    get:
+      description: Search/list customers by query
+      parameters:
+      - description: Search query (name, phone, email)
+        in: query
+        name: q
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "401":
+          description: Unauthorized
+      security:
+      - BearerAuth: []
+      summary: List customers
+      tags:
+      - Customers
+    post:
+      consumes:
+      - application/json
+      description: Create a new customer
+      parameters:
+      - description: Customer data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreateCustomerRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+        "401":
+          description: Unauthorized
+        "422":
+          description: Unprocessable Entity
+      security:
+      - BearerAuth: []
+      summary: Create customer
+      tags:
+      - Customers
+  /v1/customers/{id}:
+    get:
+      description: Get customer details and purchase history
+      parameters:
+      - description: Customer ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+        "401":
+          description: Unauthorized
+        "404":
+          description: Not Found
+      security:
+      - BearerAuth: []
+      summary: Get customer with order history
+      tags:
+      - Customers
+    put:
+      consumes:
+      - application/json
+      description: Update customer details
+      parameters:
+      - description: Customer ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Customer update data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/model.Customer'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+        "401":
+          description: Unauthorized
+        "404":
+          description: Not Found
+        "422":
+          description: Unprocessable Entity
+      security:
+      - BearerAuth: []
+      summary: Update customer
+      tags:
+      - Customers
+  /v1/customers/{id}/orders:
+    get:
+      description: Get all orders for a customer
+      parameters:
+      - description: Customer ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+        "401":
+          description: Unauthorized
+      security:
+      - BearerAuth: []
+      summary: Get customer orders
+      tags:
+      - Customers
+  /v1/customers/phone/{phone}:
+    get:
+      description: Find customer by phone number
+      parameters:
+      - description: Phone number
+        in: path
+        name: phone
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+        "401":
+          description: Unauthorized
+        "404":
+          description: Not Found
+      security:
+      - BearerAuth: []
+      summary: Get customer by phone
+      tags:
+      - Customers
+  /v1/dashboard/revenue:
+    get:
+      description: Get revenue trend over time period
+      parameters:
+      - description: Store type filter
+        in: query
+        name: storeType
+        type: string
+      - description: Start date (YYYY-MM-DD)
+        in: query
+        name: startDate
+        type: string
+      - description: End date (YYYY-MM-DD)
+        in: query
+        name: endDate
+        type: string
+      - description: 'Number of days (default: 7)'
+        in: query
+        name: days
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "401":
+          description: Unauthorized
+      security:
+      - BearerAuth: []
+      summary: Get revenue trend
+      tags:
+      - Dashboard
+  /v1/dashboard/summary:
+    get:
+      description: Get summary stats for dashboard
+      parameters:
+      - description: Store type filter
+        in: query
+        name: storeType
+        type: string
+      - description: Start date (YYYY-MM-DD)
+        in: query
+        name: startDate
+        type: string
+      - description: End date (YYYY-MM-DD)
+        in: query
+        name: endDate
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "401":
+          description: Unauthorized
+      security:
+      - BearerAuth: []
+      summary: Get dashboard summary
+      tags:
+      - Dashboard
+  /v1/dashboard/top-products:
+    get:
+      description: Get top selling products by revenue
+      parameters:
+      - description: Store type filter
+        in: query
+        name: storeType
+        type: string
+      - description: 'Limit (default: 10)'
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "401":
+          description: Unauthorized
+      security:
+      - BearerAuth: []
+      summary: Get top selling products
+      tags:
+      - Dashboard
+  /v1/display/cart:
+    get:
+      description: Returns the latest stored cart display JSON for a terminal. Public
+        endpoint - no authentication required.
+      parameters:
+      - description: Android terminal ID (ANDROID_ID)
+        in: query
+        name: terminalId
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: JSON cart display data
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+        "500":
+          description: Internal Server Error
+      summary: Get cart display JSON
+      tags:
+      - Cart Display
+    post:
+      consumes:
+      - application/json
+      description: Receives cart display JSON from Android POS and stores it. Requires
+        Bearer token authentication.
+      parameters:
+      - description: Cart display JSON (must include terminalId field)
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.SaveCartDisplayRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+        "401":
+          description: Unauthorized
+        "422":
+          description: Unprocessable Entity
+      security:
+      - BearerAuth: []
+      summary: Upload cart display JSON
+      tags:
+      - Cart Display
+  /v1/display/cart/{terminalId}:
+    delete:
+      description: Remove stored cart display for a terminal
+      parameters:
+      - description: Terminal ID
+        in: path
+        name: terminalId
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "401":
+          description: Unauthorized
+        "404":
+          description: Not Found
+        "500":
+          description: Internal Server Error
+      security:
+      - BearerAuth: []
+      summary: Delete cart display
+      tags:
+      - Cart Display
+  /v1/fuel/nozzles:
+    get:
+      description: Get all nozzles
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      summary: List nozzles
+      tags:
+      - Fuel
+    post:
+      consumes:
+      - application/json
+      description: Create a new nozzle
+      parameters:
+      - description: Nozzle data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreateNozzleRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+        "401":
+          description: Unauthorized
+        "422":
+          description: Unprocessable Entity
+      security:
+      - BearerAuth: []
+      summary: Create nozzle
+      tags:
+      - Fuel
+  /v1/fuel/nozzles/{id}:
+    delete:
+      description: Delete a nozzle
+      parameters:
+      - description: Nozzle ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "401":
+          description: Unauthorized
+        "404":
+          description: Not Found
+      security:
+      - BearerAuth: []
+      summary: Delete nozzle
+      tags:
+      - Fuel
+    patch:
+      consumes:
+      - application/json
+      description: Update nozzle
+      parameters:
+      - description: Nozzle ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Update data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UpdateNozzleRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+        "401":
+          description: Unauthorized
+        "404":
+          description: Not Found
+        "422":
+          description: Unprocessable Entity
+      security:
+      - BearerAuth: []
+      summary: Update nozzle
+      tags:
+      - Fuel
+  /v1/fuel/prices:
+    get:
+      description: Get all fuel prices
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      summary: List fuel prices
+      tags:
+      - Fuel
+  /v1/fuel/prices/{code}:
+    patch:
+      consumes:
+      - application/json
+      description: Update fuel price by code
+      parameters:
+      - description: Fuel code (PERTALITE, PERTAMAX, DEXlite, etc)
+        in: path
+        name: code
+        required: true
+        type: string
+      - description: Price update data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UpdateFuelPriceRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+        "404":
+          description: Not Found
+        "422":
+          description: Unprocessable Entity
+      security:
+      - BearerAuth: []
+      summary: Update fuel price
+      tags:
+      - Fuel
+  /v1/fuel/pumps:
+    get:
+      description: Get all pumps
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "500":
+          description: Internal Server Error
+      summary: List pumps
+      tags:
+      - Fuel
+    post:
+      consumes:
+      - application/json
+      description: Create a new pump
+      parameters:
+      - description: Pump data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreatePumpRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+        "401":
+          description: Unauthorized
+        "422":
+          description: Unprocessable Entity
+      security:
+      - BearerAuth: []
+      summary: Create pump
+      tags:
+      - Fuel
+  /v1/fuel/pumps/{id}:
+    delete:
+      description: Delete a pump
+      parameters:
+      - description: Pump ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "401":
+          description: Unauthorized
+        "404":
+          description: Not Found
+      security:
+      - BearerAuth: []
+      summary: Delete pump
+      tags:
+      - Fuel
+    patch:
+      consumes:
+      - application/json
+      description: Update pump details
+      parameters:
+      - description: Pump ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Update data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UpdatePumpRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+        "401":
+          description: Unauthorized
+        "404":
+          description: Not Found
+        "422":
+          description: Unprocessable Entity
+      security:
+      - BearerAuth: []
+      summary: Update pump
+      tags:
+      - Fuel
+  /v1/fuel/report:
+    get:
+      description: Get fuel sales report for date range
+      parameters:
+      - description: Start date (YYYY-MM-DD)
+        in: query
+        name: from
+        required: true
+        type: string
+      - description: End date (YYYY-MM-DD)
+        in: query
+        name: to
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+        "401":
+          description: Unauthorized
+        "500":
+          description: Internal Server Error
+      security:
+      - BearerAuth: []
+      summary: Fuel sales report
+      tags:
+      - Fuel
+  /v1/fuel/sales:
+    post:
+      consumes:
+      - application/json
+      description: Record a fuel sale transaction
+      parameters:
+      - description: Sale data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.FuelSaleRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+        "401":
+          description: Unauthorized
+        "422":
+          description: Unprocessable Entity
+      security:
+      - BearerAuth: []
+      summary: Record fuel sale
+      tags:
+      - Fuel
+  /v1/holds:
+    get:
+      description: Get all hold sessions
+      parameters:
+      - description: Terminal ID filter
+        in: query
+        name: terminalId
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "401":
+          description: Unauthorized
+      security:
+      - BearerAuth: []
+      summary: List hold sessions
+      tags:
+      - Hold Sessions
+    post:
+      consumes:
+      - application/json
+      description: Hold cart as pending session
+      parameters:
+      - description: Hold session data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreateHoldRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+        "401":
+          description: Unauthorized
+        "422":
+          description: Unprocessable Entity
+      security:
+      - BearerAuth: []
+      summary: Create hold session
+      tags:
+      - Hold Sessions
+  /v1/holds/{id}:
+    delete:
+      description: Delete/abandon a held cart
+      parameters:
+      - description: Hold session ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "401":
+          description: Unauthorized
+        "404":
+          description: Not Found
+        "409":
+          description: Conflict
+      security:
+      - BearerAuth: []
+      summary: Delete hold session
+      tags:
+      - Hold Sessions
+    get:
+      description: Get hold session by ID
+      parameters:
+      - description: Hold session ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "401":
+          description: Unauthorized
+        "404":
+          description: Not Found
+      security:
+      - BearerAuth: []
+      summary: Get hold session
+      tags:
+      - Hold Sessions
+  /v1/holds/{id}/resume:
+    put:
+      description: Resume a held cart
+      parameters:
+      - description: Hold session ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "401":
+          description: Unauthorized
+        "404":
+          description: Not Found
+        "409":
+          description: Conflict
+      security:
+      - BearerAuth: []
+      summary: Resume hold session
+      tags:
+      - Hold Sessions
+  /v1/login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticate user with username and password. Returns JWT token
+        for API access.
+      parameters:
+      - description: Login credentials
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "401":
+          description: Unauthorized
+        "422":
+          description: Unprocessable Entity
+      summary: User login
+      tags:
+      - Authentication
+  /v1/orders:
+    get:
+      description: Get orders with optional filters
+      parameters:
+      - description: Store type filter
+        in: query
+        name: storeType
+        type: string
+      - description: Payment method filter
+        in: query
+        name: paymentMethod
+        type: string
+      - description: Terminal ID filter
+        in: query
+        name: terminalId
+        type: string
+      - description: Start date Unix timestamp
+        format: int64
+        in: query
+        name: startDate
+        type: integer
+      - description: End date Unix timestamp
+        format: int64
+        in: query
+        name: endDate
+        type: integer
+      - description: Filter voided orders
+        in: query
+        name: isVoided
+        type: boolean
+      - description: Filter settled orders
+        in: query
+        name: isSettled
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "401":
+          description: Unauthorized
+      security:
+      - BearerAuth: []
+      summary: List orders
+      tags:
+      - Orders
+    post:
+      consumes:
+      - application/json
+      description: Create a new order
+      parameters:
+      - description: Order data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreateOrderRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Idempotent response (order already exists
+        "201":
+          description: Created
+        "401":
+          description: Unauthorized
+        "422":
+          description: Unprocessable Entity
+      security:
+      - BearerAuth: []
+      summary: Create order
+      tags:
+      - Orders
+  /v1/orders/{id}:
+    get:
+      description: Get a single order by its ID
+      parameters:
+      - description: Order ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "401":
+          description: Unauthorized
+        "404":
+          description: Not Found
+      security:
+      - BearerAuth: []
+      summary: Get order by ID
+      tags:
+      - Orders
+  /v1/orders/{id}/void:
+    patch:
+      consumes:
+      - application/json
+      description: Void/cancel an order (ADMIN only)
+      parameters:
+      - description: Order ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Void reason
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.VoidOrderRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "404":
+          description: Not Found
+        "409":
+          description: Conflict
+      security:
+      - BearerAuth: []
+      summary: Void order
+      tags:
+      - Orders
+  /v1/orders/bulk:
+    post:
+      consumes:
+      - application/json
+      description: Sync multiple orders at once (offline support)
+      parameters:
+      - description: Orders to sync
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.BulkSyncOrderRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "401":
+          description: Unauthorized
+        "422":
+          description: Unprocessable Entity
+      security:
+      - BearerAuth: []
+      summary: Bulk sync orders
+      tags:
+      - Orders
+  /v1/orders/settle:
+    post:
+      consumes:
+      - application/json
+      description: Settle/close orders for a terminal (ADMIN only)
+      parameters:
+      - description: Settlement data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.SettleOrderRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "409":
+          description: Conflict
+        "422":
+          description: Unprocessable Entity
+      security:
+      - BearerAuth: []
+      summary: Settle orders
+      tags:
+      - Orders
+  /v1/orders/unsettled/summary:
+    get:
+      description: Get summary of unsettled orders for terminal
+      parameters:
+      - description: Store type filter
+        in: query
+        name: storeType
+        type: string
+      - description: Terminal ID filter
+        in: query
+        name: terminalId
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "401":
+          description: Unauthorized
+      security:
+      - BearerAuth: []
+      summary: Get unsettled orders summary
+      tags:
+      - Orders
+  /v1/products:
+    get:
+      description: Get all products with optional filtering and sync timestamp
+      parameters:
+      - description: Store type filter (RETAIL, FOOD, OUTFIT)
+        in: query
+        name: storeType
+        type: string
+      - description: Category filter
+        in: query
+        name: category
+        type: string
+      - description: Unix timestamp for incremental sync
+        format: int64
+        in: query
+        name: lastSync
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: header
+        "401":
+          description: Unauthorized
+      security:
+      - BearerAuth: []
+      summary: List products
+      tags:
+      - Products
+    post:
+      consumes:
+      - application/json
+      description: Create a new product (ADMIN only)
+      parameters:
+      - description: Product data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/model.Product'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+        "400":
+          description: Bad Request
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "422":
+          description: Unprocessable Entity
+      security:
+      - BearerAuth: []
+      summary: Create product
+      tags:
+      - Products
+  /v1/products/{id}:
+    delete:
+      description: Delete a product by ID (ADMIN only)
+      parameters:
+      - description: Product ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "404":
+          description: Not Found
+      security:
+      - BearerAuth: []
+      summary: Delete product
+      tags:
+      - Products
+    get:
+      description: Get a single product with active discounts
+      parameters:
+      - description: Product ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+        "401":
+          description: Unauthorized
+        "404":
+          description: Not Found
+      security:
+      - BearerAuth: []
+      summary: Get product by ID
+      tags:
+      - Products
+    put:
+      consumes:
+      - application/json
+      description: Update an existing product (ADMIN only)
+      parameters:
+      - description: Product ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Product update data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/model.Product'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "404":
+          description: Not Found
+        "422":
+          description: Unprocessable Entity
+      security:
+      - BearerAuth: []
+      summary: Update product
+      tags:
+      - Products
+  /v1/products/{id}/history:
+    get:
+      description: Get stock movement history for a product
+      parameters:
+      - description: Product ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+        "401":
+          description: Unauthorized
+      security:
+      - BearerAuth: []
+      summary: Get product stock history
+      tags:
+      - Products
+  /v1/products/{id}/stock:
+    post:
+      consumes:
+      - application/json
+      description: Adjust stock quantity (IN/OUT/ADJUSTMENT) for a product
+      parameters:
+      - description: Product ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Stock adjustment data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.AdjustStockRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+        "401":
+          description: Unauthorized
+        "404":
+          description: Not Found
+        "409":
+          description: Conflict
+      security:
+      - BearerAuth: []
+      summary: Adjust product stock
+      tags:
+      - Products
+  /v1/products/{id}/variants:
+    get:
+      description: Get all variants for a product
+      parameters:
+      - description: Product ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+        "401":
+          description: Unauthorized
+      security:
+      - BearerAuth: []
+      summary: List product variants
+      tags:
+      - Product Variants
+    post:
+      consumes:
+      - application/json
+      description: Create a new product variant
+      parameters:
+      - description: Product ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Variant data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreateVariantRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+        "400":
+          description: Bad Request
+        "401":
+          description: Unauthorized
+        "422":
+          description: Unprocessable Entity
+      security:
+      - BearerAuth: []
+      summary: Create variant
+      tags:
+      - Product Variants
+  /v1/products/{id}/variants/{id}:
+    patch:
+      consumes:
+      - application/json
+      description: Update variant details
+      parameters:
+      - description: Variant ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Update data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UpdateVariantRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+        "401":
+          description: Unauthorized
+        "404":
+          description: Not Found
+        "422":
+          description: Unprocessable Entity
+      security:
+      - BearerAuth: []
+      summary: Update variant
+      tags:
+      - Product Variants
+  /v1/products/export:
+    get:
+      description: Export all products to CSV file (ADMIN only)
+      parameters:
+      - description: Store type filter
+        in: query
+        name: storeType
+        type: string
+      produces:
+      - text/csv
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: file
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+      security:
+      - BearerAuth: []
+      summary: Export products to CSV
+      tags:
+      - Products
+  /v1/products/import:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Import products from CSV file (ADMIN only)
+      parameters:
+      - description: CSV file
+        in: formData
+        name: file
+        required: true
+        type: file
+      - description: Store type
+        in: formData
+        name: storeType
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+      security:
+      - BearerAuth: []
+      summary: Import products from CSV
+      tags:
+      - Products
+  /v1/products/low-stock:
+    get:
+      description: Get list of products with stock below threshold
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "401":
+          description: Unauthorized
+      security:
+      - BearerAuth: []
+      summary: Get low stock products
+      tags:
+      - Products
+  /v1/settlements:
+    get:
+      description: Get paginated list of settlements
+      parameters:
+      - description: 'Limit (default: 20)'
+        in: query
+        name: limit
+        type: integer
+      - description: Store type filter
+        in: query
+        name: storeType
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "401":
+          description: Unauthorized
+      security:
+      - BearerAuth: []
+      summary: List settlements
+      tags:
+      - Settlements
+  /v1/settlements/{id}:
+    get:
+      description: Get a single settlement by ID
+      parameters:
+      - description: Settlement ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "401":
+          description: Unauthorized
+        "404":
+          description: Not Found
+      security:
+      - BearerAuth: []
+      summary: Get settlement by ID
+      tags:
+      - Settlements
+  /v1/sync/orders:
+    post:
+      consumes:
+      - application/json
+      description: Sync multiple orders at once (offline support)
+      parameters:
+      - description: Orders to sync
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.BulkSyncOrderRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "401":
+          description: Unauthorized
+        "422":
+          description: Unprocessable Entity
+      security:
+      - BearerAuth: []
+      summary: Bulk sync orders
+      tags:
+      - Orders
+securityDefinitions:
+  BearerAuth:
+    description: Type "Bearer" followed by a space and JWT token. For Keycloak, obtain
+      token from {KEYCLOAK_BASE_URL}/realms/{KEYCLOAK_REALM}/protocol/openid-connect/token
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

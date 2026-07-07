@@ -21,6 +21,17 @@ func NewCustomerHandler(customerService *service.CustomerService) *CustomerHandl
 	return &CustomerHandler{customerService: customerService}
 }
 
+// List godoc
+//
+//	@Summary		List customers
+//	@Description	Search/list customers by query
+//	@Tags			Customers
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			q	query	string	false	"Search query (name, phone, email)"
+//	@Success		200
+//	@Failure		401
+//	@Router				/v1/customers [get]
 func (h *CustomerHandler) List(c *gin.Context) {
 	query := c.Query("q")
 	customers, err := h.customerService.List(query)
@@ -31,6 +42,19 @@ func (h *CustomerHandler) List(c *gin.Context) {
 	c.JSON(http.StatusOK, response.Success(customers))
 }
 
+// Get godoc
+//
+//	@Summary		Get customer with order history
+//	@Description	Get customer details and purchase history
+//	@Tags			Customers
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			id	path	int	true	"Customer ID"
+//	@Success		200
+//	@Failure		400
+//	@Failure		401
+//	@Failure		404
+//	@Router				/v1/customers/{id} [get]
 func (h *CustomerHandler) Get(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)
@@ -59,6 +83,19 @@ func (h *CustomerHandler) Get(c *gin.Context) {
 	}))
 }
 
+// GetByPhone godoc
+//
+//	@Summary		Get customer by phone
+//	@Description	Find customer by phone number
+//	@Tags			Customers
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			phone	path	string	true	"Phone number"
+//	@Success		200
+//	@Failure		400
+//	@Failure		401
+//	@Failure		404
+//	@Router				/v1/customers/phone/{phone} [get]
 func (h *CustomerHandler) GetByPhone(c *gin.Context) {
 	phone := c.Param("phone")
 	if phone == "" {
@@ -77,6 +114,19 @@ func (h *CustomerHandler) GetByPhone(c *gin.Context) {
 	c.JSON(http.StatusOK, response.Success(customer))
 }
 
+// Create godoc
+//
+//	@Summary		Create customer
+//	@Description	Create a new customer
+//	@Tags			Customers
+//	@Accept		json
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			request	body	dto.CreateCustomerRequest	true	"Customer data"
+//	@Success		201
+//	@Failure		401
+//	@Failure		422
+//	@Router				/v1/customers [post]
 func (h *CustomerHandler) Create(c *gin.Context) {
 	var req dto.CreateCustomerRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -96,6 +146,22 @@ func (h *CustomerHandler) Create(c *gin.Context) {
 	c.JSON(http.StatusCreated, response.Success(customer))
 }
 
+// Update godoc
+//
+//	@Summary		Update customer
+//	@Description	Update customer details
+//	@Tags			Customers
+//	@Accept		json
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			id		path		int						true	"Customer ID"
+//	@Param			request	body	model.Customer	true	"Customer update data"
+//	@Success		200
+//	@Failure		400
+//	@Failure		401
+//	@Failure		404
+//	@Failure		422
+//	@Router				/v1/customers/{id} [put]
 func (h *CustomerHandler) Update(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)
@@ -120,6 +186,18 @@ func (h *CustomerHandler) Update(c *gin.Context) {
 	c.JSON(http.StatusOK, response.Success(customer))
 }
 
+// GetOrders godoc
+//
+//	@Summary		Get customer orders
+//	@Description	Get all orders for a customer
+//	@Tags			Customers
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			id	path	int	true	"Customer ID"
+//	@Success		200
+//	@Failure		400
+//	@Failure		401
+//	@Router				/v1/customers/{id}/orders [get]
 func (h *CustomerHandler) GetOrders(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)

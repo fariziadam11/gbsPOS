@@ -2,13 +2,14 @@ package handler
 
 import (
 	"errors"
-	"gbs-common/pkg/response"
 	"gbs-pos-api/internal/dto"
 	"gbs-pos-api/internal/model"
 	"gbs-pos-api/internal/service"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+
+	"gbs-common/pkg/response"
 	"gorm.io/gorm"
 )
 
@@ -20,6 +21,19 @@ func NewHoldHandler(service *service.HoldService) *HoldHandler {
 	return &HoldHandler{service: service}
 }
 
+// Create godoc
+//
+//	@Summary		Create hold session
+//	@Description	Hold cart as pending session
+//	@Tags			Hold Sessions
+//	@Accept		json
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			request	body	dto.CreateHoldRequest	true	"Hold session data"
+//	@Success		201
+//	@Failure		401
+//	@Failure		422
+//	@Router				/v1/holds [post]
 func (h *HoldHandler) Create(c *gin.Context) {
 	var req dto.CreateHoldRequest
 
@@ -39,6 +53,17 @@ func (h *HoldHandler) Create(c *gin.Context) {
 	c.JSON(http.StatusCreated, response.Success(toHoldResponse(result)))
 }
 
+// List godoc
+//
+//	@Summary		List hold sessions
+//	@Description	Get all hold sessions
+//	@Tags			Hold Sessions
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			terminalId	query	string	false	"Terminal ID filter"
+//	@Success		200
+//	@Failure		401
+//	@Router				/v1/holds [get]
 func (h *HoldHandler) List(c *gin.Context) {
 	terminalID := c.Query("terminalId")
 
@@ -52,6 +77,18 @@ func (h *HoldHandler) List(c *gin.Context) {
 	c.JSON(http.StatusOK, response.Success(toHoldResponses(result)))
 }
 
+// Get godoc
+//
+//	@Summary		Get hold session
+//	@Description	Get hold session by ID
+//	@Tags			Hold Sessions
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			id	path	string	true	"Hold session ID"
+//	@Success		200
+//	@Failure		401
+//	@Failure		404
+//	@Router				/v1/holds/{id} [get]
 func (h *HoldHandler) Get(c *gin.Context) {
 	id := c.Param("id")
 
@@ -64,6 +101,19 @@ func (h *HoldHandler) Get(c *gin.Context) {
 	c.JSON(http.StatusOK, response.Success(toHoldResponse(result)))
 }
 
+// Resume godoc
+//
+//	@Summary		Resume hold session
+//	@Description	Resume a held cart
+//	@Tags			Hold Sessions
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			id	path	string	true	"Hold session ID"
+//	@Success		200
+//	@Failure		401
+//	@Failure		404
+//	@Failure		409
+//	@Router				/v1/holds/{id}/resume [put]
 func (h *HoldHandler) Resume(c *gin.Context) {
 	id := c.Param("id")
 
@@ -76,6 +126,18 @@ func (h *HoldHandler) Resume(c *gin.Context) {
 	c.JSON(http.StatusOK, response.Success(toHoldResponse(session)))
 }
 
+// Delete godoc
+//
+//	@Summary		Delete hold session
+//	@Description	Delete/abandon a held cart
+//	@Tags			Hold Sessions
+//	@Security		BearerAuth
+//	@Param			id	path	string	true	"Hold session ID"
+//	@Success		204
+//	@Failure		401
+//	@Failure		404
+//	@Failure		409
+//	@Router				/v1/holds/{id} [delete]
 func (h *HoldHandler) Delete(c *gin.Context) {
 	id := c.Param("id")
 

@@ -38,8 +38,19 @@ func NewDisplayHandler(service *service.CartDisplayService) *DisplayHandler {
 	return &DisplayHandler{service: service}
 }
 
-// SaveCartDisplay receives cart display JSON from Android and stores it.
-// POST /v1/display/cart - protected (needs Bearer token)
+// SaveCartDisplay godoc
+//
+//	@Summary		Upload cart display JSON
+//	@Description	Receives cart display JSON from Android POS and stores it. Requires Bearer token authentication.
+//	@Tags			Cart Display
+//	@Accept		json
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			body	body	string	true	"Cart display JSON (must include terminalId field)"
+//	@Success		200
+//	@Failure		400
+//	@Failure		401
+//	@Router			/v1/display/cart [post]
 func (h *DisplayHandler) SaveCartDisplay(c *gin.Context) {
 	// Read entire body as string
 	body, err := io.ReadAll(c.Request.Body)
@@ -73,8 +84,16 @@ func (h *DisplayHandler) SaveCartDisplay(c *gin.Context) {
 	c.JSON(http.StatusOK, response.Success(nil))
 }
 
-// GetCartDisplay returns the latest stored cart display JSON for a terminal.
-// GET /v1/display/cart?terminalId=xxx - public (no auth)
+// GetCartDisplay godoc
+//
+//	@Summary		Get cart display JSON
+//	@Description	Returns the latest stored cart display JSON for a terminal. Public endpoint - no authentication required.
+//	@Tags			Cart Display
+//	@Produce		json
+//	@Param			terminalId	query	string	false	"Android terminal ID (ANDROID_ID)"
+//	@Success		200	{string}	string	"JSON cart display data"
+//	@Failure		500
+//	@Router			/v1/display/cart [get]
 func (h *DisplayHandler) GetCartDisplay(c *gin.Context) {
 	terminalID := c.Query("terminalId")
 	if terminalID == "" {

@@ -25,6 +25,23 @@ func NewOrderHandler(
 	return &OrderHandler{orderService: orderService, settlementService: settlementService}
 }
 
+// List godoc
+//
+//	@Summary		List orders
+//	@Description	Get orders with optional filters
+//	@Tags			Orders
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			storeType		query		string	false	"Store type filter"
+//	@Param			paymentMethod	query		string	false	"Payment method filter"
+//	@Param			terminalId	query		string	false	"Terminal ID filter"
+//	@Param			startDate		query		int64		false	"Start date Unix timestamp"
+//	@Param			endDate		query		int64		false	"End date Unix timestamp"
+//	@Param			isVoided		query		bool		false	"Filter voided orders"
+//	@Param			isSettled		query		bool		false	"Filter settled orders"
+//	@Success		200
+//	@Failure		401
+//	@Router				/v1/orders [get]
 func (h *OrderHandler) List(c *gin.Context) {
 	storeType := c.Query("storeType")
 	paymentMethod := c.Query("paymentMethod")
@@ -56,6 +73,18 @@ func (h *OrderHandler) List(c *gin.Context) {
 	c.JSON(http.StatusOK, response.Success(orders))
 }
 
+// Get godoc
+//
+//	@Summary		Get order by ID
+//	@Description	Get a single order by its ID
+//	@Tags			Orders
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			id	path		string	true	"Order ID"
+//	@Success		200
+//	@Failure		401
+//	@Failure		404
+//	@Router				/v1/orders/{id} [get]
 func (h *OrderHandler) Get(c *gin.Context) {
 	id := c.Param("id")
 	order, err := h.orderService.Get(id)
@@ -73,9 +102,23 @@ func (h *OrderHandler) Get(c *gin.Context) {
 	c.JSON(http.StatusOK, response.Success(order))
 }
 
+// Create godoc
+//
+//	@Summary		Create order
+//	@Description	Create a new order
+//	@Tags			Orders
+//	@Accept		json
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			request	body	dto.CreateOrderRequest	true	"Order data"
+//	@Success		201
+//	@Success		200		"Idempotent response (order already exists"
+//	@Failure		401
+//	@Failure		422
+//	@Router				/v1/orders [post]
 func (h *OrderHandler) Create(c *gin.Context) {
 	var req dto.CreateOrderRequest
-	
+
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(
 			http.StatusUnprocessableEntity,
@@ -97,7 +140,6 @@ func (h *OrderHandler) Create(c *gin.Context) {
 		}
 	}
 	newOrder := &model.Order{
-		ID:            req.ID,
 		Items:         items,
 		Subtotal:      req.Subtotal,
 		Tax:           req.Tax,
@@ -138,6 +180,22 @@ func (h *OrderHandler) Create(c *gin.Context) {
 	c.JSON(http.StatusCreated, response.Success(result))
 }
 
+// Void godoc
+//
+//	@Summary		Void order
+//	@Description	Void/cancel an order (ADMIN only)
+//	@Tags			Orders
+//	@Accept		json
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			id		path				string				true	"Order ID"
+//	@Param			request	body	dto.VoidOrderRequest	true	"Void reason"
+//	@Success		200
+//	@Failure		401
+//	@Failure		403
+//	@Failure		404
+//	@Failure		409
+//	@Router				/v1/orders/{id}/void [patch]
 func (h *OrderHandler) Void(c *gin.Context) {
 	id := c.Param("id")
 	var req dto.VoidOrderRequest
@@ -156,7 +214,7 @@ func (h *OrderHandler) Void(c *gin.Context) {
 		case "ORDER_NOT_FOUND":
 			c.JSON(
 				http.StatusNotFound,
-				response.Error("ORDER_NOT_FOUND", "Order with ID "+id+" not found"),
+				response.Error("ORDER_NOT_FOUND", "Order "+id+" not found"),
 			)
 		case "ORDER_ALREADY_VOIDED":
 			c.JSON(
@@ -179,6 +237,18 @@ func (h *OrderHandler) Void(c *gin.Context) {
 	c.JSON(http.StatusOK, response.Success(order))
 }
 
+// UnsettledSummary godoc
+//
+//	@Summary		Get unsettled orders summary
+//	@Description	Get summary of unsettled orders for terminal
+//	@Tags			Orders
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			storeType	query	string	false	"Store type filter"
+//	@Param			terminalId	query	string	false	"Terminal ID filter"
+//	@Success		200
+//	@Failure		401
+//	@Router				/v1/orders/unsettled/summary [get]
 func (h *OrderHandler) UnsettledSummary(c *gin.Context) {
 	storeType := c.Query("storeType")
 	terminalID := c.Query("terminalId")
@@ -190,9 +260,23 @@ func (h *OrderHandler) UnsettledSummary(c *gin.Context) {
 	c.JSON(http.StatusOK, response.Success(summary))
 }
 
+// BulkSync godoc
+//
+//	@Summary		Bulk sync orders
+//	@Description	Sync multiple orders at once (offline support)
+//	@Tags			Orders
+//	@Accept		json
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			request	body	dto.BulkSyncOrderRequest	true	"Orders to sync"
+//	@Success		200
+//	@Failure		401
+//	@Failure		422
+//	@Router				/v1/orders/bulk [post]
+//	@Router				/v1/sync/orders [post]
 func (h *OrderHandler) BulkSync(c *gin.Context) {
 	var req dto.BulkSyncOrderRequest
-	
+
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(
 			http.StatusUnprocessableEntity,
@@ -213,6 +297,21 @@ func (h *OrderHandler) BulkSync(c *gin.Context) {
 	c.JSON(http.StatusOK, response.Success(result))
 }
 
+// Settle godoc
+//
+//	@Summary		Settle orders
+//	@Description	Settle/close orders for a terminal (ADMIN only)
+//	@Tags			Orders
+//	@Accept		json
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			request	body	dto.SettleOrderRequest	true	"Settlement data"
+//	@Success		200
+//	@Failure		401
+//	@Failure		403
+//	@Failure		409
+//	@Failure		422
+//	@Router				/v1/orders/settle [post]
 func (h *OrderHandler) Settle(c *gin.Context) {
 	var req dto.SettleOrderRequest
 

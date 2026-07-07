@@ -1,0 +1,566 @@
+definitions:
+  dto.CreateUserRequest:
+    properties:
+      gender:
+        type: string
+      name:
+        type: string
+      password:
+        minLength: 6
+        type: string
+      role:
+        enum:
+        - ADMIN
+        - CASHIER
+        type: string
+      username:
+        type: string
+    required:
+    - password
+    - role
+    - username
+    type: object
+  handler.ErrorDetail:
+    properties:
+      code:
+        type: string
+      message:
+        type: string
+    type: object
+  handler.ErrorResponse:
+    properties:
+      error:
+        $ref: '#/definitions/handler.ErrorDetail'
+      success:
+        type: boolean
+    type: object
+  handler.LoginRequest:
+    properties:
+      password:
+        type: string
+      username:
+        type: string
+    required:
+    - password
+    - username
+    type: object
+  handler.LoginResponse:
+    properties:
+      token:
+        type: string
+      user:
+        $ref: '#/definitions/handler.UserInfo'
+    type: object
+  handler.UserInfo:
+    properties:
+      id:
+        type: integer
+      name:
+        type: string
+      role:
+        type: string
+      username:
+        type: string
+    type: object
+info:
+  contact: {}
+paths:
+  /v1/ads:
+    get:
+      description: Get paginated list of all advertisements. Only ADMIN role.
+      parameters:
+      - description: 'Page number (default: 1)'
+        in: query
+        name: page
+        type: integer
+      - description: 'Items per page (default: 20)'
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+      security:
+      - BearerAuth: []
+      summary: List all advertisements
+      tags:
+      - Ads
+  /v1/ads/{id}:
+    delete:
+      description: Delete an advertisement by ID. Only ADMIN role.
+      parameters:
+      - description: Ad ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "404":
+          description: Not Found
+      security:
+      - BearerAuth: []
+      summary: Delete advertisement
+      tags:
+      - Ads
+    get:
+      description: Get a single advertisement by its ID. Only ADMIN role.
+      parameters:
+      - description: Ad ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "404":
+          description: Not Found
+      security:
+      - BearerAuth: []
+      summary: Get advertisement by ID
+      tags:
+      - Ads
+    put:
+      consumes:
+      - application/json
+      description: Update an existing advertisement. Only ADMIN role.
+      parameters:
+      - description: Ad ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "404":
+          description: Not Found
+        "422":
+          description: Unprocessable Entity
+      security:
+      - BearerAuth: []
+      summary: Update advertisement
+      tags:
+      - Ads
+  /v1/ads/{id}/play:
+    post:
+      consumes:
+      - application/json
+      description: Log when an ad is played on a terminal. Used for analytics.
+      parameters:
+      - description: Ad ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+        "422":
+          description: Unprocessable Entity
+      summary: Log ad play
+      tags:
+      - Ads
+  /v1/ads/{id}/toggle:
+    post:
+      description: Activate or deactivate an advertisement. Only ADMIN role.
+      parameters:
+      - description: Ad ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "404":
+          description: Not Found
+      security:
+      - BearerAuth: []
+      summary: Toggle advertisement status
+      tags:
+      - Ads
+  /v1/ads/active:
+    get:
+      description: Get list of active ads for a specific store type. Public endpoint.
+      parameters:
+      - description: Store type (e.g., RETAIL, FOOD)
+        in: query
+        name: storeType
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+      summary: Get active playlist
+      tags:
+      - Ads
+  /v1/ads/download/{id}:
+    get:
+      description: Download the video file for an advertisement. Public endpoint.
+      parameters:
+      - description: Ad ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - video/mp4
+      responses:
+        "200":
+          description: Video file
+        "400":
+          description: Bad Request
+        "404":
+          description: Not Found
+      summary: Download advertisement video
+      tags:
+      - Ads
+  /v1/ads/upload:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Upload a new video advertisement. Only ADMIN role can upload ads.
+      parameters:
+      - description: Video file (mp4, webm, quicktime)
+        in: formData
+        name: file
+        required: true
+        type: file
+      - description: Ad name
+        in: formData
+        name: name
+        required: true
+        type: string
+      - collectionFormat: multi
+        description: Store types
+        in: formData
+        items:
+          type: string
+        name: storeTypes
+        type: array
+      - description: Playlist order
+        in: formData
+        name: playlistOrder
+        type: integer
+      - description: Start date (YYYY-MM-DD)
+        in: formData
+        name: startDate
+        type: string
+      - description: End date (YYYY-MM-DD)
+        in: formData
+        name: endDate
+        type: string
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+        "400":
+          description: Bad Request
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "413":
+          description: Request Entity Too Large
+      security:
+      - BearerAuth: []
+      summary: Upload advertisement
+      tags:
+      - Ads
+  /v1/display/cart:
+    get:
+      description: Returns the latest stored cart display JSON for a terminal. Public
+        endpoint - no authentication required.
+      parameters:
+      - description: Android terminal ID (ANDROID_ID)
+        in: query
+        name: terminalId
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: JSON cart display data
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+      summary: Get cart display JSON
+      tags:
+      - Cart Display
+    post:
+      consumes:
+      - application/json
+      description: Receives cart display JSON from Android POS and stores it. Requires
+        Bearer token authentication.
+      parameters:
+      - description: Cart display JSON (must include terminalId field)
+        in: body
+        name: body
+        required: true
+        schema:
+          type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+        "401":
+          description: Unauthorized
+      security:
+      - BearerAuth: []
+      summary: Upload cart display JSON
+      tags:
+      - Cart Display
+  /v1/login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticate user and receive JWT token. Only available when ENABLE_DEMO_AUTH=true
+        or Keycloak not configured.
+      parameters:
+      - description: Login credentials
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handler.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.LoginResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      summary: User login
+      tags:
+      - Authentication
+  /v1/settings:
+    get:
+      description: Get all system settings. Only ADMIN role.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+      security:
+      - BearerAuth: []
+      summary: Get all settings
+      tags:
+      - Settings
+    put:
+      consumes:
+      - application/json
+      description: Update system settings. Only ADMIN role.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "422":
+          description: Unprocessable Entity
+      security:
+      - BearerAuth: []
+      summary: Update settings
+      tags:
+      - Settings
+  /v1/users:
+    get:
+      description: Get list of all users. Only ADMIN role.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+      security:
+      - BearerAuth: []
+      summary: List all users
+      tags:
+      - Users
+    post:
+      consumes:
+      - application/json
+      description: Create a new user account. Only ADMIN role.
+      parameters:
+      - description: User data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreateUserRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+        "400":
+          description: Bad Request
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "422":
+          description: Unprocessable Entity
+      security:
+      - BearerAuth: []
+      summary: Create new user
+      tags:
+      - Users
+  /v1/users/{id}:
+    delete:
+      description: Delete a user by ID. Only ADMIN role.
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "404":
+          description: Not Found
+      security:
+      - BearerAuth: []
+      summary: Delete user
+      tags:
+      - Users
+    get:
+      description: Get a single user by ID. Only ADMIN role.
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "404":
+          description: Not Found
+      security:
+      - BearerAuth: []
+      summary: Get user by ID
+      tags:
+      - Users
+    put:
+      consumes:
+      - application/json
+      description: Update an existing user. Only ADMIN role.
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "404":
+          description: Not Found
+        "422":
+          description: Unprocessable Entity
+      security:
+      - BearerAuth: []
+      summary: Update user
+      tags:
+      - Users
+swagger: "2.0"

@@ -4,9 +4,10 @@ import (
 	"errors"
 	"net/http"
 
-	"gbs-common/pkg/response"
 	"gbs-pos-api/internal/dto"
 	"gbs-pos-api/internal/service"
+
+	"gbs-common/pkg/response"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/datatypes"
@@ -21,7 +22,20 @@ func NewCartDisplayHandler(service *service.CartDisplayService) *CartDisplayHand
 	return &CartDisplayHandler{service: service}
 }
 
-// Save receives a cart display JSON from Android and stores it as JSONB.
+// Save godoc
+//
+//	@Summary		Upload cart display JSON
+//	@Description	Receives cart display JSON from Android POS and stores it. Requires Bearer token authentication.
+//	@Tags			Cart Display
+//	@Accept		json
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			request	body	dto.SaveCartDisplayRequest	true	"Cart display JSON (must include terminalId field)"
+//	@Success		200
+//	@Failure		400
+//	@Failure		401
+//	@Failure		422
+//	@Router				/v1/display/cart [post]
 func (h *CartDisplayHandler) Save(c *gin.Context) {
 	var req dto.SaveCartDisplayRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -46,8 +60,17 @@ func (h *CartDisplayHandler) Save(c *gin.Context) {
 	c.JSON(http.StatusOK, response.Success(map[string]string{"terminalId": req.TerminalID}))
 }
 
-// Get returns the latest stored cart display JSON for a terminal.
-// This endpoint is public and returns the raw JSON document without the standard envelope.
+// Get godoc
+//
+//	@Summary		Get cart display JSON
+//	@Description	Returns the latest stored cart display JSON for a terminal. Public endpoint - no authentication required.
+//	@Tags			Cart Display
+//	@Produce		json
+//	@Param			terminalId	query	string	false	"Android terminal ID (ANDROID_ID)"
+//	@Success		200		{string}	string	"JSON cart display data"
+//	@Failure		400
+//	@Failure		500
+//	@Router				/v1/display/cart [get]
 func (h *CartDisplayHandler) Get(c *gin.Context) {
 	terminalID := c.Query("terminalId")
 	if terminalID == "" {
@@ -70,7 +93,18 @@ func (h *CartDisplayHandler) Get(c *gin.Context) {
 	c.Data(http.StatusOK, "application/json", payload)
 }
 
-// Delete removes the stored cart display for a terminal.
+// Delete godoc
+//
+//	@Summary		Delete cart display
+//	@Description	Remove stored cart display for a terminal
+//	@Tags			Cart Display
+//	@Security		BearerAuth
+//	@Param			terminalId	path	string	true	"Terminal ID"
+//	@Success		204
+//	@Failure		401
+//	@Failure		404
+//	@Failure		500
+//	@Router				/v1/display/cart/{terminalId} [delete]
 func (h *CartDisplayHandler) Delete(c *gin.Context) {
 	terminalID := c.Param("terminalId")
 

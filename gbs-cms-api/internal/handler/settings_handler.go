@@ -17,6 +17,17 @@ func NewSettingsHandler(settingsService *service.SettingsService) *SettingsHandl
 	return &SettingsHandler{settingsService: settingsService}
 }
 
+// GetAll godoc
+//
+//	@Summary		Get all settings
+//	@Description	Get all system settings. Only ADMIN role.
+//	@Tags			Settings
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Success		200
+//	@Failure		401
+//	@Failure		403
+//	@Router			/v1/settings [get]
 func (h *SettingsHandler) GetAll(c *gin.Context) {
 	settings, err := h.settingsService.GetAll()
 	if err != nil {
@@ -26,6 +37,20 @@ func (h *SettingsHandler) GetAll(c *gin.Context) {
 	c.JSON(http.StatusOK, response.Success(dto.SettingsResponse{Settings: settings}))
 }
 
+// Update godoc
+//
+//	@Summary		Update settings
+//	@Description	Update system settings. Only ADMIN role.
+//	@Tags			Settings
+//	@Accept		json
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Success		200
+//	@Failure		400
+//	@Failure		401
+//	@Failure		403
+//	@Failure		422
+//	@Router			/v1/settings [put]
 func (h *SettingsHandler) Update(c *gin.Context) {
 	var req dto.UpdateSettingsRequest
 	if err := c.ShouldBindJSON(&req); err != nil {

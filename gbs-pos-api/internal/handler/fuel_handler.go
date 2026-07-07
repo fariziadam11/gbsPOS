@@ -1,13 +1,14 @@
 package handler
 
 import (
-	"gbs-common/pkg/response"
 	"gbs-pos-api/internal/dto"
 	"gbs-pos-api/internal/service"
 	"net/http"
 	"time"
 
 	"github.com/gin-gonic/gin"
+
+	"gbs-common/pkg/response"
 )
 
 type FuelHandler struct {
@@ -18,7 +19,14 @@ func NewFuelHandler(fuelService *service.FuelService) *FuelHandler {
 	return &FuelHandler{fuelService: fuelService}
 }
 
-// Fuel prices
+// ListPrices godoc
+//
+//	@Summary		List fuel prices
+//	@Description	Get all fuel prices
+//	@Tags			Fuel
+//	@Produce		json
+//	@Success		200
+//	@Router				/v1/fuel/prices [get]
 func (h *FuelHandler) ListPrices(c *gin.Context) {
 	prices, err := h.fuelService.ListPrices()
 	if err != nil {
@@ -28,6 +36,21 @@ func (h *FuelHandler) ListPrices(c *gin.Context) {
 	c.JSON(http.StatusOK, response.Success(prices))
 }
 
+// UpdatePrice godoc
+//
+//	@Summary		Update fuel price
+//	@Description	Update fuel price by code
+//	@Tags			Fuel
+//	@Accept		json
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			code	path	string					true	"Fuel code (PERTALITE, PERTAMAX, DEXlite, etc)"
+//	@Param			request	body	dto.UpdateFuelPriceRequest	true	"Price update data"
+//	@Success		200
+//	@Failure		400
+//	@Failure		404
+//	@Failure		422
+//	@Router				/v1/fuel/prices/{code} [patch]
 func (h *FuelHandler) UpdatePrice(c *gin.Context) {
 	code := c.Param("code")
 	var req dto.UpdateFuelPriceRequest
@@ -47,7 +70,15 @@ func (h *FuelHandler) UpdatePrice(c *gin.Context) {
 	c.JSON(http.StatusOK, response.Success(price))
 }
 
-// Pumps
+// ListPumps godoc
+//
+//	@Summary		List pumps
+//	@Description	Get all pumps
+//	@Tags			Fuel
+//	@Produce		json
+//	@Success		200
+//	@Failure		500
+//	@Router				/v1/fuel/pumps [get]
 func (h *FuelHandler) ListPumps(c *gin.Context) {
 	pumps, err := h.fuelService.ListPumps()
 	if err != nil {
@@ -57,6 +88,19 @@ func (h *FuelHandler) ListPumps(c *gin.Context) {
 	c.JSON(http.StatusOK, response.Success(pumps))
 }
 
+// CreatePump godoc
+//
+//	@Summary		Create pump
+//	@Description	Create a new pump
+//	@Tags			Fuel
+//	@Accept		json
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			request	body	dto.CreatePumpRequest	true	"Pump data"
+//	@Success		201
+//	@Failure		401
+//	@Failure		422
+//	@Router				/v1/fuel/pumps [post]
 func (h *FuelHandler) CreatePump(c *gin.Context) {
 	var req dto.CreatePumpRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -71,6 +115,22 @@ func (h *FuelHandler) CreatePump(c *gin.Context) {
 	c.JSON(http.StatusCreated, response.Success(pump))
 }
 
+// UpdatePump godoc
+//
+//	@Summary		Update pump
+//	@Description	Update pump details
+//	@Tags			Fuel
+//	@Accept		json
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			id		path	string				true	"Pump ID"
+//	@Param			request	body	dto.UpdatePumpRequest	true	"Update data"
+//	@Success		200
+//	@Failure		400
+//	@Failure		401
+//	@Failure		404
+//	@Failure		422
+//	@Router				/v1/fuel/pumps/{id} [patch]
 func (h *FuelHandler) UpdatePump(c *gin.Context) {
 	id := c.Param("id")
 	var req dto.UpdatePumpRequest
@@ -90,6 +150,17 @@ func (h *FuelHandler) UpdatePump(c *gin.Context) {
 	c.JSON(http.StatusOK, response.Success(pump))
 }
 
+// DeletePump godoc
+//
+//	@Summary		Delete pump
+//	@Description	Delete a pump
+//	@Tags			Fuel
+//	@Security		BearerAuth
+//	@Param			id	path	string	true	"Pump ID"
+//	@Success		204
+//	@Failure		401
+//	@Failure		404
+//	@Router				/v1/fuel/pumps/{id} [delete]
 func (h *FuelHandler) DeletePump(c *gin.Context) {
 	id := c.Param("id")
 	if err := h.fuelService.DeletePump(id); err != nil {
@@ -103,7 +174,15 @@ func (h *FuelHandler) DeletePump(c *gin.Context) {
 	c.Status(http.StatusNoContent)
 }
 
-// Nozzles
+// ListNozzles godoc
+//
+//	@Summary		List nozzles
+//	@Description	Get all nozzles
+//	@Tags			Fuel
+//	@Produce		json
+//	@Success		200
+//	Failure			401
+//	@Router				/v1/fuel/nozzles [get]
 func (h *FuelHandler) ListNozzles(c *gin.Context) {
 	nozzles, err := h.fuelService.ListNozzles()
 	if err != nil {
@@ -113,6 +192,19 @@ func (h *FuelHandler) ListNozzles(c *gin.Context) {
 	c.JSON(http.StatusOK, response.Success(nozzles))
 }
 
+// CreateNozzle godoc
+//
+//	@Summary		Create nozzle
+//	@Description	Create a new nozzle
+//	@Tags			Fuel
+//	@Accept		json
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			request	body	dto.CreateNozzleRequest	true	"Nozzle data"
+//	@Success		201
+//	@Failure		401
+//	@Failure		422
+//	@Router				/v1/fuel/nozzles [post]
 func (h *FuelHandler) CreateNozzle(c *gin.Context) {
 	var req dto.CreateNozzleRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -127,6 +219,22 @@ func (h *FuelHandler) CreateNozzle(c *gin.Context) {
 	c.JSON(http.StatusCreated, response.Success(nozzle))
 }
 
+// UpdateNozzle godoc
+//
+//	@Summary		Update nozzle
+//	@Description	Update nozzle
+//	@Tags			Fuel
+//	@Accept		json
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			id		path	string					true	"Nozzle ID"
+//	@Param			request	body	dto.UpdateNozzleRequest	true	"Update data"
+//	@Success		200
+//	@Failure		400
+//	@Failure		401
+//	@Failure		404
+//	@Failure		422
+//	@Router				/v1/fuel/nozzles/{id} [patch]
 func (h *FuelHandler) UpdateNozzle(c *gin.Context) {
 	id := c.Param("id")
 	var req dto.UpdateNozzleRequest
@@ -146,6 +254,17 @@ func (h *FuelHandler) UpdateNozzle(c *gin.Context) {
 	c.JSON(http.StatusOK, response.Success(nozzle))
 }
 
+// DeleteNozzle godoc
+//
+//	@Summary		Delete nozzle
+//	@Description	Delete a nozzle
+//	@Tags			Fuel
+//	@Security		BearerAuth
+//	@Param			id	path	string	true	"Nozzle ID"
+//	@Success		204
+//	@Failure		401
+//	@Failure		404
+//	@Router				/v1/fuel/nozzles/{id} [delete]
 func (h *FuelHandler) DeleteNozzle(c *gin.Context) {
 	id := c.Param("id")
 	if err := h.fuelService.DeleteNozzle(id); err != nil {
@@ -159,7 +278,19 @@ func (h *FuelHandler) DeleteNozzle(c *gin.Context) {
 	c.Status(http.StatusNoContent)
 }
 
-// Fuel sales
+// CreateSale godoc
+//
+//	@Summary		Record fuel sale
+//	@Description	Record a fuel sale transaction
+//	@Tags			Fuel
+//	@Accept		json
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			request	body	dto.FuelSaleRequest	true	"Sale data"
+//	@Success		201
+//	@Failure		401
+//	@Failure		422
+//	@Router				/v1/fuel/sales [post]
 func (h *FuelHandler) CreateSale(c *gin.Context) {
 	var req dto.FuelSaleRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -174,6 +305,20 @@ func (h *FuelHandler) CreateSale(c *gin.Context) {
 	c.JSON(http.StatusCreated, response.Success(sale))
 }
 
+// Report godoc
+//
+//	@Summary		Fuel sales report
+//	@Description	Get fuel sales report for date range
+//	@Tags			Fuel
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			from	query	string	true	"Start date (YYYY-MM-DD)"
+//	@Param			to		query	string	true	"End date (YYYY-MM-DD)"
+//	@Success		200
+//	@Failure		400
+//	@Failure		401
+//	@Failure		500
+//	@Router				/v1/fuel/report [get]
 func (h *FuelHandler) Report(c *gin.Context) {
 	fromStr := c.Query("from")
 	toStr := c.Query("to")

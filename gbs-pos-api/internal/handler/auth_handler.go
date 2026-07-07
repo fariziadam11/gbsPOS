@@ -17,11 +17,18 @@ func NewAuthHandler(authService *service.AuthService) *AuthHandler {
 	return &AuthHandler{authService: authService}
 }
 
-// type LoginRequest struct {
-// 	Username string `json:"username" binding:"required"`
-// 	Password string `json:"password" binding:"required"`
-// }
-
+// Login godoc
+//
+//	@Summary		User login
+//	@Description	Authenticate user with username and password. Returns JWT token for API access.
+//	@Tags			Authentication
+//	@Accept		json
+//	@Produce		json
+//	@Param			request	body	dto.LoginRequest	true	"Login credentials"
+//	@Success		200
+//	@Failure		401
+//	@Failure		422
+//	@Router			/v1/login [post]
 func (h *AuthHandler) Login(c *gin.Context) {
 	var req dto.LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
