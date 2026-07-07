@@ -61,6 +61,7 @@ type Handlers struct {
 	ProductVariant *handler.ProductVariantHandler
 	Hold           *handler.HoldHandler
 	Fuel           *handler.FuelHandler
+	CartDisplay    *handler.CartDisplayHandler
 }
 
 func buildAuthMiddleware(cfg *config.Config) (gin.HandlerFunc, error) {
@@ -110,6 +111,7 @@ func Setup(
 	setupVariantRoutes(auth, h.ProductVariant)
 	setupHoldRoutes(auth, h.Hold)
 	setupFuelRoutes(v1, h.Fuel)
+	setupCartDisplayRoutes(v1, h.CartDisplay, authMiddleware)
 
 	r.Static("/public", "./public")
 

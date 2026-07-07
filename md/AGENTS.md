@@ -126,6 +126,7 @@ This section is maintained by AI agents. It must be updated after each completed
 - 2026-06-15
 - 2026-06-17
 - 2026-07-03
+- 2026-07-07: added Cart Display API for Android POS customer display JSON cache
 
 ### Active Development Focus
 
@@ -143,6 +144,7 @@ This section is maintained by AI agents. It must be updated after each completed
 - CMS Web Discount management page centralizes PRODUCT / TRANSACTION / VOUCHER CRUD and product-page discount icons now deep-link to filtered discount management.
 - Hold module reworked with lifecycle ACTIVE -> RESUMED.
 - CMS Web auth now falls back to local username/password JWT login when frontend Keycloak env is empty.
+- Cart Display API caches per-terminal JSON payloads with public GET and protected POST/DELETE endpoints.
 
 ### Known System Rules (Runtime)
 

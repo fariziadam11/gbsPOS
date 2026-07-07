@@ -51,6 +51,7 @@ func main() {
 		&model.StockMovement{},
 		&model.ProductVariant{},
 		&model.HoldSession{},
+		&model.CartDisplay{},
 		&model.Order{},
 		&model.OrderItem{},
 		&model.Settlement{},
@@ -73,6 +74,7 @@ func main() {
 	stockMovementRepo := repository.NewStockMovementRepository(db)
 	variantRepo := repository.NewProductVariantRepository(db)
 	holdRepo := repository.NewHoldRepository(db)
+	cartDisplayRepo := repository.NewCartDisplayRepository(db)
 	fuelPriceRepo := repository.NewFuelPriceRepository(db)
 	pumpRepo := repository.NewPumpRepository(db)
 	nozzleRepo := repository.NewNozzleRepository(db)
@@ -88,6 +90,7 @@ func main() {
 	customerService := service.NewCustomerService(customerRepo)
 	variantService := service.NewProductVariantService(variantRepo)
 	holdService := service.NewHoldService(holdRepo)
+	cartDisplayService := service.NewCartDisplayService(cartDisplayRepo)
 	orderService := service.NewOrderService(
 		orderRepo,
 		productService,
@@ -107,6 +110,7 @@ func main() {
 	dashboardHandler := handler.NewDashboardHandler(dashboardService)
 	variantHandler := handler.NewProductVariantHandler(variantService)
 	holdHandler := handler.NewHoldHandler(holdService)
+	cartDisplayHandler := handler.NewCartDisplayHandler(cartDisplayService)
 	fuelHandler := handler.NewFuelHandler(fuelService)
 
 	if cfg.Env == "production" {
@@ -126,6 +130,7 @@ func main() {
 			ProductVariant: variantHandler,
 			Hold:           holdHandler,
 			Fuel:           fuelHandler,
+			CartDisplay:    cartDisplayHandler,
 		},
 	)
 
