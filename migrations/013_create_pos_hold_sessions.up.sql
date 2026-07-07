@@ -1,4 +1,4 @@
-CREATE TABLE pos_hold_sessions (
+CREATE TABLE IF NOT EXISTS pos_hold_sessions (
     id UUID PRIMARY KEY,
 
     store_type VARCHAR(20) NOT NULL CHECK (store_type IN ('RETAIL', 'FNB', 'OUTFIT')),
@@ -14,6 +14,6 @@ CREATE TABLE pos_hold_sessions (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX idx_pos_hold_terminal ON pos_hold_sessions(terminal_id);
-CREATE INDEX idx_pos_hold_status ON pos_hold_sessions(status);
-CREATE INDEX idx_pos_hold_store_type ON pos_hold_sessions(store_type);
+CREATE INDEX IF NOT EXISTS idx_pos_hold_terminal ON pos_hold_sessions(terminal_id);
+CREATE INDEX IF NOT EXISTS idx_pos_hold_status ON pos_hold_sessions(status);
+CREATE INDEX IF NOT EXISTS idx_pos_hold_store_type ON pos_hold_sessions(store_type);

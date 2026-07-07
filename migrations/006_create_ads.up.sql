@@ -1,4 +1,4 @@
-CREATE TABLE ads (
+CREATE TABLE IF NOT EXISTS ads (
     id             SERIAL PRIMARY KEY,
     name           VARCHAR(200)   NOT NULL,
     filename       VARCHAR(255)   NOT NULL,
@@ -18,5 +18,5 @@ CREATE TABLE ads (
     updated_at     TIMESTAMPTZ    NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX idx_ads_is_active ON ads(is_active);
-CREATE INDEX idx_ads_dates ON ads(start_date, end_date);
+CREATE INDEX IF NOT EXISTS idx_ads_is_active ON ads(is_active);
+CREATE INDEX IF NOT EXISTS idx_ads_dates ON ads(start_date, end_date);

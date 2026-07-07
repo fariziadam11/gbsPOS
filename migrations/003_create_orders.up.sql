@@ -1,4 +1,4 @@
-CREATE TABLE orders (
+CREATE TABLE IF NOT EXISTS orders (
     id              VARCHAR(32)    PRIMARY KEY,
     subtotal        DECIMAL(12,2)  NOT NULL,
     tax             DECIMAL(12,2)  NOT NULL,
@@ -26,9 +26,9 @@ CREATE TABLE orders (
     updated_at      TIMESTAMPTZ    NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX idx_orders_timestamp ON orders(timestamp DESC);
-CREATE INDEX idx_orders_is_settled ON orders(is_settled);
-CREATE INDEX idx_orders_is_voided ON orders(is_voided);
-CREATE INDEX idx_orders_store_type ON orders(store_type);
-CREATE INDEX idx_orders_terminal_id ON orders(terminal_id);
-CREATE INDEX idx_orders_transaction_id ON orders(transaction_id);
+CREATE INDEX IF NOT EXISTS idx_orders_timestamp ON orders(timestamp DESC);
+CREATE INDEX IF NOT EXISTS idx_orders_is_settled ON orders(is_settled);
+CREATE INDEX IF NOT EXISTS idx_orders_is_voided ON orders(is_voided);
+CREATE INDEX IF NOT EXISTS idx_orders_store_type ON orders(store_type);
+CREATE INDEX IF NOT EXISTS idx_orders_terminal_id ON orders(terminal_id);
+CREATE INDEX IF NOT EXISTS idx_orders_transaction_id ON orders(transaction_id);

@@ -1,4 +1,4 @@
-CREATE TABLE settlements (
+CREATE TABLE IF NOT EXISTS settlements (
     id          VARCHAR(64)    PRIMARY KEY,
     timestamp   BIGINT         NOT NULL,
     batch_count INT            NOT NULL,
@@ -12,4 +12,4 @@ CREATE TABLE settlements (
     created_at  TIMESTAMPTZ    NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX idx_settlements_timestamp ON settlements(timestamp DESC);
+CREATE INDEX IF NOT EXISTS idx_settlements_timestamp ON settlements(timestamp DESC);

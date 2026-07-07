@@ -233,9 +233,6 @@ LOG_LEVEL=info
 # Upload Configuration
 UPLOAD_DIR=/uploads/ads
 
-# Migration Configuration
-MIGRATIONS_PATH=/root/migrations
-
 # CORS Configuration
 ALLOWED_ORIGINS=https://pos.gbs.com,https://cms.gbs.com
 ```

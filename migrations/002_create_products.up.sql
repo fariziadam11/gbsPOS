@@ -1,4 +1,4 @@
-CREATE TABLE products (
+CREATE TABLE IF NOT EXISTS products (
     id          SERIAL PRIMARY KEY,
     name        VARCHAR(200)   NOT NULL,
     price       DECIMAL(12,2)  NOT NULL CHECK (price >= 0),
@@ -9,5 +9,5 @@ CREATE TABLE products (
     updated_at  TIMESTAMPTZ    NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX idx_products_store_type ON products(store_type);
-CREATE INDEX idx_products_category ON products(category);
+CREATE INDEX IF NOT EXISTS idx_products_store_type ON products(store_type);
+CREATE INDEX IF NOT EXISTS idx_products_category ON products(category);

@@ -1,4 +1,4 @@
-CREATE TABLE discounts (
+CREATE TABLE IF NOT EXISTS discounts (
     id          SERIAL PRIMARY KEY,
     product_id  INTEGER         NOT NULL REFERENCES products(id) ON DELETE CASCADE,
     name        VARCHAR(200)    NOT NULL,
@@ -13,6 +13,6 @@ CREATE TABLE discounts (
     CONSTRAINT discounts_percentage_value_check CHECK (type <> 'PERCENTAGE' OR value <= 100)
 );
 
-CREATE INDEX idx_discounts_product_id ON discounts(product_id);
-CREATE INDEX idx_discounts_product_period ON discounts(product_id, start_date, end_date);
-CREATE INDEX idx_discounts_status ON discounts(status);
+CREATE INDEX IF NOT EXISTS idx_discounts_product_id ON discounts(product_id);
+CREATE INDEX IF NOT EXISTS idx_discounts_product_period ON discounts(product_id, start_date, end_date);
+CREATE INDEX IF NOT EXISTS idx_discounts_status ON discounts(status);

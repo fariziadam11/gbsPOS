@@ -37,7 +37,7 @@ The `.env` file is automatically loaded at startup via `github.com/joho/godotenv
 
 - `JWT_SECRET` — mandatory, must be ≥32 characters (validated at startup)
 - `DATABASE_URL` — PostgreSQL connection string
-- `MIGRATIONS_PATH` — (POS API only) path to SQL migrations; default auto-detects `migrations/` at repo root. Always uses `golang-migrate/v4` on startup.
+- `MIGRATIONS_PATH` — (POS API only) path to SQL migrations. Leave empty to use GORM `AutoMigrate` (default). Set to a migrations directory to use `golang-migrate/v4` instead.
 - `UPLOAD_DIR` — CMS only, local filesystem path for uploaded videos
 
 **Docker:**
@@ -46,7 +46,7 @@ The `.env` file is automatically loaded at startup via `github.com/joho/godotenv
 docker-compose up -d   # starts postgres, pos-api (:8080), cms-api (:8081)
 ```
 
-Docker Compose sets `MIGRATIONS_PATH=/app/migrations` on **pos-api** only; CMS starts after POS has applied migrations.
+Docker Compose leaves `MIGRATIONS_PATH` empty so both APIs use GORM `AutoMigrate`; CMS still starts after POS.
 
 ## Database
 
@@ -100,9 +100,9 @@ Contents:
 
 ## Important Gotchas
 
-- Schema changes are **SQL only** via `golang-migrate` (`migrations/` at repo root). GORM `AutoMigrate` is **tests only** (`test_helper.go`).
+- Schema changes are applied via GORM `AutoMigrate` by default. Set `MIGRATIONS_PATH` to a `golang-migrate` directory to use SQL migrations instead.
 - `gbs-common` has its own `go.mod`. Its dependency versions may differ from the API modules. Tidy all three after changes.
-- `gbs-pos-api/Dockerfile` copies repo-root `migrations/` into the image at `/app/migrations`.
+- `gbs-pos-api/Dockerfile` does not copy SQL migrations by default; GORM `AutoMigrate` is used. Set `MIGRATIONS_PATH` and mount/copy migrations if you prefer `golang-migrate`.
 - The `Ad.StoreTypes` field uses `gorm:"serializer:json"` (stored as JSON text), not PostgreSQL arrays. Query with `store_types LIKE '%RETAIL%'`.
 - `MaxMultipartMemory = 32 << 20` is set on the Gin router. The CMS upload handler separately enforces a 50MB file limit.
 
@@ -113,7 +113,7 @@ Contents:
 - Production uses `docker-compose.prod.yml` with secrets via `.env`, restart policies, and health checks.
 - Images are built and pushed to GitHub Container Registry (`ghcr.io`) via GitHub Actions on every push to `main`.
 - The `.env` file is auto-loaded by `godotenv` at startup; never commit `.env` to Git.
-- Shared SQL lives in `migrations/` (POS + CMS tables). Only **pos-api** runs migrate; CMS connects to the same DB.
+- Both APIs run GORM `AutoMigrate` for their own models against the shared DB. `migrations/` is optional and only used when `MIGRATIONS_PATH` is set.
 
 ## Project Memory (AI Dynamic Context)
 
@@ -148,7 +148,7 @@ This section is maintained by AI agents. It must be updated after each completed
 
 - storeType is GLOBAL filter across POS system
 - Orders are immutable after settlement
-- All DB changes must go through golang-migrate
+- DB changes are applied via GORM AutoMigrate by default; golang-migrate is optional
 - Handler must not contain business logic
 - Stock movement must be tracked as immutable ledger (IN / OUT / OPNAME)
 - POS Hold must persist cart snapshot before checkout or discard

@@ -1,9 +1,9 @@
 -- Add stock tracking to products
-ALTER TABLE products ADD COLUMN stock_quantity INTEGER NOT NULL DEFAULT 0;
-ALTER TABLE products ADD COLUMN low_stock_threshold INTEGER NOT NULL DEFAULT 10;
+ALTER TABLE products ADD COLUMN IF NOT EXISTS stock_quantity INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE products ADD COLUMN IF NOT EXISTS low_stock_threshold INTEGER NOT NULL DEFAULT 10;
 
 -- Stock movements audit trail
-CREATE TABLE stock_movements (
+CREATE TABLE IF NOT EXISTS stock_movements (
     id SERIAL PRIMARY KEY,
     product_id INTEGER REFERENCES products(id) ON DELETE CASCADE,
     type VARCHAR(20) NOT NULL CHECK (type IN ('IN', 'OUT', 'ADJUSTMENT')),
@@ -15,7 +15,7 @@ CREATE TABLE stock_movements (
 );
 
 -- Customers table
-CREATE TABLE customers (
+CREATE TABLE IF NOT EXISTS customers (
     id SERIAL PRIMARY KEY,
     name VARCHAR(255),
     phone VARCHAR(50) UNIQUE,
@@ -27,10 +27,10 @@ CREATE TABLE customers (
 );
 
 -- Link customers to orders
-ALTER TABLE orders ADD COLUMN customer_id INTEGER REFERENCES customers(id) ON DELETE SET NULL;
-ALTER TABLE orders ADD COLUMN loyalty_points_earned INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS customer_id INTEGER REFERENCES customers(id) ON DELETE SET NULL;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS loyalty_points_earned INTEGER NOT NULL DEFAULT 0;
 
 -- Index for faster customer lookups
-CREATE INDEX idx_customers_phone ON customers(phone);
-CREATE INDEX idx_stock_movements_product_id ON stock_movements(product_id);
-CREATE INDEX idx_orders_customer_id ON orders(customer_id);
+CREATE INDEX IF NOT EXISTS idx_customers_phone ON customers(phone);
+CREATE INDEX IF NOT EXISTS idx_stock_movements_product_id ON stock_movements(product_id);
+CREATE INDEX IF NOT EXISTS idx_orders_customer_id ON orders(customer_id);

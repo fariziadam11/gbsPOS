@@ -47,7 +47,7 @@ async function logout() {
         @click="emit('toggleSidebar')"
         title="Menu"
       />
-      <i class="pi pi-play-circle brand-icon text-2xl lg:text-3xl text-primary"></i>
+      <img src="/gis.png" alt="GBS CMS Logo" class="brand-icon" style="height: 2rem;" />
       <span class="brand-text text-lg lg:text-xl font-semibold text-color">GBS CMS</span>
     </div>
 
@@ -99,7 +99,7 @@ async function logout() {
 }
 
 .brand-icon {
-  color: var(--p-primary-color);
+  object-fit: contain;
 }
 
 .brand-text {

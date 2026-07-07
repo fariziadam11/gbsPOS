@@ -21,7 +21,6 @@ services:
             - "8080:8080"
         environment:
             - DATABASE_URL=postgres://postgres:123@postgres:5432/gbs_pos?sslmode=disable
-            - MIGRATIONS_PATH=/app/migrations
             - JWT_SECRET=872417e0370c7bb5705b380b2a4efe03af542dff46f682cc5b6a6e3366200fcb
             - PORT=8080
             - ENV=production
@@ -31,7 +30,6 @@ services:
                 condition: service_healthy
         volumes:
             - pos-uploads:/uploads/pos
-            - ./migrations:/app/migrations:ro
         restart: unless-stopped
 
     cms-api:

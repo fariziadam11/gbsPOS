@@ -40,6 +40,16 @@ func main() {
 		log.Fatal("failed to connect database: ", err)
 	}
 
+	if err := db.AutoMigrate(
+		&model.User{},
+		&model.Ad{},
+		&model.AdPlayLog{},
+	); err != nil {
+		log.Fatal("failed to migrate database: ", err)
+	}
+
+	seedData(db)
+
 	adRepo := repository.NewAdRepository(db)
 	playLogRepo := repository.NewAdPlayLogRepository(db)
 	userRepo := repository.NewUserRepository(db)
