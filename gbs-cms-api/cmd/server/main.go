@@ -44,6 +44,7 @@ func main() {
 		&model.User{},
 		&model.Ad{},
 		&model.AdPlayLog{},
+		&model.CartDisplay{},
 	); err != nil {
 		log.Fatal("failed to migrate database: ", err)
 	}
@@ -54,16 +55,19 @@ func main() {
 	playLogRepo := repository.NewAdPlayLogRepository(db)
 	userRepo := repository.NewUserRepository(db)
 	settingsRepo := repository.NewSettingsRepository(db)
+	cartDisplayRepo := repository.NewCartDisplayRepository(db)
 
 	authService := service.NewAuthService(userRepo, cfg.JWTSecret, cfg.JWTExpiryHours)
 	cmsService := service.NewCMSService(adRepo, playLogRepo, cfg.UploadDir)
 	settingsService := service.NewSettingsService(settingsRepo)
 	userManagementService := service.NewUserService(userRepo)
+	cartDisplayService := service.NewCartDisplayService(cartDisplayRepo)
 
 	authHandler := handler.NewAuthHandler(authService)
 	cmsHandler := handler.NewCMSHandler(cmsService, userManagementService)
 	settingsHandler := handler.NewSettingsHandler(settingsService)
 	userHandler := handler.NewUserHandler(userManagementService)
+	displayHandler := handler.NewDisplayHandler(cartDisplayService)
 
 	if cfg.Env == "production" {
 		gin.SetMode(gin.ReleaseMode)
@@ -111,7 +115,12 @@ func main() {
 			auth.POST("/users", middleware.RequireRole("ADMIN"), userHandler.Create)
 			auth.PUT("/users/:id", middleware.RequireRole("ADMIN"), userHandler.Update)
 			auth.DELETE("/users/:id", middleware.RequireRole("ADMIN"), userHandler.Delete)
+
+			auth.POST("/display/cart", displayHandler.SaveCartDisplay)
 		}
+
+		// Public routes for browser/customer displays
+		v1.GET("/display/cart", displayHandler.GetCartDisplay)
 	}
 
 	srv := &http.Server{
