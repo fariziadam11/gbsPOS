@@ -1222,14 +1222,12 @@ const docTemplate = `{
                     },
                     {
                         "type": "integer",
-                        "format": "int64",
                         "description": "Start date Unix timestamp",
                         "name": "startDate",
                         "in": "query"
                     },
                     {
                         "type": "integer",
-                        "format": "int64",
                         "description": "End date Unix timestamp",
                         "name": "endDate",
                         "in": "query"
@@ -1551,7 +1549,6 @@ const docTemplate = `{
                     },
                     {
                         "type": "integer",
-                        "format": "int64",
                         "description": "Unix timestamp for incremental sync",
                         "name": "lastSync",
                         "in": "query"

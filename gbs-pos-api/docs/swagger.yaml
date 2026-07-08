@@ -1186,12 +1186,10 @@ paths:
         name: terminalId
         type: string
       - description: Start date Unix timestamp
-        format: int64
         in: query
         name: startDate
         type: integer
       - description: End date Unix timestamp
-        format: int64
         in: query
         name: endDate
         type: integer
@@ -1393,7 +1391,6 @@ paths:
         name: category
         type: string
       - description: Unix timestamp for incremental sync
-        format: int64
         in: query
         name: lastSync
         type: integer
