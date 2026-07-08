@@ -14,7 +14,6 @@ RUN apk --no-cache add ca-certificates tzdata
 
 WORKDIR /app
 COPY --from=builder /gbs-pos-api ./gbs-pos-api
-COPY gbs-pos-api/public ./public
 
 EXPOSE 8080
 CMD ["./gbs-pos-api"]
