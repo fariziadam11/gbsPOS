@@ -113,7 +113,5 @@ func Setup(
 	setupFuelRoutes(v1, h.Fuel)
 	setupCartDisplayRoutes(v1, h.CartDisplay, authMiddleware)
 
-	r.Static("/public", "./public")
-
 	return r
 }
