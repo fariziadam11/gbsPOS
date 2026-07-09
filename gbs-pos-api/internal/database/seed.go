@@ -2,7 +2,6 @@ package database
 
 import (
 	"gbs-pos-api/internal/model"
-	"log"
 	"time"
 
 	"gorm.io/gorm"
@@ -17,7 +16,6 @@ func Seed(db *gorm.DB) {
 	if count > 0 {
 		return
 	}
-	log.Println("Seeding data...")
 	users := []model.User{
 		{
 			Username:     "admin",
@@ -156,7 +154,6 @@ func seedFuelData(db *gorm.DB) {
 		for _, p := range prices {
 			db.Create(&p)
 		}
-		log.Println("Seeded fuel prices")
 	}
 
 	var pumpCount int64
@@ -181,6 +178,5 @@ func seedFuelData(db *gorm.DB) {
 		for _, n := range nozzles {
 			db.Create(&n)
 		}
-		log.Println("Seeded pumps and nozzles")
 	}
 }

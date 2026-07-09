@@ -169,19 +169,15 @@ func main() {
 	defer stop()
 
 	go func() {
-		log.Println("POS API starting on port", cfg.Port)
-		log.Println("Swagger UI available at http://localhost:" + cfg.Port + "/swagger/index.html")
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Fatal("server failed: ", err)
 		}
 	}()
 
 	<-ctx.Done()
-	log.Println("shutting down POS API...")
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	if err := srv.Shutdown(shutdownCtx); err != nil {
 		log.Fatal("forced shutdown: ", err)
 	}
-	log.Println("POS API stopped")
 }

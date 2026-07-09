@@ -24,21 +24,15 @@ func LoggerMiddleware() gin.HandlerFunc {
 			path = path + "?" + raw
 		}
 
-		logger := log.Info()
-		if statusCode >= 400 {
-			logger = log.Warn()
-		}
 		if statusCode >= 500 {
-			logger = log.Error()
+			log.Error().
+				Str("method", method).
+				Str("path", path).
+				Int("status", statusCode).
+				Dur("latency", latency).
+				Str("ip", clientIP).
+				Str("client_type", c.GetHeader("X-Client-Type")).
+				Msg("request")
 		}
-
-		logger.
-			Str("method", method).
-			Str("path", path).
-			Int("status", statusCode).
-			Dur("latency", latency).
-			Str("ip", clientIP).
-			Str("client_type", c.GetHeader("X-Client-Type")).
-			Msg("request")
 	}
 }

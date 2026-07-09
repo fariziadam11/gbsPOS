@@ -169,21 +169,17 @@ func main() {
 	defer stop()
 
 	go func() {
-		log.Println("CMS API starting on port", cfg.Port)
-		log.Println("Swagger UI available at http://localhost:" + cfg.Port + "/swagger/index.html")
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Fatal("server failed: ", err)
 		}
 	}()
 
 	<-ctx.Done()
-	log.Println("shutting down CMS API...")
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	if err := srv.Shutdown(shutdownCtx); err != nil {
 		log.Fatal("forced shutdown: ", err)
 	}
-	log.Println("CMS API stopped")
 }
 
 func buildAuthMiddleware(cfg *config.Config) (gin.HandlerFunc, error) {
@@ -199,7 +195,6 @@ func seedData(db *gorm.DB) {
 	if count > 0 {
 		return
 	}
-	log.Println("CMS seeding data...")
 	users := []model.User{
 		{
 			Username:     "admin",

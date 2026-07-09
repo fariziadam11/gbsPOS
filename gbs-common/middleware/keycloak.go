@@ -2,7 +2,6 @@ package middleware
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 	"strings"
 	"time"
@@ -21,10 +20,8 @@ func NewKeycloakMiddleware(jwksURL string) (gin.HandlerFunc, error) {
 	}
 
 	return func(c *gin.Context) {
-		path := c.Request.URL.Path
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {
-			log.Printf("[AUTH] missing authorization header | path=%s", path)
 			c.AbortWithStatusJSON(
 				http.StatusUnauthorized,
 				response.Error("UNAUTHORIZED", "Missing authorization header"),
@@ -33,7 +30,6 @@ func NewKeycloakMiddleware(jwksURL string) (gin.HandlerFunc, error) {
 		}
 
 		tokenString := strings.TrimPrefix(authHeader, "Bearer ")
-		log.Printf("[AUTH] validating keycloak token | path=%s len=%d", path, len(tokenString))
 
 		token, err := jwt.Parse(tokenString, jwks.Keyfunc,
 			jwt.WithValidMethods([]string{"RS256"}),
@@ -42,7 +38,6 @@ func NewKeycloakMiddleware(jwksURL string) (gin.HandlerFunc, error) {
 		)
 
 		if err != nil || !token.Valid {
-			log.Printf("[AUTH] invalid or expired keycloak token | path=%s error=%v", path, err)
 			c.AbortWithStatusJSON(
 				http.StatusUnauthorized,
 				response.Error("INVALID_TOKEN", "Invalid or expired token"),
@@ -52,7 +47,6 @@ func NewKeycloakMiddleware(jwksURL string) (gin.HandlerFunc, error) {
 
 		claims, ok := token.Claims.(jwt.MapClaims)
 		if !ok {
-			log.Printf("[AUTH] invalid keycloak token claims | path=%s", path)
 			c.AbortWithStatusJSON(
 				http.StatusUnauthorized,
 				response.Error("INVALID_TOKEN", "Invalid token claims"),
@@ -62,9 +56,12 @@ func NewKeycloakMiddleware(jwksURL string) (gin.HandlerFunc, error) {
 
 		role := keycloakRole(claims)
 		username := keycloakUsername(claims)
-		log.Printf("[AUTH] keycloak token valid | path=%s username=%s role=%s", path, username, role)
 		if role == "" {
-			log.Printf("[AUTH] keycloak token has no ADMIN/CASHIER role | path=%s username=%s", path, username)
+			c.AbortWithStatusJSON(
+				http.StatusUnauthorized,
+				response.Error("INVALID_TOKEN", "No ADMIN/CASHIER role found"),
+			)
+			return
 		}
 
 		c.Set("userID", claims["sub"])
