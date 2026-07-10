@@ -140,6 +140,7 @@ func (h *OrderHandler) Create(c *gin.Context) {
 		}
 	}
 	newOrder := &model.Order{
+		ID:            req.ID,
 		Items:         items,
 		Subtotal:      req.Subtotal,
 		Tax:           req.Tax,

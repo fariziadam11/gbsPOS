@@ -28,7 +28,7 @@ func (r *SaveCartDisplayRequest) UnmarshalJSON(data []byte) error {
 
 	terminalID, ok := raw["terminalId"]
 	if !ok {
-		return errors.New("terminalId is required")
+		return errors.New("terminalId is required!!!")
 	}
 
 	var id string
