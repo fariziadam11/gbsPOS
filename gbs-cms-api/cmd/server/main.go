@@ -150,6 +150,7 @@ func main() {
 			auth.DELETE("/users/:id", middleware.RequireRole("ADMIN"), userHandler.Delete)
 
 			auth.POST("/display/cart", displayHandler.SaveCartDisplay)
+			auth.GET("/display/terminals", middleware.RequireRole("ADMIN"), displayHandler.ListTerminals)
 		}
 
 		// Public routes for browser/customer displays

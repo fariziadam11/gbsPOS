@@ -51,7 +51,7 @@ func (h *CartDisplayHandler) Save(c *gin.Context) {
 		return
 	}
 
-	if err := h.service.Save(req.TerminalID, datatypes.JSON(payload)); err != nil {
+	if err := h.service.Save(req.TerminalID, datatypes.JSON(payload), req.DeviceInfo); err != nil {
 		c.JSON(http.StatusInternalServerError,
 			response.Error("INTERNAL_SERVER_ERROR", err.Error()))
 		return
