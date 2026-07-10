@@ -1,10 +1,12 @@
 package handler
 
 import (
+	"encoding/json"
 	"io"
 	"net/http"
 	"strings"
 
+	"gbs-cms-api/internal/dto"
 	"gbs-cms-api/internal/service"
 	"gbs-common/pkg/response"
 
@@ -67,15 +69,15 @@ func (h *DisplayHandler) SaveCartDisplay(c *gin.Context) {
 		return
 	}
 
-	// Extract terminalId from the JSON payload
-	terminalID := extractTerminalID(payload)
+	// Extract terminalId and deviceInfo from the JSON payload
+	terminalID, deviceInfo := extractPayloadData(payload)
 	if terminalID == "" {
 		c.JSON(http.StatusBadRequest,
 			response.Error("VALIDATION_ERROR", "terminalId is required"))
 		return
 	}
 
-	if err := h.service.SaveCartDisplay(terminalID, payload); err != nil {
+	if err := h.service.SaveCartDisplay(terminalID, payload, deviceInfo); err != nil {
 		c.JSON(http.StatusInternalServerError,
 			response.Error("INTERNAL_SERVER_ERROR", err.Error()))
 		return
@@ -115,18 +117,66 @@ func (h *DisplayHandler) GetCartDisplay(c *gin.Context) {
 	c.Data(http.StatusOK, "application/json", []byte(payload))
 }
 
-// extractTerminalID extracts terminalId from JSON payload
+// ListTerminals godoc
+//
+//	@Summary		List all terminals
+//	@Description	Returns all stored cart displays with device info. Requires authentication.
+//	@Tags			Cart Display
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Success		200
+//	@Failure		401
+//	@Failure		500
+//	@Router			/v1/display/terminals [get]
+func (h *DisplayHandler) ListTerminals(c *gin.Context) {
+	terminals, err := h.service.GetAllTerminals()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError,
+			response.Error("INTERNAL_SERVER_ERROR", err.Error()))
+		return
+	}
+
+	c.JSON(http.StatusOK, response.Success(terminals))
+}
+
+// extractPayloadData extracts terminalId and deviceInfo from JSON payload
+func extractPayloadData(jsonStr string) (string, *dto.DeviceInfo) {
+	// Parse the JSON to extract terminalId and deviceInfo
+	var raw map[string]json.RawMessage
+	if err := json.Unmarshal([]byte(jsonStr), &raw); err != nil {
+		return "", nil
+	}
+
+	// Extract terminalId
+	var terminalID string
+	if terminalIDRaw, ok := raw["terminalId"]; ok {
+		json.Unmarshal(terminalIDRaw, &terminalID)
+	}
+	if terminalID == "" {
+		return "", nil
+	}
+
+	// Extract deviceInfo (optional)
+	var deviceInfo *dto.DeviceInfo
+	if deviceInfoRaw, ok := raw["deviceInfo"]; ok && deviceInfoRaw != nil {
+		var di dto.DeviceInfo
+		if err := json.Unmarshal(deviceInfoRaw, &di); err == nil {
+			deviceInfo = &di
+		}
+	}
+
+	return terminalID, deviceInfo
+}
+
+// extractTerminalID extracts terminalId from JSON payload (legacy helper)
 func extractTerminalID(json string) string {
-	// Simple extraction - find "terminalId" and get the value
 	prefix := `"terminalId"`
 	idx := strings.Index(json, prefix)
 	if idx == -1 {
 		return ""
 	}
 
-	// Find the value after the key
 	start := idx + len(prefix)
-	// Skip whitespace and colon
 	for start < len(json) && (json[start] == ' ' || json[start] == ':' || json[start] == '\t') {
 		start++
 	}
@@ -134,10 +184,8 @@ func extractTerminalID(json string) string {
 		return ""
 	}
 
-	// Check if value is quoted
 	if json[start] == '"' {
-		// Quoted string value
-		start++ // skip opening quote
+		start++
 		end := start
 		for end < len(json) && json[end] != '"' {
 			end++
@@ -145,7 +193,6 @@ func extractTerminalID(json string) string {
 		return json[start:end]
 	}
 
-	// Unquoted value (simple case)
 	end := start
 	for end < len(json) && json[end] != ',' && json[end] != '}' && json[end] != ' ' && json[end] != '\n' && json[end] != '\t' {
 		end++

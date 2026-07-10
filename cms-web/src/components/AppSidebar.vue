@@ -21,6 +21,7 @@ const navItems = [
   { label: 'Ads', icon: 'pi pi-video', route: '/ads', requiresAdmin: false },
   { label: 'Upload Ad', icon: 'pi pi-upload', route: '/upload', requiresAdmin: true },
   { label: 'Users', icon: 'pi pi-id-card', route: '/users', requiresAdmin: true },
+  { label: 'Terminals', icon: 'pi pi-mobile', route: '/terminals', requiresAdmin: true },
   { label: 'Settings', icon: 'pi pi-cog', route: '/settings', requiresAdmin: true },
 ]
 

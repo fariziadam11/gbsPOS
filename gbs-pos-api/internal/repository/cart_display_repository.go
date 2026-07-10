@@ -21,18 +21,40 @@ func (r *CartDisplayRepository) WithTx(tx *gorm.DB) *CartDisplayRepository {
 }
 
 // Upsert inserts a new CartDisplay or updates the payload for an existing terminal.
-func (r *CartDisplayRepository) Upsert(terminalID string, payload datatypes.JSON) error {
+func (r *CartDisplayRepository) Upsert(terminalID string, payload datatypes.JSON, deviceInfo *DeviceInfo) error {
 	display := model.CartDisplay{
 		TerminalID: terminalID,
 		Payload:    payload,
 	}
 
+	// Set device info if provided
+	if deviceInfo != nil {
+		display.DeviceModel = &deviceInfo.DeviceModel
+		display.DeviceManufacturer = &deviceInfo.DeviceManufacturer
+		display.DeviceBrand = &deviceInfo.DeviceBrand
+		display.AndroidVersion = &deviceInfo.AndroidVersion
+		display.SDKInt = &deviceInfo.SDKInt
+		display.AppVersion = &deviceInfo.AppVersion
+		display.AppVersionCode = &deviceInfo.AppVersionCode
+	}
+
 	return r.db.
 		Clauses(clause.OnConflict{
 			Columns:   []clause.Column{{Name: "terminal_id"}},
-			DoUpdates: clause.AssignmentColumns([]string{"payload", "updated_at"}),
+			DoUpdates: clause.AssignmentColumns([]string{"payload", "updated_at", "device_model", "device_manufacturer", "device_brand", "android_version", "sdk_int", "app_version", "app_version_code"}),
 		}).
 		Create(&display).Error
+}
+
+// DeviceInfo represents device information from the Android POS app.
+type DeviceInfo struct {
+	DeviceModel        string
+	DeviceManufacturer string
+	DeviceBrand        string
+	AndroidVersion     string
+	SDKInt             int
+	AppVersion         string
+	AppVersionCode     int64
 }
 
 func (r *CartDisplayRepository) GetByTerminalID(terminalID string) (*model.CartDisplay, error) {

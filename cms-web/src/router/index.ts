@@ -77,6 +77,12 @@ const router = createRouter({
       meta: { requiresAuth: true, requiresAdmin: true },
     },
     {
+      path: '/terminals',
+      name: 'terminals',
+      component: () => import('../views/TerminalsView.vue'),
+      meta: { requiresAuth: true, requiresAdmin: true },
+    },
+    {
       path: '/fuel-prices',
       name: 'fuel-prices',
       component: () => import('../views/FuelPricesView.vue'),
