@@ -46,6 +46,7 @@ func (s *ProductVariantService) Create(productID int, req dto.CreateVariantReque
 	variant := &model.ProductVariant{
 		ProductID:         productID,
 		SKU:               req.SKU,
+		Barcode:           req.Barcode,
 		Attributes:        req.Attributes,
 		Price:             req.Price,
 		StockQuantity:     req.StockQuantity,
@@ -72,6 +73,9 @@ func (s *ProductVariantService) Update(id int, req dto.UpdateVariantRequest) (*d
 	}
 	if req.SKU != nil {
 		v.SKU = *req.SKU
+	}
+	if req.Barcode != nil {
+		v.Barcode = *req.Barcode
 	}
 	if req.Name != nil {
 		v.Name = *req.Name
@@ -130,6 +134,7 @@ func toVariantResponse(v model.ProductVariant) dto.VariantResponse {
 		ID:                v.ID,
 		ProductID:         v.ProductID,
 		SKU:               v.SKU,
+		Barcode:           v.Barcode,
 		Name:              v.Name,
 		Attributes:        v.Attributes,
 		Price:             v.Price,

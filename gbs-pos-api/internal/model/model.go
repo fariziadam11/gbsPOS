@@ -18,16 +18,17 @@ type User struct {
 }
 
 type Product struct {
-	ID                uint      `gorm:"primaryKey"                  json:"id"`
-	Name              string    `gorm:"size:200;not null"           json:"name"`
-	Price             float64   `gorm:"type:decimal(12,2);not null" json:"price"`
-	Category          string    `gorm:"size:100;not null"           json:"category"`
-	ImageURL          string    `gorm:"size:500"                    json:"imageUrl"`
-	StoreType         string    `gorm:"size:20;not null"            json:"storeType"`
-	StockQuantity     int       `gorm:"not null;default:0"         json:"stockQuantity"`
-	LowStockThreshold int       `gorm:"not null;default:10"        json:"lowStockThreshold"`
-	CreatedAt         time.Time `                                   json:"createdAt"`
-	UpdatedAt         time.Time `                                   json:"updatedAt"`
+	ID                uint      `gorm:"primaryKey"                                      json:"id"`
+	Name              string    `gorm:"size:200;not null"                               json:"name"`
+	Price             float64   `gorm:"type:decimal(12,2);not null"                     json:"price"`
+	Category          string    `gorm:"size:100;not null"                               json:"category"`
+	ImageURL          string    `gorm:"size:500"                                        json:"imageUrl"`
+	StoreType         string    `gorm:"size:20;not null"                                json:"storeType"`
+	StockQuantity     int       `gorm:"not null;default:0"                              json:"stockQuantity"`
+	LowStockThreshold int       `gorm:"not null;default:10"                             json:"lowStockThreshold"`
+	Barcode           string    `gorm:"size:100;index"                                  json:"barcode"`
+	CreatedAt         time.Time `                                                        json:"createdAt"`
+	UpdatedAt         time.Time `                                                        json:"updatedAt"`
 }
 
 const (
@@ -139,18 +140,19 @@ type StockMovement struct {
 }
 
 type ProductVariant struct {
-	ID                int                    `gorm:"primaryKey"                            json:"id"`
-	ProductID         int                    `gorm:"not null;index"                        json:"productId"`
-	SKU               string                 `gorm:"size:100"                               json:"sku"`
-	Name              string                 `gorm:"size:255;not null"                      json:"name"`
-	Attributes        map[string]interface{} `gorm:"serializer:json;not null"              json:"attributes"`
+	ID                int                    `gorm:"primaryKey"                             json:"id"`
+	ProductID         int                    `gorm:"not null;index"                         json:"productId"`
+	SKU               string                 `gorm:"size:100"                                json:"sku"`
+	Name              string                 `gorm:"size:255;not null"                       json:"name"`
+	Attributes        map[string]interface{} `gorm:"serializer:json;not null"               json:"attributes"`
 	Price             *float64               `gorm:"type:decimal(12,2)"                     json:"price"`
-	StockQuantity     int                    `gorm:"not null;default:0"                     json:"stockQuantity"`
-	LowStockThreshold *int                   `                                               json:"lowStockThreshold"`
-	IsActive          bool                   `gorm:"not null;default:true"                  json:"isActive"`
-	SortOrder         int                    `gorm:"not null;default:0"                     json:"sortOrder"`
-	CreatedAt         time.Time              `                                               json:"createdAt"`
-	UpdatedAt         time.Time              `                                               json:"updatedAt"`
+	StockQuantity     int                    `gorm:"not null;default:0"                      json:"stockQuantity"`
+	LowStockThreshold *int                   `                                              json:"lowStockThreshold"`
+	Barcode           string                 `gorm:"size:100;index"                          json:"barcode"`
+	IsActive          bool                   `gorm:"not null;default:true"                   json:"isActive"`
+	SortOrder         int                    `gorm:"not null;default:0"                      json:"sortOrder"`
+	CreatedAt         time.Time              `                                              json:"createdAt"`
+	UpdatedAt         time.Time              `                                              json:"updatedAt"`
 }
 
 type HoldStatus string

@@ -16,6 +16,11 @@ func NewProductRepository(db *gorm.DB) *ProductRepository {
 	return &ProductRepository{db: db}
 }
 
+// DB returns the underlying database connection for cross-repo queries
+func (r *ProductRepository) DB() *gorm.DB {
+	return r.db
+}
+
 func (r *ProductRepository) FindAll(
 	storeType, category string,
 	lastSync int64,
@@ -41,6 +46,14 @@ func (r *ProductRepository) FindAll(
 func (r *ProductRepository) FindByID(id uint) (*model.Product, error) {
 	var product model.Product
 	if err := r.db.First(&product, id).Error; err != nil {
+		return nil, err
+	}
+	return &product, nil
+}
+
+func (r *ProductRepository) FindByBarcode(barcode string) (*model.Product, error) {
+	var product model.Product
+	if err := r.db.Where("barcode = ? AND barcode != ''", barcode).First(&product).Error; err != nil {
 		return nil, err
 	}
 	return &product, nil
@@ -83,6 +96,7 @@ func (r *ProductRepository) Upsert(product *model.Product) error {
 		existing.ImageURL = product.ImageURL
 		existing.StockQuantity = product.StockQuantity
 		existing.LowStockThreshold = product.LowStockThreshold
+		existing.Barcode = product.Barcode
 		return r.db.Save(&existing).Error
 	}
 	if errors.Is(err, gorm.ErrRecordNotFound) {

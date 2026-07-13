@@ -175,6 +175,66 @@ func (h *ProductHandler) Get(c *gin.Context) {
 	c.JSON(http.StatusOK, response.Success(product))
 }
 
+// GetByBarcode godoc
+//
+//	@Summary		Get product by barcode
+//	@Description	Look up a product or variant by barcode
+//	@Tags			Products
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			code	path	string	true	"Barcode"
+//	@Success		200
+//	@Failure		400
+//	@Failure		401
+//	@Failure		404
+//	@Router			/v1/products/barcode/{code} [get]
+func (h *ProductHandler) GetByBarcode(c *gin.Context) {
+	code := c.Param("code")
+	if code == "" {
+		c.JSON(http.StatusBadRequest, response.Error("VALIDATION_ERROR", "Barcode is required"))
+		return
+	}
+
+	result, err := h.productService.FindByBarcode(code)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			c.JSON(
+				http.StatusNotFound,
+				response.Error("NOT_FOUND", "Product or variant with barcode "+code+" not found"),
+			)
+			return
+		}
+		c.JSON(http.StatusInternalServerError, response.Error("INTERNAL_SERVER_ERROR", err.Error()))
+		return
+	}
+
+	if result.Variant != nil {
+		// Return variant info with parent product
+		productResp, variantResp, err := h.productService.GetProductWithVariantDiscounts(result.Variant.ProductID, &result.Variant.ID)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, response.Error("INTERNAL_SERVER_ERROR", err.Error()))
+			return
+		}
+		c.JSON(http.StatusOK, response.Success(map[string]interface{}{
+			"type":    "variant",
+			"product": productResp,
+			"variant": variantResp,
+		}))
+		return
+	}
+
+	// Return product info
+	productResp, err := h.productService.GetWithDiscount(result.Product.ID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, response.Error("INTERNAL_SERVER_ERROR", err.Error()))
+		return
+	}
+	c.JSON(http.StatusOK, response.Success(map[string]interface{}{
+		"type":    "product",
+		"product": productResp,
+	}))
+}
+
 // Create godoc
 //
 //	@Summary		Create product

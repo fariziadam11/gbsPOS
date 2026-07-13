@@ -19,6 +19,7 @@ type ProductResponse struct {
 	StoreType         string                   `json:"storeType"`
 	StockQuantity     int                      `json:"stockQuantity"`
 	LowStockThreshold int                      `json:"lowStockThreshold"`
+	Barcode           string                   `json:"barcode"`
 	Discount          *ProductDiscountResponse `json:"discount"`
 	FinalPrice        float64                  `json:"finalPrice"`
 	CreatedAt         time.Time                `json:"createdAt"`

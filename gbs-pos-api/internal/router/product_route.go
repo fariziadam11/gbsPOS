@@ -54,4 +54,5 @@ func setupProductRoutes(
 	)
 
 	rg.GET("/products/:id", productHandler.Get)
+	rg.GET("/products/barcode/:code", productHandler.GetByBarcode)
 }

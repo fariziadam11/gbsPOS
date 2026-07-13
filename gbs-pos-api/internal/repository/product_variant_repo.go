@@ -29,6 +29,14 @@ func (r *ProductVariantRepository) FindByID(id int) (*model.ProductVariant, erro
 	return &variant, nil
 }
 
+func (r *ProductVariantRepository) FindByBarcode(barcode string) (*model.ProductVariant, error) {
+	var variant model.ProductVariant
+	if err := r.db.Where("barcode = ? AND barcode != ''", barcode).First(&variant).Error; err != nil {
+		return nil, err
+	}
+	return &variant, nil
+}
+
 func (r *ProductVariantRepository) Create(variant *model.ProductVariant) error {
 	return r.db.Create(variant).Error
 }

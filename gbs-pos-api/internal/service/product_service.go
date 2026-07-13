@@ -36,6 +36,66 @@ func (s *ProductService) Get(id uint) (*model.Product, error) {
 	return s.repo.FindByID(id)
 }
 
+// FindByBarcodeResult holds the result of barcode lookup
+type FindByBarcodeResult struct {
+	Product *model.Product
+	Variant *model.ProductVariant
+}
+
+// FindByBarcode looks up a product or variant by barcode
+func (s *ProductService) FindByBarcode(barcode string) (*FindByBarcodeResult, error) {
+	// First check product barcode
+	product, err := s.repo.FindByBarcode(barcode)
+	if err == nil && product != nil {
+		return &FindByBarcodeResult{Product: product}, nil
+	}
+
+	// Then check variant barcode
+	variantRepo := repository.NewProductVariantRepository(s.repo.DB())
+	variant, err := variantRepo.FindByBarcode(barcode)
+	if err == nil && variant != nil {
+		return &FindByBarcodeResult{Variant: variant}, nil
+	}
+
+	return nil, gorm.ErrRecordNotFound
+}
+
+// GetProductWithVariantDiscounts returns a product response with variant and discount info
+func (s *ProductService) GetProductWithVariantDiscounts(productID int, variantID *int) (*dto.ProductResponse, *dto.VariantResponse, error) {
+	product, err := s.repo.FindByID(uint(productID))
+	if err != nil {
+		return nil, nil, err
+	}
+
+	var variant *model.ProductVariant
+	if variantID != nil {
+		variantRepo := repository.NewProductVariantRepository(s.repo.DB())
+		v, err := variantRepo.FindByID(*variantID)
+		if err != nil {
+			return nil, nil, err
+		}
+		variant = v
+	}
+
+	// Get discount
+	var discount *model.Discount
+	if s.discountService != nil {
+		activeDiscounts, err := s.discountService.GetActiveDiscountsByProductIDs([]uint{product.ID})
+		if err == nil {
+			discount = activeDiscounts[product.ID]
+		}
+	}
+
+	productResp := s.toProductResponse(product, discount)
+	var variantResp *dto.VariantResponse
+	if variant != nil {
+		resp := toVariantResponse(*variant)
+		variantResp = &resp
+	}
+
+	return &productResp, variantResp, nil
+}
+
 func (s *ProductService) ListWithDiscounts(storeType, category string, lastSync int64) ([]dto.ProductResponse, error) {
 	products, err := s.List(storeType, category, lastSync)
 	if err != nil {
@@ -99,6 +159,7 @@ func (s *ProductService) Update(id uint, updates *model.Product) (*model.Product
 	if updates.LowStockThreshold >= 0 {
 		product.LowStockThreshold = updates.LowStockThreshold
 	}
+	product.Barcode = updates.Barcode
 	if err := s.repo.Update(product); err != nil {
 		return nil, err
 	}
@@ -261,7 +322,7 @@ func (s *ProductService) ExportCSV(w io.Writer, storeType string) error {
 	}
 
 	writer := csv.NewWriter(w)
-	writer.Write([]string{"id", "name", "price", "category", "image_url", "store_type", "stock_quantity", "low_stock_threshold"})
+	writer.Write([]string{"id", "name", "price", "category", "image_url", "store_type", "stock_quantity", "low_stock_threshold", "barcode"})
 
 	for _, p := range products {
 		writer.Write([]string{
@@ -273,6 +334,7 @@ func (s *ProductService) ExportCSV(w io.Writer, storeType string) error {
 			p.StoreType,
 			strconv.Itoa(p.StockQuantity),
 			strconv.Itoa(p.LowStockThreshold),
+			p.Barcode,
 		})
 	}
 
@@ -323,6 +385,7 @@ func (s *ProductService) toProductResponse(
 		StoreType:         product.StoreType,
 		StockQuantity:     product.StockQuantity,
 		LowStockThreshold: product.LowStockThreshold,
+		Barcode:           product.Barcode,
 		Discount:          discountResponse,
 		FinalPrice:        finalPrice,
 		CreatedAt:         product.CreatedAt,
@@ -377,6 +440,8 @@ func parseCSVRow(row []string, colMap map[string]int, defaultStoreType string) (
 		}
 	}
 
+	barcode := getCol("barcode")
+
 	return &model.Product{
 		Name:              name,
 		Price:             price,
@@ -385,5 +450,6 @@ func parseCSVRow(row []string, colMap map[string]int, defaultStoreType string) (
 		StoreType:         st,
 		StockQuantity:     stockQty,
 		LowStockThreshold: lowThreshold,
+		Barcode:           barcode,
 	}, ""
 }
