@@ -209,7 +209,7 @@ func (s *DiscountService) Stop(id uint) (*dto.DiscountResponse, error) {
 	if err != nil {
 		return nil, err
 	}
-	if s.GetEffectiveStatus(discount) != DiscountStatusActive {
+	if s.calculateEffectiveStatus(discount, s.now()) != DiscountStatusActive {
 		return nil, ErrDiscountInvalidStatus
 	}
 
@@ -225,7 +225,7 @@ func (s *DiscountService) Cancel(id uint) (*dto.DiscountResponse, error) {
 	if err != nil {
 		return nil, err
 	}
-	if s.GetEffectiveStatus(discount) != DiscountStatusPending {
+	if s.calculateEffectiveStatus(discount, s.now()) != DiscountStatusPending {
 		return nil, ErrDiscountInvalidStatus
 	}
 
@@ -381,10 +381,7 @@ func (s *DiscountService) SelectBestVoucherDiscount(
 
 func (s *DiscountService) ValidateVoucher(code string, transactionTotal float64) (*model.Discount, error) {
 	discount, _, err := s.SelectBestVoucherDiscount(code, transactionTotal)
-	if err != nil {
-		return nil, err
-	}
-	return discount, nil
+	return discount, err
 }
 
 func (s *DiscountService) selectBestApplicableDiscount(
@@ -493,7 +490,7 @@ func (s *DiscountService) toResponse(discount *model.Discount) *dto.DiscountResp
 		StartDate:       discount.StartDate,
 		EndDate:         discount.EndDate,
 		Status:          discount.Status,
-		EffectiveStatus: s.GetEffectiveStatus(discount),
+		EffectiveStatus: s.calculateEffectiveStatus(discount, s.now()),
 		CreatedAt:       discount.CreatedAt,
 		UpdatedAt:       discount.UpdatedAt,
 	}
@@ -575,17 +572,14 @@ func parseDiscountDate(value string, endOfDay bool) (time.Time, error) {
 		return time.Time{}, &DiscountValidationError{Message: "date is required"}
 	}
 
-	if parsed, err := time.Parse(time.RFC3339, value); err == nil {
-		return parsed, nil
-	}
-	if parsed, err := time.ParseInLocation("2006-01-02 15:04:05", value, time.Local); err == nil {
-		return parsed, nil
-	}
-	if parsed, err := time.ParseInLocation("2006-01-02", value, time.Local); err == nil {
-		if endOfDay {
-			return parsed.Add(24*time.Hour - time.Nanosecond), nil
+	layouts := []string{time.RFC3339, "2006-01-02 15:04:05", "2006-01-02"}
+	for _, layout := range layouts {
+		if parsed, err := time.ParseInLocation(layout, value, time.Local); err == nil {
+			if endOfDay && layout == "2006-01-02" {
+				return parsed.Add(24*time.Hour - time.Nanosecond), nil
+			}
+			return parsed, nil
 		}
-		return parsed, nil
 	}
 
 	return time.Time{}, &DiscountValidationError{

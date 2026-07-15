@@ -37,7 +37,7 @@ func TestCartDisplayService_Save(t *testing.T) {
 
 	payload := datatypes.JSON([]byte(`{"TeksSelesai":"Transaksi"}`))
 
-	err := svc.Save("POS-001", payload)
+	err := svc.Save("POS-001", payload, nil)
 	require.NoError(t, err)
 
 	var stored model.CartDisplay

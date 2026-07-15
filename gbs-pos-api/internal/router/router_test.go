@@ -18,7 +18,7 @@ func TestSetupRegistersRoutes(t *testing.T) {
 		Handlers{
 			Auth:       handler.NewAuthHandler(nil),
 			Product:    handler.NewProductHandler(nil),
-			Discount:   handler.NewDiscountHandler(nil),
+			Discount:   handler.NewDiscountHandler(nil, nil),
 			Order:      handler.NewOrderHandler(nil, nil),
 			Settlement: handler.NewSettlementHandler(nil),
 			Customer:   handler.NewCustomerHandler(nil),

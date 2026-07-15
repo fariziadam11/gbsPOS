@@ -45,10 +45,7 @@ func (s *CMSService) ListAds(page, limit int) (*AdListResult, error) {
 	}
 	totalPages := 0
 	if total > 0 {
-		totalPages = int(total) / limit
-		if int(total)%limit > 0 {
-			totalPages++
-		}
+		totalPages = (int(total) + limit - 1) / limit
 	}
 	return &AdListResult{
 		Ads: ads,
@@ -218,8 +215,7 @@ func ParseTimePointer(t string) *time.Time {
 		return nil
 	}
 	for _, layout := range []string{"15:04:05", "15:04"} {
-		parsed, err := time.Parse(layout, t)
-		if err == nil {
+		if parsed, err := time.Parse(layout, t); err == nil {
 			return &parsed
 		}
 	}
@@ -241,9 +237,5 @@ func ParseInt(s string) (int, error) {
 	if s == "" {
 		return 0, nil
 	}
-	i, err := strconv.Atoi(s)
-	if err != nil {
-		return 0, fmt.Errorf("VALIDATION_ERROR: invalid integer value: %s", s)
-	}
-	return i, nil
+	return strconv.Atoi(s)
 }

@@ -18,13 +18,9 @@ type DiscountHandler struct {
 
 func NewDiscountHandler(
 	discountService *service.DiscountService,
-	pricingService ...*service.PricingService,
+	pricingService *service.PricingService,
 ) *DiscountHandler {
-	h := &DiscountHandler{discountService: discountService}
-	if len(pricingService) > 0 {
-		h.pricingService = pricingService[0]
-	}
-	return h
+	return &DiscountHandler{discountService: discountService, pricingService: pricingService}
 }
 
 func (h *DiscountHandler) List(c *gin.Context) {

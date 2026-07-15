@@ -25,15 +25,7 @@ func (s *UserService) List() ([]dto.UserResponse, error) {
 	}
 	result := make([]dto.UserResponse, len(users))
 	for i, u := range users {
-		result[i] = dto.UserResponse{
-			ID:        u.ID,
-			Username:  u.Username,
-			Name:      u.Name,
-			Role:      u.Role,
-			Gender:    u.Gender,
-			CreatedAt: u.CreatedAt.Format(time.RFC3339),
-			UpdatedAt: u.UpdatedAt.Format(time.RFC3339),
-		}
+		result[i] = *mapUserToResponse(&u)
 	}
 	return result, nil
 }

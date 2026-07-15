@@ -71,10 +71,6 @@ func (r *ProductRepository) Delete(id uint) error {
 	return r.db.Delete(&model.Product{}, id).Error
 }
 
-func (r *ProductRepository) FindAllByStoreType(storeType string) ([]model.Product, error) {
-	return r.FindAll(storeType, "", 0)
-}
-
 func (r *ProductRepository) GetLowStock(storeType string) ([]model.Product, error) {
 	var products []model.Product
 	query := r.db.Where("stock_quantity <= low_stock_threshold AND low_stock_threshold > 0")
