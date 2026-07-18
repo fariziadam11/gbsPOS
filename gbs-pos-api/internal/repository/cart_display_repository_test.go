@@ -34,7 +34,7 @@ func TestCartDisplayRepository_Upsert_Insert(t *testing.T) {
 
 	payload := datatypes.JSON([]byte(`{"Initial":{},"DaftarBelanja":[],"Summary":{},"TeksSelesai":"Transaksi"}`))
 
-	err := repo.Upsert("POS-001", payload)
+	err := repo.Upsert("POS-001", payload, nil)
 	require.NoError(t, err)
 
 	var stored model.CartDisplay
@@ -54,7 +54,7 @@ func TestCartDisplayRepository_Upsert_Update(t *testing.T) {
 
 	seedCartDisplay(t, db, "POS-001", initial)
 
-	err := repo.Upsert("POS-001", updated)
+	err := repo.Upsert("POS-001", updated, nil)
 	require.NoError(t, err)
 
 	var stored model.CartDisplay

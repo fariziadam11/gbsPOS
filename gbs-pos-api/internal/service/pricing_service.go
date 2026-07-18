@@ -5,6 +5,7 @@ import (
 	"gbs-pos-api/internal/dto"
 	"gbs-pos-api/internal/model"
 	"gbs-pos-api/internal/repository"
+	"math"
 	"strings"
 
 	"gorm.io/gorm"
@@ -151,8 +152,5 @@ func toAppliedDiscountResponse(
 }
 
 func clampMoney(value float64) float64 {
-	if value < 0 {
-		return 0
-	}
-	return value
+	return math.Max(0, value)
 }
