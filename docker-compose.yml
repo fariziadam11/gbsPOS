@@ -21,10 +21,17 @@ services:
             - "8080:8080"
         environment:
             - DATABASE_URL=postgres://postgres:123@postgres:5432/gbs_pos?sslmode=disable
-            - JWT_SECRET=872417e0370c7bb5705b380b2a4efe03af542dff46f682cc5b6a6e3366200fcb
+            - JWT_SECRET=${JWT_SECRET:-872417e0370c7bb5705b380b2a4efe03af542dff46f682cc5b6a6e3366200fcb}
             - PORT=8080
             - ENV=production
             - LOG_LEVEL=info
+            # SumoPod QRIS Payment Gateway
+            - SUMOPOD_API_URL=${SUMOPOD_API_URL:-https://api-pay-sandbox.sumopod.com/api/v1}
+            - SUMOPOD_API_KEY=${SUMOPOD_API_KEY:-}
+            - SUMOPOD_WEBHOOK_TOKEN=${SUMOPOD_WEBHOOK_TOKEN:-}
+            - SUMOPOD_SUCCESS_URL=${SUMOPOD_SUCCESS_URL:-}
+            - SUMOPOD_CANCEL_URL=${SUMOPOD_CANCEL_URL:-}
+            - SUMOPOD_EXPIRES_HOURS=${SUMOPOD_EXPIRES_HOURS:-24}
         depends_on:
             postgres:
                 condition: service_healthy

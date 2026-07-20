@@ -19,6 +19,14 @@ type Config struct {
 	KeycloakBaseURL string `env:"KEYCLOAK_BASE_URL" envDefault:""`
 	KeycloakRealm   string `env:"KEYCLOAK_REALM"    envDefault:""`
 	EnableDemoAuth  bool   `env:"ENABLE_DEMO_AUTH"  envDefault:"false"`
+
+	// SumoPod QRIS Payment Gateway
+	SumoPodAPIURL        string `env:"SUMOPOD_API_URL"        envDefault:"https://api-pay-sandbox.sumopod.com/api/v1"`
+	SumoPodAPIKey        string `env:"SUMOPOD_API_KEY"        envDefault:""`
+	SumoPodWebhookToken   string `env:"SUMOPOD_WEBHOOK_TOKEN"  envDefault:""`
+	SumoPodSuccessURL     string `env:"SUMOPOD_SUCCESS_URL"    envDefault:""`
+	SumoPodCancelURL      string `env:"SUMOPOD_CANCEL_URL"     envDefault:""`
+	SumoPodExpiresHours   int    `env:"SUMOPOD_EXPIRES_HOURS"  envDefault:"24"`
 }
 
 func (c *Config) UseKeycloak() bool {

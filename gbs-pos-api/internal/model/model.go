@@ -85,9 +85,17 @@ type Order struct {
 	DiscountType        string      `gorm:"size:20" json:"discountType"`
 	DiscountValue       *float64    `gorm:"type:decimal(12,2)" json:"discountValue"`
 	DiscountAmount      *float64    `gorm:"type:decimal(12,2)" json:"discountAmount"`
-	CreatedAt           time.Time   `json:"createdAt"`
-	UpdatedAt           time.Time   `json:"updatedAt"`
-	Items               []OrderItem `gorm:"foreignKey:OrderID;constraint:OnDelete:CASCADE" json:"items"`
+	// QRIS Payment Gateway Fields (SumoPod)
+	QrisPaymentID   string     `gorm:"size:100;index" json:"qrisPaymentId,omitempty"`
+	QrisStatus      string     `gorm:"size:20;default:pending;index" json:"qrisStatus,omitempty"`
+	QrisLinkURL     string     `gorm:"type:text" json:"qrisLinkUrl,omitempty"`
+	QrisExpiresAt   *time.Time `json:"qrisExpiresAt,omitempty"`
+	QrisFee         float64    `gorm:"type:decimal(12,2);default:0" json:"qrisFee,omitempty"`
+	QrisNetAmount   float64    `gorm:"type:decimal(12,2);default:0" json:"qrisNetAmount,omitempty"`
+	QrisCompletedAt *time.Time `json:"qrisCompletedAt,omitempty"`
+	CreatedAt       time.Time  `json:"createdAt"`
+	UpdatedAt       time.Time  `json:"updatedAt"`
+	Items           []OrderItem `gorm:"foreignKey:OrderID;constraint:OnDelete:CASCADE" json:"items"`
 }
 
 type OrderItem struct {

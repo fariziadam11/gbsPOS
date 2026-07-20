@@ -123,6 +123,7 @@ func main() {
 	settlementService := service.NewSettlementService(orderRepo, settlementRepo)
 	dashboardService := service.NewDashboardService(dashboardRepo)
 	fuelService := service.NewFuelService(fuelPriceRepo, pumpRepo, nozzleRepo, fuelSaleRepo)
+	qrisService := service.NewQrisService(cfg, db, orderRepo)
 
 	authHandler := handler.NewAuthHandler(authService)
 	productHandler := handler.NewProductHandler(productService)
@@ -135,6 +136,7 @@ func main() {
 	holdHandler := handler.NewHoldHandler(holdService)
 	cartDisplayHandler := handler.NewCartDisplayHandler(cartDisplayService)
 	fuelHandler := handler.NewFuelHandler(fuelService)
+	qrisHandler := handler.NewQrisHandler(qrisService, cfg)
 
 	r := router.Setup(
 		cfg,
@@ -150,6 +152,7 @@ func main() {
 			Hold:           holdHandler,
 			Fuel:           fuelHandler,
 			CartDisplay:    cartDisplayHandler,
+			Qris:           qrisHandler,
 		},
 	)
 

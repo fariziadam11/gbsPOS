@@ -35,6 +35,13 @@ services:
       KEYCLOAK_REALM: ${KEYCLOAK_REALM}
       ENABLE_DEMO_AUTH: ${ENABLE_DEMO_AUTH:-false}
       LOG_LEVEL: info
+      # SumoPod QRIS Payment Gateway
+      SUMOPOD_API_URL: ${SUMOPOD_API_URL:-https://api-pay-sandbox.sumopod.com/api/v1}
+      SUMOPOD_API_KEY: ${SUMOPOD_API_KEY}
+      SUMOPOD_WEBHOOK_TOKEN: ${SUMOPOD_WEBHOOK_TOKEN}
+      SUMOPOD_SUCCESS_URL: ${SUMOPOD_SUCCESS_URL}
+      SUMOPOD_CANCEL_URL: ${SUMOPOD_CANCEL_URL}
+      SUMOPOD_EXPIRES_HOURS: ${SUMOPOD_EXPIRES_HOURS:-24}
     volumes:
       - pos-uploads:/app/uploads
     depends_on:
