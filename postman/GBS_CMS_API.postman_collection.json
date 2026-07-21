@@ -1,0 +1,535 @@
+{
+	"info": {
+		"_postman_id": "gbs-cms-api-collection",
+		"name": "GBS CMS API",
+		"description": "Content Management System API collection for managing advertisements, users, settings, and cart displays. Supports dual authentication (JWT and Keycloak).",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "https://api-cms.armmada.id/v1"
+		},
+		{
+			"key": "jwtToken",
+			"value": ""
+		},
+		{
+			"key": "keycloakToken",
+			"value": ""
+		},
+		{
+			"key": "keycloakBaseUrl",
+			"value": "https://auth.armmada.id",
+			"description": "Keycloak server base URL"
+		},
+		{
+			"key": "keycloakRealm",
+			"value": "gbs-pos",
+			"description": "Keycloak realm name"
+		},
+		{
+			"key": "authType",
+			"value": "jwt",
+			"type": "string",
+			"description": "Authentication type: 'jwt' for local JWT, 'keycloak' for Keycloak"
+		}
+	],
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{jwtToken}}",
+				"type": "string"
+			}
+		]
+	},
+	"item": [
+		{
+			"name": "Health",
+			"item": [
+				{
+					"name": "Health Check",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/health",
+							"host": ["{{baseUrl}}"],
+							"path": ["health"]
+						},
+						"description": "Check if the CMS API is running"
+					}
+				}
+			]
+		},
+		{
+			"name": "Authentication",
+			"item": [
+				{
+					"name": "Login (JWT)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json();",
+									"if (jsonData.success && jsonData.data.token) {",
+									"    pm.collectionVariables.set('jwtToken', jsonData.data.token);",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"admin\",\n    \"password\": \"admin123\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/login",
+							"host": ["{{baseUrl}}"],
+							"path": ["login"]
+						},
+						"description": "Login with username/password to get JWT token. Works when ENABLE_DEMO_AUTH=true."
+					}
+				},
+				{
+					"name": "Login (Keycloak - Get Token)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json();",
+									"if (jsonData.access_token) {",
+									"    pm.collectionVariables.set('keycloakToken', jsonData.access_token);",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/x-www-form-urlencoded"
+							}
+						],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "grant_type",
+									"value": "password",
+									"type": "text"
+								},
+								{
+									"key": "client_id",
+									"value": "gbs-cms",
+									"type": "text"
+								},
+								{
+									"key": "username",
+									"value": "admin",
+									"type": "text"
+								},
+								{
+									"key": "password",
+									"value": "admin123",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{keycloakBaseUrl}}/realms/{{keycloakRealm}}/protocol/openid-connect/token",
+							"host": ["{{keycloakBaseUrl}}"],
+							"path": ["realms", "{{keycloakRealm}}", "protocol", "openid-connect", "token"]
+						},
+						"description": "Get Keycloak access token. Replace with your Keycloak server URL and credentials."
+					}
+				}
+			]
+		},
+		{
+			"name": "Advertisements",
+			"item": [
+				{
+					"name": "List Ads",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/ads",
+							"host": ["{{baseUrl}}"],
+							"path": ["ads"]
+						},
+						"description": "Get paginated list of all advertisements (ADMIN only)"
+					}
+				},
+				{
+					"name": "Get Ad by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/ads/:id",
+							"host": ["{{baseUrl}}"],
+							"path": ["ads", ":id"]
+						},
+						"description": "Get a single advertisement by ID (ADMIN only)"
+					}
+				},
+				{
+					"name": "Upload Ad",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "file",
+									"type": "file",
+									"description": "Video file (mp4, webm, quicktime)"
+								},
+								{
+									"key": "name",
+									"value": "Summer Sale Promo",
+									"type": "text"
+								},
+								{
+									"key": "storeTypes",
+									"value": "RETAIL",
+									"type": "text"
+								},
+								{
+									"key": "playlistOrder",
+									"value": "1",
+									"type": "text"
+								},
+								{
+									"key": "startDate",
+									"value": "2024-01-01",
+									"type": "text"
+								},
+								{
+									"key": "endDate",
+									"value": "2024-12-31",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{baseUrl}}/ads/upload",
+							"host": ["{{baseUrl}}"],
+							"path": ["ads", "upload"]
+						},
+						"description": "Upload a new video advertisement (ADMIN only)"
+					}
+				},
+				{
+					"name": "Update Ad",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Updated Promo Name\",\n    \"isActive\": true,\n    \"startDate\": \"2024-01-01\",\n    \"endDate\": \"2024-06-30\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/ads/:id",
+							"host": ["{{baseUrl}}"],
+							"path": ["ads", ":id"]
+						},
+						"description": "Update an existing advertisement (ADMIN only)"
+					}
+				},
+				{
+					"name": "Toggle Ad Status",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/ads/:id/toggle",
+							"host": ["{{baseUrl}}"],
+							"path": ["ads", ":id", "toggle"]
+						},
+						"description": "Activate or deactivate an advertisement (ADMIN only)"
+					}
+				},
+				{
+					"name": "Delete Ad",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/ads/:id",
+							"host": ["{{baseUrl}}"],
+							"path": ["ads", ":id"]
+						},
+						"description": "Delete an advertisement (ADMIN only)"
+					}
+				},
+				{
+					"name": "Get Active Playlist",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/ads/active?storeType=RETAIL",
+							"host": ["{{baseUrl}}"],
+							"path": ["ads", "active"],
+							"query": [
+								{
+									"key": "storeType",
+									"value": "RETAIL"
+								}
+							]
+						},
+						"description": "Get list of active ads for a specific store type (Public)"
+					}
+				},
+				{
+					"name": "Download Ad Video",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/ads/download/:id",
+							"host": ["{{baseUrl}}"],
+							"path": ["ads", "download", ":id"]
+						},
+						"description": "Download the video file for an advertisement (Public)"
+					}
+				},
+				{
+					"name": "Log Ad Play",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"terminalId\": \"DISPLAY-01\",\n    \"storeType\": \"RETAIL\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/ads/:id/play",
+							"host": ["{{baseUrl}}"],
+							"path": ["ads", ":id", "play"]
+						},
+						"description": "Log when an ad is played on a terminal"
+					}
+				}
+			]
+		},
+		{
+			"name": "Users",
+			"item": [
+				{
+					"name": "List Users",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/users",
+							"host": ["{{baseUrl}}"],
+							"path": ["users"]
+						},
+						"description": "Get list of all users (ADMIN only)"
+					}
+				},
+				{
+					"name": "Get User by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/users/:id",
+							"host": ["{{baseUrl}}"],
+							"path": ["users", ":id"]
+						},
+						"description": "Get a single user by ID (ADMIN only)"
+					}
+				},
+				{
+					"name": "Create User",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"newcashier\",\n    \"password\": \"password123\",\n    \"name\": \"New Cashier\",\n    \"role\": \"CASHIER\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/users",
+							"host": ["{{baseUrl}}"],
+							"path": ["users"]
+						},
+						"description": "Create a new user account (ADMIN only)"
+					}
+				},
+				{
+					"name": "Update User",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Updated Name\",\n    \"role\": \"CASHIER\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/users/:id",
+							"host": ["{{baseUrl}}"],
+							"path": ["users", ":id"]
+						},
+						"description": "Update an existing user (ADMIN only)"
+					}
+				},
+				{
+					"name": "Delete User",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/users/:id",
+							"host": ["{{baseUrl}}"],
+							"path": ["users", ":id"]
+						},
+						"description": "Delete a user (ADMIN only)"
+					}
+				}
+			]
+		},
+		{
+			"name": "Settings",
+			"item": [
+				{
+					"name": "Get All Settings",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/settings",
+							"host": ["{{baseUrl}}"],
+							"path": ["settings"]
+						},
+						"description": "Get all system settings (ADMIN only)"
+					}
+				},
+				{
+					"name": "Update Settings",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"storeName\": \"My Store\",\n    \"storeCode\": \"STORE01\",\n    \"address\": \"Jakarta\",\n    \"phone\": \"02112345678\",\n    \"email\": \"store@example.com\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/settings",
+							"host": ["{{baseUrl}}"],
+							"path": ["settings"]
+						},
+						"description": "Update system settings (ADMIN only)"
+					}
+				}
+			]
+		},
+		{
+			"name": "Cart Display",
+			"item": [
+				{
+					"name": "Save Cart Display (POS)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"terminalId\": \"ANDROID-123456\",\n    \"deviceInfo\": {\n        \"model\": \"Samsung Galaxy S21\",\n        \"androidId\": \"android123456\",\n        \"ipAddress\": \"192.168.1.100\"\n    },\n    \"Initial\": {\n        \"NamaKasir\": \"CASHIER01\",\n        \"KodeToko\": \"T001\",\n        \"NamaToko\": \"Demo Store\",\n        \"JenisToko\": \"POINT\"\n    },\n    \"DaftarBelanja\": [\n        {\n            \"Nama\": \"Coffee Latte\",\n            \"Harga\": \"25000\",\n            \"Qty\": \"2\",\n            \"SubTotal\": \"50000\"\n        }\n    ],\n    \"Summary\": {\n        \"Hemat\": \"0\",\n        \"Total\": \"50000\",\n        \"Bayar\": \"60000\",\n        \"Kembali\": \"10000\"\n    },\n    \"TeksSelesai\": \"Terima Kasih\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/display/cart",
+							"host": ["{{baseUrl}}"],
+							"path": ["display", "cart"]
+						},
+						"description": "Upload cart display JSON from Android POS"
+					}
+				},
+				{
+					"name": "Get Cart Display (Public)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/display/cart?terminalId=ANDROID-123456",
+							"host": ["{{baseUrl}}"],
+							"path": ["display", "cart"],
+							"query": [
+								{
+									"key": "terminalId",
+									"value": "ANDROID-123456"
+								}
+							]
+						},
+						"description": "Get cart display JSON for a terminal (Public - no auth required)"
+					}
+				},
+				{
+					"name": "List All Terminals",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/display/terminals",
+							"host": ["{{baseUrl}}"],
+							"path": ["display", "terminals"]
+						},
+						"description": "Get all stored cart displays with device info (ADMIN only)"
+					}
+				}
+			]
+		}
+	]
+}

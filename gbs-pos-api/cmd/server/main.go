@@ -36,13 +36,16 @@ import (
 // @license.name Apache 2.0
 // @license.url http://www.apache.org/licenses/LICENSE-2.0.html
 
-// @host localhost:8080
+// @host api-pos.armmada.id
 // @BasePath /v1
 
 // @securityDefinitions.apikey BearerAuth
 // @in header
 // @name Authorization
-// @description Type "Bearer" followed by a space and JWT token. For Keycloak, obtain token from {KEYCLOAK_BASE_URL}/realms/{KEYCLOAK_REALM}/protocol/openid-connect/token
+// @description Dual authentication supported:
+// - JWT (HS256): Obtain token from POST /v1/login (when ENABLE_DEMO_AUTH=true)
+// - Keycloak (RS256): Obtain token from {KEYCLOAK_BASE_URL}/realms/{KEYCLOAK_REALM}/protocol/openid-connect/token
+// Tokens are automatically detected by algorithm (HS256=JWT, RS256=Keycloak)
 
 func main() {
 	_ = godotenv.Load("../../.env")

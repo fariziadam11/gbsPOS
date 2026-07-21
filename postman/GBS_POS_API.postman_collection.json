@@ -1,0 +1,857 @@
+{
+	"info": {
+		"_postman_id": "gbs-pos-api-collection",
+		"name": "GBS POS API",
+		"description": "Point of Sale REST API collection for retail, F&B, and fuel station operations. Supports dual authentication (JWT and Keycloak).",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "https://api-pos.armmada.id/v1"
+		},
+		{
+			"key": "jwtToken",
+			"value": ""
+		},
+		{
+			"key": "keycloakToken",
+			"value": ""
+		},
+		{
+			"key": "authType",
+			"value": "jwt",
+			"type": "string",
+			"description": "Authentication type: 'jwt' for local JWT, 'keycloak' for Keycloak"
+		}
+	],
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{jwtToken}}",
+				"type": "string"
+			}
+		]
+	},
+	"item": [
+		{
+			"name": "Health",
+			"item": [
+				{
+					"name": "Health Check",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/health",
+							"host": ["{{baseUrl}}"],
+							"path": ["health"]
+						},
+						"description": "Check if the POS API is running"
+					}
+				}
+			]
+		},
+		{
+			"name": "Authentication",
+			"item": [
+				{
+					"name": "Login (JWT)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json();",
+									"if (jsonData.success && jsonData.data.token) {",
+									"    pm.collectionVariables.set('jwtToken', jsonData.data.token);",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"admin\",\n    \"password\": \"admin123\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/login",
+							"host": ["{{baseUrl}}"],
+							"path": ["login"]
+						},
+						"description": "Login with username/password to get JWT token. Works when ENABLE_DEMO_AUTH=true."
+					}
+				},
+				{
+					"name": "Login (Keycloak - Get Token)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json();",
+									"if (jsonData.access_token) {",
+									"    pm.collectionVariables.set('keycloakToken', jsonData.access_token);",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/x-www-form-urlencoded"
+							}
+						],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "grant_type",
+									"value": "password",
+									"type": "text"
+								},
+								{
+									"key": "client_id",
+									"value": "gbs-pos",
+									"type": "text"
+								},
+								{
+									"key": "username",
+									"value": "admin",
+									"type": "text"
+								},
+								{
+									"key": "password",
+									"value": "admin123",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{keycloakBaseUrl}}/realms/{{keycloakRealm}}/protocol/openid-connect/token",
+							"host": ["{{keycloakBaseUrl}}"],
+							"path": ["realms", "{{keycloakRealm}}", "protocol", "openid-connect", "token"]
+						},
+						"description": "Get Keycloak access token. Replace with your Keycloak server URL and credentials."
+					}
+				}
+			]
+		},
+		{
+			"name": "Products",
+			"item": [
+				{
+					"name": "List Products",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Response is successful', function() {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test('Response has success true', function() {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.success).to.eql(true);",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/products",
+							"host": ["{{baseUrl}}"],
+							"path": ["products"]
+						},
+						"description": "Get all products with optional filtering"
+					}
+				},
+				{
+					"name": "Get Product by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/products/:id",
+							"host": ["{{baseUrl}}"],
+							"path": ["products", ":id"]
+						},
+						"description": "Get a single product by ID"
+					}
+				},
+				{
+					"name": "Get Product by Barcode",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/products/barcode/:code",
+							"host": ["{{baseUrl}}"],
+							"path": ["products", "barcode", ":code"]
+						},
+						"description": "Look up a product or variant by barcode"
+					}
+				},
+				{
+					"name": "Create Product",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Coffee Latte\",\n    \"price\": 25000,\n    \"cost\": 12000,\n    \"sku\": \"COF-LATTE\",\n    \"barcode\": \"8901234567890\",\n    \"category\": \"Beverage\",\n    \"storeType\": \"FOOD\",\n    \"stock\": 100,\n    \"isActive\": true\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/products",
+							"host": ["{{baseUrl}}"],
+							"path": ["products"]
+						},
+						"description": "Create a new product (ADMIN only)"
+					}
+				},
+				{
+					"name": "Update Product",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Coffee Latte Premium\",\n    \"price\": 28000,\n    \"cost\": 13000\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/products/:id",
+							"host": ["{{baseUrl}}"],
+							"path": ["products", ":id"]
+						},
+						"description": "Update a product (ADMIN only)"
+					}
+				},
+				{
+					"name": "Delete Product",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/products/:id",
+							"host": ["{{baseUrl}}"],
+							"path": ["products", ":id"]
+						},
+						"description": "Delete a product (ADMIN only)"
+					}
+				},
+				{
+					"name": "Adjust Stock",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"type\": \"IN\",\n    \"quantity\": 50,\n    \"reason\": \"Restock from supplier\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/products/:id/stock",
+							"host": ["{{baseUrl}}"],
+							"path": ["products", ":id", "stock"]
+						},
+						"description": "Adjust product stock (IN/OUT/ADJUSTMENT)"
+					}
+				},
+				{
+					"name": "Get Low Stock Products",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/products/low-stock",
+							"host": ["{{baseUrl}}"],
+							"path": ["products", "low-stock"]
+						},
+						"description": "Get products with stock below threshold"
+					}
+				}
+			]
+		},
+		{
+			"name": "Discounts",
+			"item": [
+				{
+					"name": "List Discounts",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/discounts",
+							"host": ["{{baseUrl}}"],
+							"path": ["discounts"]
+						},
+						"description": "Get all discounts"
+					}
+				},
+				{
+					"name": "Create Discount",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Happy Hour\",\n    \"type\": \"PERCENT\",\n    \"value\": 20,\n    \"startDate\": \"2024-01-01\",\n    \"endDate\": \"2024-12-31\",\n    \"storeTypes\": [\"RETAIL\"],\n    \"minPurchase\": 50000\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/discounts",
+							"host": ["{{baseUrl}}"],
+							"path": ["discounts"]
+						},
+						"description": "Create a new discount"
+					}
+				},
+				{
+					"name": "Calculate Price",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"productId\": 1,\n    \"quantity\": 2,\n    \"originalPrice\": 50000\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/discounts/calculate",
+							"host": ["{{baseUrl}}"],
+							"path": ["discounts", "calculate"]
+						},
+						"description": "Calculate discounted price"
+					}
+				}
+			]
+		},
+		{
+			"name": "Orders",
+			"item": [
+				{
+					"name": "List Orders",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/orders",
+							"host": ["{{baseUrl}}"],
+							"path": ["orders"]
+						},
+						"description": "Get orders with optional filters"
+					}
+				},
+				{
+					"name": "Get Order by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/orders/:id",
+							"host": ["{{baseUrl}}"],
+							"path": ["orders", ":id"]
+						},
+						"description": "Get a single order by ID"
+					}
+				},
+				{
+					"name": "Create Order",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"id\": \"ORD-{{$timestamp}}\",\n    \"items\": [\n        {\n            \"productId\": 1,\n            \"productName\": \"Coffee Latte\",\n            \"productPrice\": 25000,\n            \"qty\": 2,\n            \"subtotal\": 50000\n        }\n    ],\n    \"subtotal\": 50000,\n    \"tax\": 5000,\n    \"total\": 55000,\n    \"paymentMethod\": \"CASH\",\n    \"cashReceived\": 60000,\n    \"changeAmount\": 5000,\n    \"storeType\": \"FOOD\",\n    \"terminalId\": \"POS-01\",\n    \"timestamp\": {{$timestamp}}\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/orders",
+							"host": ["{{baseUrl}}"],
+							"path": ["orders"]
+						},
+						"description": "Create a new order"
+					}
+				},
+				{
+					"name": "Bulk Sync Orders",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"terminalId\": \"POS-01\",\n    \"orders\": [\n        {\n            \"id\": \"ORD-SYNC-001\",\n            \"items\": [\n                {\n                    \"productId\": 1,\n                    \"productName\": \"Product 1\",\n                    \"productPrice\": 10000,\n                    \"qty\": 1,\n                    \"subtotal\": 10000\n                }\n            ],\n            \"subtotal\": 10000,\n            \"tax\": 1000,\n            \"total\": 11000,\n            \"paymentMethod\": \"CASH\",\n            \"cashReceived\": 15000,\n            \"changeAmount\": 4000,\n            \"storeType\": \"RETAIL\",\n            \"terminalId\": \"POS-01\"\n        }\n    ]\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/sync/orders",
+							"host": ["{{baseUrl}}"],
+							"path": ["sync", "orders"]
+						},
+						"description": "Bulk sync orders (for offline support)"
+					}
+				},
+				{
+					"name": "Void Order",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"reason\": \"Customer cancelled\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/orders/:id/void",
+							"host": ["{{baseUrl}}"],
+							"path": ["orders", ":id", "void"]
+						},
+						"description": "Void/cancel an order (ADMIN only)"
+					}
+				},
+				{
+					"name": "Get Unsettled Summary",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/orders/unsettled/summary",
+							"host": ["{{baseUrl}}"],
+							"path": ["orders", "unsettled", "summary"]
+						},
+						"description": "Get summary of unsettled orders"
+					}
+				},
+				{
+					"name": "Settle Orders",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"settlementId\": \"SETTLE-{{$timestamp}}\",\n    \"timestamp\": {{$timestamp}},\n    \"storeType\": \"FOOD\",\n    \"terminalId\": \"POS-01\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/orders/settle",
+							"host": ["{{baseUrl}}"],
+							"path": ["orders", "settle"]
+						},
+						"description": "Settle/close orders for a terminal (ADMIN only)"
+					}
+				}
+			]
+		},
+		{
+			"name": "Settlements",
+			"item": [
+				{
+					"name": "List Settlements",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/settlements",
+							"host": ["{{baseUrl}}"],
+							"path": ["settlements"]
+						},
+						"description": "Get paginated list of settlements"
+					}
+				},
+				{
+					"name": "Get Settlement by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/settlements/:id",
+							"host": ["{{baseUrl}}"],
+							"path": ["settlements", ":id"]
+						},
+						"description": "Get a single settlement by ID"
+					}
+				}
+			]
+		},
+		{
+			"name": "Customers",
+			"item": [
+				{
+					"name": "List Customers",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/customers",
+							"host": ["{{baseUrl}}"],
+							"path": ["customers"]
+						},
+						"description": "Search/list customers"
+					}
+				},
+				{
+					"name": "Get Customer by Phone",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/customers/phone/:phone",
+							"host": ["{{baseUrl}}"],
+							"path": ["customers", "phone", ":phone"]
+						},
+						"description": "Find customer by phone number"
+					}
+				},
+				{
+					"name": "Create Customer",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"John Doe\",\n    \"phone\": \"081234567890\",\n    \"email\": \"john@example.com\",\n    \"address\": \"Jakarta\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/customers",
+							"host": ["{{baseUrl}}"],
+							"path": ["customers"]
+						},
+						"description": "Create a new customer"
+					}
+				}
+			]
+		},
+		{
+			"name": "Dashboard",
+			"item": [
+				{
+					"name": "Get Dashboard Summary",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/dashboard/summary",
+							"host": ["{{baseUrl}}"],
+							"path": ["dashboard", "summary"]
+						},
+						"description": "Get summary stats for dashboard"
+					}
+				},
+				{
+					"name": "Get Revenue Trend",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/dashboard/revenue",
+							"host": ["{{baseUrl}}"],
+							"path": ["dashboard", "revenue"]
+						},
+						"description": "Get revenue trend over time"
+					}
+				},
+				{
+					"name": "Get Top Products",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/dashboard/top-products",
+							"host": ["{{baseUrl}}"],
+							"path": ["dashboard", "top-products"]
+						},
+						"description": "Get top selling products"
+					}
+				}
+			]
+		},
+		{
+			"name": "Fuel Station",
+			"item": [
+				{
+					"name": "List Fuel Prices",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/fuel/prices",
+							"host": ["{{baseUrl}}"],
+							"path": ["fuel", "prices"]
+						},
+						"description": "Get all fuel prices"
+					}
+				},
+				{
+					"name": "Update Fuel Price",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"price\": 15000\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/fuel/prices/:code",
+							"host": ["{{baseUrl}}"],
+							"path": ["fuel", "prices", ":code"]
+						},
+						"description": "Update fuel price by code"
+					}
+				},
+				{
+					"name": "List Pumps",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/fuel/pumps",
+							"host": ["{{baseUrl}}"],
+							"path": ["fuel", "pumps"]
+						},
+						"description": "Get all pumps"
+					}
+				},
+				{
+					"name": "Create Pump",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Pump 1\",\n    \"code\": \"P001\",\n    \"isActive\": true\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/fuel/pumps",
+							"host": ["{{baseUrl}}"],
+							"path": ["fuel", "pumps"]
+						},
+						"description": "Create a new pump"
+					}
+				},
+				{
+					"name": "Record Fuel Sale",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"pumpId\": 1,\n    \"nozzleId\": 1,\n    \"liters\": 10.5,\n    \"pricePerLiter\": 15000,\n    \"total\": 157500,\n    \"paymentMethod\": \"CASH\",\n    \"terminalId\": \"POS-01\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/fuel/sales",
+							"host": ["{{baseUrl}}"],
+							"path": ["fuel", "sales"]
+						},
+						"description": "Record a fuel sale transaction"
+					}
+				},
+				{
+					"name": "Fuel Sales Report",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/fuel/report?from=2024-01-01&to=2024-01-31",
+							"host": ["{{baseUrl}}"],
+							"path": ["fuel", "report"],
+							"query": [
+								{
+									"key": "from",
+									"value": "2024-01-01"
+								},
+								{
+									"key": "to",
+									"value": "2024-01-31"
+								}
+							]
+						},
+						"description": "Get fuel sales report for date range"
+					}
+				}
+			]
+		},
+		{
+			"name": "QRIS Payments",
+			"item": [
+				{
+					"name": "Initialize QRIS Payment",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"orderId\": \"ORD-123456\",\n    \"amount\": 55000\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/qris/payments",
+							"host": ["{{baseUrl}}"],
+							"path": ["qris", "payments"]
+						},
+						"description": "Initialize QRIS payment via SumoPod"
+					}
+				},
+				{
+					"name": "Get QRIS Payment Status",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/qris/payments/:orderId/status",
+							"host": ["{{baseUrl}}"],
+							"path": ["qris", "payments", ":orderId", "status"]
+						},
+						"description": "Get QRIS payment status"
+					}
+				}
+			]
+		},
+		{
+			"name": "Hold Sessions",
+			"item": [
+				{
+					"name": "List Hold Sessions",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/holds",
+							"host": ["{{baseUrl}}"],
+							"path": ["holds"]
+						},
+						"description": "Get all hold sessions"
+					}
+				},
+				{
+					"name": "Create Hold Session",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"storeType\": \"RETAIL\",\n    \"terminalId\": \"POS-01\",\n    \"payload\": \"{\\\"items\\\":[{\\\"name\\\":\\\"Product 1\\\",\\\"qty\\\":2}]}\",\n    \"total\": 50000\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/holds",
+							"host": ["{{baseUrl}}"],
+							"path": ["holds"]
+						},
+						"description": "Hold cart as pending session"
+					}
+				},
+				{
+					"name": "Resume Hold Session",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/holds/:id/resume",
+							"host": ["{{baseUrl}}"],
+							"path": ["holds", ":id", "resume"]
+						},
+						"description": "Resume a held cart"
+					}
+				},
+				{
+					"name": "Delete Hold Session",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/holds/:id",
+							"host": ["{{baseUrl}}"],
+							"path": ["holds", ":id"]
+						},
+						"description": "Delete/abandon a held cart"
+					}
+				}
+			]
+		}
+	]
+}

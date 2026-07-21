@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"fmt"
 	"net/http"
 	"strings"
 	"time"
@@ -11,10 +12,26 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
+// AuthConfig holds configuration for the composite auth middleware
+type AuthConfig struct {
+	JWKSURL     string // Keycloak JWKS URL (e.g., https://auth.example.com/realms/myrealm/protocol/openid-connect/certs)
+	JWTSecret   string // JWT secret for legacy/local auth
+	AllowDual   bool   // If true, accept both JWT and Keycloak tokens
+}
+
+// NewCompositeAuthMiddleware creates a middleware that accepts both JWT (HS256) and Keycloak (RS256) tokens.
+// It automatically detects token type based on algorithm in the token header.
+// For Keycloak tokens (RS256), it validates against the JWKS endpoint.
+// For legacy JWT tokens (HS256), it validates using the provided secret.
 func NewCompositeAuthMiddleware(jwksURL, jwtSecret string) (gin.HandlerFunc, error) {
-	keycloakHandler, err := NewKeycloakMiddleware(jwksURL)
-	if err != nil {
-		return nil, err
+	var keycloakHandler gin.HandlerFunc
+	var err error
+
+	if jwksURL != "" {
+		keycloakHandler, err = NewKeycloakMiddleware(jwksURL)
+		if err != nil {
+			return nil, fmt.Errorf("failed to initialize Keycloak middleware: %w", err)
+		}
 	}
 
 	legacyHandler := NewAuthMiddleware(jwtSecret)
@@ -31,6 +48,7 @@ func NewCompositeAuthMiddleware(jwksURL, jwtSecret string) (gin.HandlerFunc, err
 
 		tokenString := strings.TrimPrefix(authHeader, "Bearer ")
 
+		// Parse token header to detect algorithm
 		parser := jwt.NewParser()
 		token, _, err := parser.ParseUnverified(tokenString, jwt.MapClaims{})
 		if err != nil {
@@ -42,21 +60,46 @@ func NewCompositeAuthMiddleware(jwksURL, jwtSecret string) (gin.HandlerFunc, err
 		}
 
 		alg, _ := token.Header["alg"].(string)
-		if alg == "RS256" {
-			keycloakHandler(c)
+
+		// Route based on algorithm
+		switch alg {
+		case "RS256":
+			// Keycloak token (RS256)
+			if keycloakHandler != nil {
+				keycloakHandler(c)
+				return
+			}
+			c.AbortWithStatusJSON(
+				http.StatusUnauthorized,
+				response.Error("INVALID_TOKEN", "Keycloak authentication is not configured"),
+			)
+			return
+
+		case "HS256", "HS384", "HS512":
+			// Legacy JWT token (HS256)
+			if jwtSecret != "" {
+				legacyHandler(c)
+				return
+			}
+			c.AbortWithStatusJSON(
+				http.StatusUnauthorized,
+				response.Error("INVALID_TOKEN", "JWT authentication is not configured"),
+			)
+			return
+
+		default:
+			c.AbortWithStatusJSON(
+				http.StatusUnauthorized,
+				response.Error("INVALID_TOKEN", fmt.Sprintf("Unsupported token algorithm: %s", alg)),
+			)
 			return
 		}
-
-		if jwtSecret != "" {
-			legacyHandler(c)
-			return
-		}
-
-		c.AbortWithStatusJSON(
-			http.StatusUnauthorized,
-			response.Error("INVALID_TOKEN", "Unsupported token algorithm"),
-		)
 	}, nil
+}
+
+// NewCompositeAuthMiddlewareWithConfig creates auth middleware with explicit configuration
+func NewCompositeAuthMiddlewareWithConfig(cfg AuthConfig) (gin.HandlerFunc, error) {
+	return NewCompositeAuthMiddleware(cfg.JWKSURL, cfg.JWTSecret)
 }
 
 func NewAuthMiddleware(jwtSecret string) gin.HandlerFunc {

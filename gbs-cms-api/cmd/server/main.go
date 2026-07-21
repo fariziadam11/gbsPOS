@@ -8,15 +8,17 @@
 //	Schemes: http, https
 //	BasePath: /v1
 //	Version: 1.0.0
-//	Host: localhost:8081
+//	Host: api-cms.armmada.id
 //
 //	SecurityDefinitions:
 //	BearerAuth:
 //	  type: apiKey
 //	  name: Authorization
 //	  in: header
-//	  description: JWT Bearer token. For Keycloak auth, obtain token from:
-//	  {KEYCLOAK_BASE_URL}/realms/{KEYCLOAK_REALM}/protocol/openid-connect/token
+//	  description: Dual authentication supported:
+//	  - JWT (HS256): Obtain token from POST /v1/login (when ENABLE_DEMO_AUTH=true)
+//	  - Keycloak (RS256): Obtain token from {KEYCLOAK_BASE_URL}/realms/{KEYCLOAK_REALM}/protocol/openid-connect/token
+//	  Tokens are automatically detected by algorithm (HS256=JWT, RS256=Keycloak)
 //
 //	Responses:
 //	401: Unauthorized - Invalid or missing token
@@ -184,9 +186,15 @@ func main() {
 }
 
 func buildAuthMiddleware(cfg *config.Config) (gin.HandlerFunc, error) {
-	if cfg.UseKeycloak() {
+	if cfg.UseKeycloak() && cfg.EnableDemoAuth {
+		// Dual auth mode: accept both Keycloak and local JWT tokens
 		return middleware.NewCompositeAuthMiddleware(cfg.KeycloakJWKSURL(), cfg.JWTSecret)
 	}
+	if cfg.UseKeycloak() {
+		// Keycloak only mode
+		return middleware.NewKeycloakMiddleware(cfg.KeycloakJWKSURL())
+	}
+	// JWT only mode
 	return middleware.NewAuthMiddleware(cfg.JWTSecret), nil
 }
 

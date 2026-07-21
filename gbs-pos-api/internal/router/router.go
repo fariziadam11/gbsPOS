@@ -66,9 +66,15 @@ type Handlers struct {
 }
 
 func buildAuthMiddleware(cfg *config.Config) (gin.HandlerFunc, error) {
-	if cfg.UseKeycloak() {
+	if cfg.UseKeycloak() && cfg.EnableDemoAuth {
+		// Dual auth mode: accept both Keycloak and local JWT tokens
 		return middleware.NewCompositeAuthMiddleware(cfg.KeycloakJWKSURL(), cfg.JWTSecret)
 	}
+	if cfg.UseKeycloak() {
+		// Keycloak only mode
+		return middleware.NewKeycloakMiddleware(cfg.KeycloakJWKSURL())
+	}
+	// JWT only mode
 	return middleware.NewAuthMiddleware(cfg.JWTSecret), nil
 }
 

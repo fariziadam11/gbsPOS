@@ -13,8 +13,28 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
+// KeycloakConfig holds configuration for Keycloak authentication
+type KeycloakConfig struct {
+	JWKSURL  string // Keycloak JWKS URL
+	ClientID string // Optional: expected client_id in token
+}
+
+// NewKeycloakMiddleware creates a middleware that validates Keycloak/OIDC tokens using JWKS.
+// The token must be signed with RS256 and contain either ADMIN or CASHIER role in realm_access.
 func NewKeycloakMiddleware(jwksURL string) (gin.HandlerFunc, error) {
-	jwks, err := keyfunc.NewDefault([]string{jwksURL})
+	return NewKeycloakMiddlewareWithConfig(KeycloakConfig{
+		JWKSURL: jwksURL,
+	})
+}
+
+// NewKeycloakMiddlewareWithConfig creates Keycloak middleware with explicit configuration
+func NewKeycloakMiddlewareWithConfig(cfg KeycloakConfig) (gin.HandlerFunc, error) {
+	if cfg.JWKSURL == "" {
+		return nil, fmt.Errorf("JWKS URL is required")
+	}
+
+	// Create JWKS from the Keycloak JWKS endpoint
+	jwks, err := keyfunc.NewDefault([]string{cfg.JWKSURL})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create JWKS keyfunc: %w", err)
 	}
@@ -40,7 +60,7 @@ func NewKeycloakMiddleware(jwksURL string) (gin.HandlerFunc, error) {
 		if err != nil || !token.Valid {
 			c.AbortWithStatusJSON(
 				http.StatusUnauthorized,
-				response.Error("INVALID_TOKEN", "Invalid or expired token"),
+				response.Error("INVALID_TOKEN", "Invalid or expired Keycloak token"),
 			)
 			return
 		}
@@ -54,19 +74,40 @@ func NewKeycloakMiddleware(jwksURL string) (gin.HandlerFunc, error) {
 			return
 		}
 
+		// Validate client_id if configured
+		if cfg.ClientID != "" {
+			if clientID, _ := claims["azp"].(string); clientID != cfg.ClientID {
+				c.AbortWithStatusJSON(
+					http.StatusUnauthorized,
+					response.Error("INVALID_TOKEN", "Invalid client_id"),
+				)
+				return
+			}
+		}
+
 		role := keycloakRole(claims)
 		username := keycloakUsername(claims)
 		if role == "" {
 			c.AbortWithStatusJSON(
 				http.StatusUnauthorized,
-				response.Error("INVALID_TOKEN", "No ADMIN/CASHIER role found"),
+				response.Error("INVALID_TOKEN", "No ADMIN/CASHIER role found in Keycloak token"),
 			)
 			return
 		}
 
+		// Set standard claims in context
 		c.Set("userID", claims["sub"])
 		c.Set("username", username)
 		c.Set("role", role)
+
+		// Optionally set additional Keycloak claims
+		if email, ok := claims["email"].(string); ok {
+			c.Set("email", email)
+		}
+		if name, ok := claims["name"].(string); ok {
+			c.Set("name", name)
+		}
+
 		c.Next()
 	}, nil
 }
