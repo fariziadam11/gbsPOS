@@ -63,6 +63,7 @@ type Handlers struct {
 	Fuel           *handler.FuelHandler
 	CartDisplay    *handler.CartDisplayHandler
 	Qris           *handler.QrisHandler
+	QrisDirect     *handler.QrisDirectHandler
 }
 
 func buildAuthMiddleware(cfg *config.Config) (gin.HandlerFunc, error) {
@@ -120,6 +121,7 @@ func Setup(
 	setupFuelRoutes(v1, h.Fuel)
 	setupCartDisplayRoutes(v1, h.CartDisplay, authMiddleware)
 	setupQrisRoutes(r, h.Qris)
+	setupQrisDirectRoutes(auth, h.QrisDirect)
 
 	return r
 }

@@ -76,10 +76,92 @@ type QrisPaymentStatusResponse struct {
 }
 
 type QrisInitResponse struct {
-	OrderID       string    `json:"orderId"`
+	OrderID        string    `json:"orderId"`
 	PaymentID     string    `json:"paymentId"`
 	PaymentLinkURL string   `json:"paymentLinkUrl"`
 	Amount        float64   `json:"amount"`
 	Fee           float64   `json:"fee"`
 	ExpiresAt     time.Time `json:"expiresAt"`
+}
+
+// QRIS Direct (Static to Dynamic) DTOs
+
+// ParseQRISRequest represents a request to parse QRIS string
+type ParseQRISRequest struct {
+	QrisString string `json:"qrisString" binding:"required"`
+}
+
+// ParseQRISResponse represents parsed QRIS data
+type ParseQRISResponse struct {
+	IsStatic     bool    `json:"isStatic"`
+	IsDynamic    bool    `json:"isDynamic"`
+	MerchantName string  `json:"merchantName"`
+	MerchantCity string  `json:"merchantCity"`
+	Provider     string  `json:"provider"`
+	MCC          string  `json:"mcc"`
+	Currency     string  `json:"currency"`
+	CurrentAmount string `json:"currentAmount,omitempty"`
+}
+
+// ConvertQRISRequest represents a request to convert static to dynamic QRIS
+type ConvertQRISRequest struct {
+	QrisString string  `json:"qrisString" binding:"required"`
+	Amount     float64 `json:"amount" binding:"required,gt=0"`
+	FeeType    string  `json:"feeType,omitempty"`    // "fixed" or "percentage"
+	FeeValue   float64 `json:"feeValue,omitempty"`   // Fee amount or percentage
+	OrderID    string  `json:"orderId,omitempty"`   // Optional order association
+}
+
+// ConvertQRISResponse represents the converted QRIS data
+type ConvertQRISResponse struct {
+	ID           string    `json:"id"`
+	OrderID      string    `json:"orderId,omitempty"`
+	OriginalQris string    `json:"originalQris"`
+	DynamicQris  string    `json:"dynamicQris"`
+	Amount      float64   `json:"amount"`
+	FeeType     string    `json:"feeType,omitempty"`
+	FeeValue    float64   `json:"feeValue,omitempty"`
+	FeeAmount   float64   `json:"feeAmount"`
+	TotalAmount float64   `json:"totalAmount"`
+	MerchantName string   `json:"merchantName"`
+	MerchantCity string   `json:"merchantCity"`
+	Provider    string    `json:"provider"`
+	QRCodeBase64 string   `json:"qrCodeBase64"`
+	ExpiresAt   time.Time `json:"expiresAt"`
+}
+
+// GetQRISStatusResponse represents QRIS transaction status
+type GetQRISStatusResponse struct {
+	ID          string     `json:"id"`
+	OrderID     string     `json:"orderId"`
+	Amount      float64    `json:"amount"`
+	FeeAmount   float64    `json:"feeAmount"`
+	TotalAmount float64    `json:"totalAmount"`
+	Provider    string     `json:"provider"`
+	Status      string     `json:"status"`
+	PaidAt      *time.Time `json:"paidAt,omitempty"`
+	ExpiresAt   time.Time  `json:"expiresAt"`
+	CreatedAt   time.Time  `json:"createdAt"`
+}
+
+// ConfirmQRISPaymentRequest represents a request to confirm payment
+type ConfirmQRISPaymentRequest struct {
+	TransactionID string `json:"transactionId" binding:"required"`
+}
+
+// CancelQRISPaymentRequest represents a request to cancel payment
+type CancelQRISPaymentRequest struct {
+	TransactionID string `json:"transactionId" binding:"required"`
+	Reason        string `json:"reason,omitempty"`
+}
+
+// GenerateQRCodeRequest represents a request to generate QR code image
+type GenerateQRCodeRequest struct {
+	QrisString string `json:"qrisString" binding:"required"`
+}
+
+// GenerateQRCodeResponse represents QR code image response
+type GenerateQRCodeResponse struct {
+	Base64 string `json:"base64"`
+	URL    string `json:"url"`
 }

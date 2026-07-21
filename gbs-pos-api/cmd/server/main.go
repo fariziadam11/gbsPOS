@@ -85,6 +85,7 @@ func main() {
 		&model.Pump{},
 		&model.Nozzle{},
 		&model.FuelSale{},
+		&model.QrisTransaction{},
 	); err != nil {
 		log.Fatal("failed to migrate database: ", err)
 	}
@@ -105,6 +106,7 @@ func main() {
 	pumpRepo := repository.NewPumpRepository(db)
 	nozzleRepo := repository.NewNozzleRepository(db)
 	fuelSaleRepo := repository.NewFuelSaleRepository(db)
+	qrisTransactionRepo := repository.NewQrisTransactionRepository(db)
 
 	dashboardRepo := repository.NewDashboardRepository(db)
 
@@ -127,6 +129,7 @@ func main() {
 	dashboardService := service.NewDashboardService(dashboardRepo)
 	fuelService := service.NewFuelService(fuelPriceRepo, pumpRepo, nozzleRepo, fuelSaleRepo)
 	qrisService := service.NewQrisService(cfg, db, orderRepo)
+	qrisDirectService := service.NewQrisDirectService(qrisTransactionRepo, orderRepo)
 
 	authHandler := handler.NewAuthHandler(authService)
 	productHandler := handler.NewProductHandler(productService)
@@ -140,6 +143,7 @@ func main() {
 	cartDisplayHandler := handler.NewCartDisplayHandler(cartDisplayService)
 	fuelHandler := handler.NewFuelHandler(fuelService)
 	qrisHandler := handler.NewQrisHandler(qrisService, cfg)
+	qrisDirectHandler := handler.NewQrisDirectHandler(qrisDirectService)
 
 	r := router.Setup(
 		cfg,
@@ -156,6 +160,7 @@ func main() {
 			Fuel:           fuelHandler,
 			CartDisplay:    cartDisplayHandler,
 			Qris:           qrisHandler,
+			QrisDirect:     qrisDirectHandler,
 		},
 	)
 

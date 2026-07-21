@@ -184,3 +184,40 @@ type HoldSession struct {
 func (HoldSession) TableName() string {
 	return "pos_hold_sessions"
 }
+
+// QRIS Transaction Status
+const (
+	QrisTransactionStatusPending   = "PENDING"
+	QrisTransactionStatusPaid     = "PAID"
+	QrisTransactionStatusCancelled = "CANCELLED"
+	QrisTransactionStatusExpired   = "EXPIRED"
+)
+
+// QrisTransaction represents a QRIS direct payment transaction (without gateway)
+type QrisTransaction struct {
+	ID                string     `gorm:"primaryKey;size:64" json:"id"`
+	OrderID           string     `gorm:"size:32;index" json:"orderId"`
+	StaticQrisString  string     `gorm:"type:text;not null" json:"staticQrisString"`
+	DynamicQrisString string     `gorm:"type:text" json:"dynamicQrisString"`
+	Amount            float64    `gorm:"type:decimal(12,2);not null" json:"amount"`
+	FeeType           string     `gorm:"size:20" json:"feeType,omitempty"`           // "fixed" or "percentage"
+	FeeValue          float64    `gorm:"type:decimal(12,2);default:0" json:"feeValue,omitempty"`
+	FeeAmount         float64    `gorm:"type:decimal(12,2);default:0" json:"feeAmount"`
+	TotalAmount       float64    `gorm:"type:decimal(12,2);not null" json:"totalAmount"`
+	MerchantName      string     `gorm:"size:255" json:"merchantName"`
+	MerchantCity      string     `gorm:"size:100" json:"merchantCity"`
+	Provider          string     `gorm:"size:50" json:"provider"` // DANA, OVO, GoPay, etc.
+	TerminalID        string     `gorm:"size:32" json:"terminalId"`
+	Status            string     `gorm:"size:20;not null;default:PENDING;index" json:"status"`
+	PaidAt            *time.Time `json:"paidAt,omitempty"`
+	CancelledAt       *time.Time `json:"cancelledAt,omitempty"`
+	CancelledBy       string     `gorm:"size:100" json:"cancelledBy,omitempty"`
+	CancelReason      string     `gorm:"size:255" json:"cancelReason,omitempty"`
+	ExpiresAt         time.Time `json:"expiresAt"`
+	CreatedAt         time.Time  `json:"createdAt"`
+	UpdatedAt         time.Time  `json:"updatedAt"`
+}
+
+func (QrisTransaction) TableName() string {
+	return "pos_qris_transactions"
+}
