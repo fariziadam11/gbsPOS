@@ -7,18 +7,13 @@ import (
 )
 
 // setupQrisRoutes configures QRIS payment routes
-func setupQrisRoutes(v1 *gin.RouterGroup, qrisHandler *handler.QrisHandler) {
-	// Protected routes require authentication
-	protected := v1.Group("")
-	protected.Use(func(c *gin.Context) {
-		// Auth middleware is applied at parent level in Setup()
-		c.Next()
-	})
-	{
-		protected.POST("/qris/payments", qrisHandler.InitPayment)
-		protected.GET("/qris/payments/:orderId/status", qrisHandler.GetPaymentStatus)
-	}
+// authMiddleware supports both JWT and Keycloak authentication
+func setupQrisRoutes(r *gin.Engine, qrisHandler *handler.QrisHandler) {
+	// Protected routes - require JWT or Keycloak authentication
+	r.POST("/v1/qris/payments", qrisHandler.InitPayment)
+	r.GET("/v1/qris/payments/:orderId/status", qrisHandler.GetPaymentStatus)
 
-	// Webhook route (public, uses token auth via X-Webhook-Token header)
-	v1.POST("/qris/webhook", qrisHandler.HandleWebhook)
+	// Webhook route (public, uses webhook token auth via X-Webhook-Token header)
+	// Placed outside v1 group to avoid auth middleware
+	r.POST("/v1/qris/webhook", qrisHandler.HandleWebhook)
 }

@@ -113,7 +113,7 @@ func Setup(
 	setupHoldRoutes(auth, h.Hold)
 	setupFuelRoutes(v1, h.Fuel)
 	setupCartDisplayRoutes(v1, h.CartDisplay, authMiddleware)
-	setupQrisRoutes(v1, h.Qris)
+	setupQrisRoutes(r, h.Qris)
 
 	return r
 }
