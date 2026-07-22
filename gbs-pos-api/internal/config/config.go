@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/caarlos0/env/v10"
 	"github.com/joho/godotenv"
@@ -71,6 +72,10 @@ func Load() (*Config, error) {
 	if err := env.Parse(&cfg); err != nil {
 		return nil, err
 	}
+
+	// Trim whitespace from QRIS string (handles accidental newlines/spaces in .env)
+	cfg.QrisDirectStaticQRIS = strings.TrimSpace(cfg.QrisDirectStaticQRIS)
+
 	if err := cfg.Validate(); err != nil {
 		return nil, err
 	}
