@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"gbs-pos-api/internal/config"
 	"gbs-pos-api/internal/dto"
 	"gbs-pos-api/internal/model"
 	"gbs-pos-api/internal/repository"
@@ -15,51 +16,35 @@ import (
 
 // QrisDirectService handles QRIS static to dynamic conversion
 type QrisDirectService struct {
+	cfg        *config.Config
 	qrisTxRepo *repository.QrisTransactionRepository
 	orderRepo  *repository.OrderRepository
 }
 
 // NewQrisDirectService creates a new QRIS direct service
 func NewQrisDirectService(
+	cfg *config.Config,
 	qrisTxRepo *repository.QrisTransactionRepository,
 	orderRepo *repository.OrderRepository,
 ) *QrisDirectService {
+	// Set CRC validation based on config
+	qrislib.SkipCRCValidation = cfg.QrisDirectSkipCRCValidate
+
 	return &QrisDirectService{
+		cfg:        cfg,
 		qrisTxRepo: qrisTxRepo,
 		orderRepo:  orderRepo,
 	}
 }
 
-// ParseQRIS parses a QRIS string and returns structured data
-func (s *QrisDirectService) ParseQRIS(ctx context.Context, req dto.ParseQRISRequest) (*dto.ParseQRISResponse, error) {
-	parsed, err := qrislib.Parse(req.QrisString)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse QRIS: %v", err)
-	}
-
-	// Detect provider from merchant accounts
-	provider := "Unknown"
-	if len(parsed.MerchantAccounts) > 0 {
-		provider = parsed.MerchantAccounts[0].ProviderID
-		if provider == "" {
-			provider = "Unknown"
-		}
-	}
-
-	return &dto.ParseQRISResponse{
-		IsStatic:      parsed.IsStatic,
-		IsDynamic:     parsed.IsDynamic,
-		MerchantName:  parsed.MerchantName,
-		MerchantCity:  parsed.MerchantCity,
-		Provider:      provider,
-		MCC:           parsed.MCC,
-		Currency:      parsed.Currency,
-		CurrentAmount: parsed.Amount,
-	}, nil
-}
-
-// ConvertQRIS converts a static QRIS to dynamic and creates a transaction record
+// ConvertQRIS converts the configured static QRIS to dynamic and creates a transaction record
 func (s *QrisDirectService) ConvertQRIS(ctx context.Context, req dto.ConvertQRISRequest) (*dto.ConvertQRISResponse, error) {
+	// Get static QRIS from config
+	staticQris := s.cfg.QrisDirectStaticQRIS
+	if staticQris == "" {
+		return nil, fmt.Errorf("QRIS_DIRECT_STATIC_QRIS is not configured")
+	}
+
 	// Validate order if provided
 	if req.OrderID != "" {
 		order, err := s.orderRepo.FindByID(req.OrderID)
@@ -72,7 +57,7 @@ func (s *QrisDirectService) ConvertQRIS(ctx context.Context, req dto.ConvertQRIS
 	}
 
 	// Convert static to dynamic
-	dynamicQris, err := qrislib.ConvertWithFee(req.QrisString, qrislib.ConvertOptions{
+	dynamicQris, err := qrislib.ConvertWithFee(staticQris, qrislib.ConvertOptions{
 		Amount:   req.Amount,
 		FeeType:  req.FeeType,
 		FeeValue: req.FeeValue,
@@ -85,29 +70,30 @@ func (s *QrisDirectService) ConvertQRIS(ctx context.Context, req dto.ConvertQRIS
 	feeAmount := qrislib.GetFee(req.Amount, req.FeeType, req.FeeValue)
 	totalAmount := req.Amount + feeAmount
 
-	// Parse the original QRIS for merchant info
-	parsed, _ := qrislib.Parse(req.QrisString)
-
 	// Generate unique transaction ID
 	txID := fmt.Sprintf("QRIS-%s", uuid.New().String()[:12])
 
-	// Create transaction record
-	now := time.Now()
-	expiresAt := now.Add(15 * time.Minute) // Default 15 minutes expiry
+	// Set expiration time from config (default 15 minutes)
+	expiresMinutes := s.cfg.QrisDirectExpiresMinutes
+	if expiresMinutes <= 0 {
+		expiresMinutes = 15
+	}
+	expiresAt := time.Now().Add(time.Duration(expiresMinutes) * time.Minute)
 
+	// Create transaction record
 	tx := &model.QrisTransaction{
 		ID:                txID,
 		OrderID:           req.OrderID,
-		StaticQrisString:  req.QrisString,
+		StaticQrisString:  staticQris,
 		DynamicQrisString: dynamicQris,
 		Amount:            req.Amount,
 		FeeType:           req.FeeType,
 		FeeValue:          req.FeeValue,
 		FeeAmount:         feeAmount,
 		TotalAmount:       totalAmount,
-		MerchantName:      parsed.MerchantName,
-		MerchantCity:      parsed.MerchantCity,
-		Provider:          detectProvider(req.QrisString),
+		MerchantName:      s.cfg.QrisDirectMerchantName,
+		MerchantCity:      s.cfg.QrisDirectMerchantCity,
+		Provider:          s.cfg.QrisDirectProvider,
 		Status:            model.QrisTransactionStatusPending,
 		ExpiresAt:         expiresAt,
 	}
@@ -116,24 +102,20 @@ func (s *QrisDirectService) ConvertQRIS(ctx context.Context, req dto.ConvertQRIS
 		return nil, fmt.Errorf("failed to create transaction: %v", err)
 	}
 
-	// Generate QR code (placeholder - frontend should generate from dynamicQris string)
-	qrCodeBase64 := dynamicQris // For now, return the string; frontend will handle QR generation
-
 	return &dto.ConvertQRISResponse{
 		ID:            txID,
 		OrderID:       req.OrderID,
-		OriginalQris:  req.QrisString,
 		DynamicQris:   dynamicQris,
 		Amount:        req.Amount,
-		FeeType:      req.FeeType,
-		FeeValue:     req.FeeValue,
-		FeeAmount:    feeAmount,
-		TotalAmount:  totalAmount,
-		MerchantName: parsed.MerchantName,
-		MerchantCity: parsed.MerchantCity,
-		Provider:     detectProvider(req.QrisString),
-		QRCodeBase64: qrCodeBase64,
-		ExpiresAt:    expiresAt,
+		FeeType:       req.FeeType,
+		FeeValue:      req.FeeValue,
+		FeeAmount:     feeAmount,
+		TotalAmount:   totalAmount,
+		MerchantName:  s.cfg.QrisDirectMerchantName,
+		MerchantCity:  s.cfg.QrisDirectMerchantCity,
+		Provider:      s.cfg.QrisDirectProvider,
+		QRCodeBase64:  dynamicQris, // Frontend will generate QR from this string
+		ExpiresAt:     expiresAt,
 	}, nil
 }
 
@@ -225,18 +207,4 @@ func (s *QrisDirectService) ProcessExpiredTransactions(ctx context.Context) erro
 	}
 
 	return nil
-}
-
-// detectProvider detects payment provider from QRIS string
-func detectProvider(qrisString string) string {
-	parsed, err := qrislib.Parse(qrisString)
-	if err != nil {
-		return "Unknown"
-	}
-
-	if len(parsed.MerchantAccounts) > 0 {
-		return parsed.MerchantAccounts[0].ProviderID
-	}
-
-	return "Unknown"
 }

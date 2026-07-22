@@ -8,15 +8,13 @@ import (
 
 // setupQrisDirectRoutes configures QRIS direct payment routes
 // These endpoints handle static to dynamic QRIS conversion without payment gateway
+// The static QRIS string is configured via QRIS_DIRECT_STATIC_QRIS env var
 func setupQrisDirectRoutes(r *gin.RouterGroup, qrisDirectHandler *handler.QrisDirectHandler) {
 	// QRIS Direct endpoints (static to dynamic)
 	// Protected routes - require JWT or Keycloak authentication
 	qrisDirect := r.Group("/qris-direct")
 	{
-		// Parse QRIS string
-		qrisDirect.POST("/parse", qrisDirectHandler.ParseQRIS)
-
-		// Convert static to dynamic
+		// Convert static to dynamic QRIS (uses configured static QRIS)
 		qrisDirect.POST("/convert", qrisDirectHandler.ConvertQRIS)
 
 		// Get transaction status

@@ -129,7 +129,7 @@ func main() {
 	dashboardService := service.NewDashboardService(dashboardRepo)
 	fuelService := service.NewFuelService(fuelPriceRepo, pumpRepo, nozzleRepo, fuelSaleRepo)
 	qrisService := service.NewQrisService(cfg, db, orderRepo)
-	qrisDirectService := service.NewQrisDirectService(qrisTransactionRepo, orderRepo)
+	qrisDirectService := service.NewQrisDirectService(cfg, qrisTransactionRepo, orderRepo)
 
 	authHandler := handler.NewAuthHandler(authService)
 	productHandler := handler.NewProductHandler(productService)

@@ -23,57 +23,9 @@ func NewQrisDirectHandler(qrisDirectService *service.QrisDirectService) *QrisDir
 	}
 }
 
-// ParseQRIS godoc
-// @Summary Parse QRIS string
-// @Description Parse a QRIS string and return structured information
-// @Tags QRIS Direct
-// @Accept json
-// @Produce json
-// @Param request body dto.ParseQRISRequest true "QRIS String"
-// @Success 200 {object} response.Response{data=dto.ParseQRISResponse}
-// @Failure 400 {object} response.Response
-// @Failure 500 {object} response.Response
-// @Router /v1/qris-direct/parse [post]
-func (h *QrisDirectHandler) ParseQRIS(c *gin.Context) {
-	var req dto.ParseQRISRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusUnprocessableEntity, gin.H{
-			"success": false,
-			"error":   "VALIDATION_ERROR",
-			"message":  err.Error(),
-		})
-		return
-	}
-
-	if req.QrisString == "" {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"success": false,
-			"error":   "VALIDATION_ERROR",
-			"message":  "qrisString is required",
-		})
-		return
-	}
-
-	result, err := h.qrisDirectService.ParseQRIS(c.Request.Context(), req)
-	if err != nil {
-		log.Error().Err(err).Msg("Failed to parse QRIS")
-		c.JSON(http.StatusBadRequest, gin.H{
-			"success": false,
-			"error":   "PARSE_ERROR",
-			"message":  err.Error(),
-		})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"data":    result,
-	})
-}
-
 // ConvertQRIS godoc
 // @Summary Convert static QRIS to dynamic
-// @Description Convert a static QRIS to dynamic by injecting amount
+// @Description Convert the configured static QRIS to dynamic by injecting amount
 // @Tags QRIS Direct
 // @Accept json
 // @Produce json

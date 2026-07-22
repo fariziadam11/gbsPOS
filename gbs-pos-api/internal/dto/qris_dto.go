@@ -86,48 +86,31 @@ type QrisInitResponse struct {
 
 // QRIS Direct (Static to Dynamic) DTOs
 
-// ParseQRISRequest represents a request to parse QRIS string
-type ParseQRISRequest struct {
-	QrisString string `json:"qrisString" binding:"required"`
-}
-
-// ParseQRISResponse represents parsed QRIS data
-type ParseQRISResponse struct {
-	IsStatic     bool    `json:"isStatic"`
-	IsDynamic    bool    `json:"isDynamic"`
-	MerchantName string  `json:"merchantName"`
-	MerchantCity string  `json:"merchantCity"`
-	Provider     string  `json:"provider"`
-	MCC          string  `json:"mcc"`
-	Currency     string  `json:"currency"`
-	CurrentAmount string `json:"currentAmount,omitempty"`
-}
-
 // ConvertQRISRequest represents a request to convert static to dynamic QRIS
+// The static QRIS string is taken from config (QRIS_DIRECT_STATIC_QRIS)
 type ConvertQRISRequest struct {
-	QrisString string  `json:"qrisString" binding:"required"`
-	Amount     float64 `json:"amount" binding:"required,gt=0"`
-	FeeType    string  `json:"feeType,omitempty"`    // "fixed" or "percentage"
-	FeeValue   float64 `json:"feeValue,omitempty"`   // Fee amount or percentage
-	OrderID    string  `json:"orderId,omitempty"`   // Optional order association
+	Amount   float64 `json:"amount" binding:"required,gt=0"`
+	FeeType  string  `json:"feeType,omitempty"`   // "fixed" or "percentage"
+	FeeValue float64 `json:"feeValue,omitempty"`  // Fee amount or percentage
+	OrderID  string  `json:"orderId,omitempty"`   // Optional order association
 }
 
 // ConvertQRISResponse represents the converted QRIS data
 type ConvertQRISResponse struct {
 	ID           string    `json:"id"`
 	OrderID      string    `json:"orderId,omitempty"`
-	OriginalQris string    `json:"originalQris"`
+	OriginalQris string    `json:"originalQris,omitempty"`
 	DynamicQris  string    `json:"dynamicQris"`
-	Amount      float64   `json:"amount"`
-	FeeType     string    `json:"feeType,omitempty"`
-	FeeValue    float64   `json:"feeValue,omitempty"`
-	FeeAmount   float64   `json:"feeAmount"`
-	TotalAmount float64   `json:"totalAmount"`
-	MerchantName string   `json:"merchantName"`
-	MerchantCity string   `json:"merchantCity"`
-	Provider    string    `json:"provider"`
-	QRCodeBase64 string   `json:"qrCodeBase64"`
-	ExpiresAt   time.Time `json:"expiresAt"`
+	Amount       float64   `json:"amount"`
+	FeeType      string    `json:"feeType,omitempty"`
+	FeeValue     float64   `json:"feeValue,omitempty"`
+	FeeAmount    float64   `json:"feeAmount"`
+	TotalAmount  float64   `json:"totalAmount"`
+	MerchantName string    `json:"merchantName"`
+	MerchantCity string    `json:"merchantCity"`
+	Provider     string    `json:"provider"`
+	QRCodeBase64 string    `json:"qrCodeBase64"`
+	ExpiresAt    time.Time `json:"expiresAt"`
 }
 
 // GetQRISStatusResponse represents QRIS transaction status

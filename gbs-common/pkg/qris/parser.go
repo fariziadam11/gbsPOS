@@ -5,6 +5,10 @@ import (
 	"strings"
 )
 
+// SkipCRCValidation allows parsing QRIS strings with invalid CRC
+// Useful for development or QRIS strings generated with different CRC algorithms
+var SkipCRCValidation = false
+
 // TLV represents a Tag-Length-Value element
 type TLV struct {
 	Tag     string
@@ -270,6 +274,7 @@ func ParseTLV(qrisString string) ([]TLV, error) {
 }
 
 // Parse parses a QRIS string into a structured object
+// Set SkipCRCValidation to true if the QRIS string has an invalid CRC
 func Parse(qrisString string) (*ParsedQRIS, error) {
 	tlvs, err := ParseTLV(qrisString)
 	if err != nil {
@@ -280,8 +285,10 @@ func Parse(qrisString string) (*ParsedQRIS, error) {
 		RawTLVs: tlvs,
 	}
 
-	// Validate CRC first
-	if err := ValidateCRC(qrisString); err != nil {
+	// Validate CRC first (skip if QRIS has non-standard CRC)
+	if SkipCRCValidation {
+		// Skip CRC validation
+	} else if err := ValidateCRC(qrisString); err != nil {
 		return nil, fmt.Errorf("CRC validation failed: %v", err)
 	}
 
