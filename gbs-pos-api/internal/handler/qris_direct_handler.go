@@ -150,17 +150,24 @@ func (h *QrisDirectHandler) GetTransactionStatus(c *gin.Context) {
 // @Router /v1/qris-direct/transactions/{transactionId}/confirm [post]
 // @Router /v1/qris-direct/confirm [post]
 func (h *QrisDirectHandler) ConfirmPayment(c *gin.Context) {
-	var req dto.ConfirmQRISPaymentRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusUnprocessableEntity, gin.H{
-			"success": false,
-			"error":   "VALIDATION_ERROR",
-			"message":  err.Error(),
-		})
-		return
+	// First try to get transactionId from path parameter (for /transactions/:transactionId/confirm)
+	transactionID := c.Param("transactionId")
+
+	// If not in path, try from body (for /confirm)
+	if transactionID == "" {
+		var req dto.ConfirmQRISPaymentRequest
+		if err := c.ShouldBindJSON(&req); err != nil {
+			c.JSON(http.StatusUnprocessableEntity, gin.H{
+				"success": false,
+				"error":   "VALIDATION_ERROR",
+				"message":  err.Error(),
+			})
+			return
+		}
+		transactionID = req.TransactionID
 	}
 
-	if req.TransactionID == "" {
+	if transactionID == "" {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"success": false,
 			"error":   "VALIDATION_ERROR",
@@ -169,7 +176,7 @@ func (h *QrisDirectHandler) ConfirmPayment(c *gin.Context) {
 		return
 	}
 
-	err := h.qrisDirectService.ConfirmPayment(c.Request.Context(), req.TransactionID)
+	err := h.qrisDirectService.ConfirmPayment(c.Request.Context(), transactionID)
 	if err != nil {
 		if strings.Contains(err.Error(), "not found") {
 			c.JSON(http.StatusNotFound, gin.H{
@@ -217,17 +224,26 @@ func (h *QrisDirectHandler) ConfirmPayment(c *gin.Context) {
 // @Router /v1/qris-direct/transactions/{transactionId}/cancel [post]
 // @Router /v1/qris-direct/cancel [post]
 func (h *QrisDirectHandler) CancelPayment(c *gin.Context) {
-	var req dto.CancelQRISPaymentRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusUnprocessableEntity, gin.H{
-			"success": false,
-			"error":   "VALIDATION_ERROR",
-			"message":  err.Error(),
-		})
-		return
+	// First try to get transactionId from path parameter (for /transactions/:transactionId/cancel)
+	transactionID := c.Param("transactionId")
+	var reason string
+
+	// If not in path, try from body (for /cancel)
+	if transactionID == "" {
+		var req dto.CancelQRISPaymentRequest
+		if err := c.ShouldBindJSON(&req); err != nil {
+			c.JSON(http.StatusUnprocessableEntity, gin.H{
+				"success": false,
+				"error":   "VALIDATION_ERROR",
+				"message":  err.Error(),
+			})
+			return
+		}
+		transactionID = req.TransactionID
+		reason = req.Reason
 	}
 
-	if req.TransactionID == "" {
+	if transactionID == "" {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"success": false,
 			"error":   "VALIDATION_ERROR",
@@ -242,7 +258,7 @@ func (h *QrisDirectHandler) CancelPayment(c *gin.Context) {
 		cancelledBy = userName.(string)
 	}
 
-	err := h.qrisDirectService.CancelPayment(c.Request.Context(), req.TransactionID, req.Reason, cancelledBy)
+	err := h.qrisDirectService.CancelPayment(c.Request.Context(), transactionID, reason, cancelledBy)
 	if err != nil {
 		if strings.Contains(err.Error(), "not found") {
 			c.JSON(http.StatusNotFound, gin.H{

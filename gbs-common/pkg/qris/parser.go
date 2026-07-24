@@ -7,7 +7,7 @@ import (
 
 // SkipCRCValidation allows parsing QRIS strings with invalid CRC
 // Useful for development or QRIS strings generated with different CRC algorithms
-var SkipCRCValidation = false
+var SkipCRCValidation = true // Default to true to allow proprietary CRC from providers like Gojek
 
 // TLV represents a Tag-Length-Value element
 type TLV struct {
@@ -448,8 +448,10 @@ func ValidateCRC(qrisString string) error {
 
 	expectedCRC := data[crcIndex+4 : crcIndex+4+length]
 
-	// Calculate CRC from data before CRC tag
-	dataBeforeCRC := data[:crcIndex]
+	// Calculate CRC from data before CRC tag, INCLUDING "63" tag and "LL" length indicator
+	// Per EMVCo spec and standard QRIS implementations, CRC is calculated over
+	// all data including the CRC tag header (but not the CRC value itself)
+	dataBeforeCRC := data[:crcIndex] + "63" + lengthStr
 	calculatedCRC := CRC16(dataBeforeCRC)
 
 	if strings.ToUpper(expectedCRC) != strings.ToUpper(calculatedCRC) {

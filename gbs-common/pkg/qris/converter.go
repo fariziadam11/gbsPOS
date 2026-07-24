@@ -41,8 +41,8 @@ func ConvertWithFee(qrisString string, opts ConvertOptions) (string, error) {
 		return "", fmt.Errorf("amount must be greater than 0")
 	}
 
-	// Format amount (2 decimal places)
-	amountStr := fmt.Sprintf("%.2f", opts.Amount)
+	// Format amount (integer, no decimal places for QRIS)
+	amountStr := fmt.Sprintf("%.0f", opts.Amount)
 
 	// Build the new QRIS
 	var builder strings.Builder
@@ -52,8 +52,9 @@ func ConvertWithFee(qrisString string, opts ConvertOptions) (string, error) {
 		builder.WriteString(tlv.Raw)
 	}
 
-	// 2. Change Point of Initiation Method (01) from 11 to 12
-	builder.WriteString("0112") // Tag "01", length 2, value "12" (dynamic)
+	// 2. Point of Initiation Method (01) from 11 to 12
+	// Format: Tag (01) + Length (02) + Value (12 for dynamic)
+	builder.WriteString("010212")
 
 	// 3. Merchant Account Information (26-51) - keep as is
 	for _, tag := range []string{"26", "27", "28", "29", "30", "31", "32", "33", "34", "35",
@@ -86,11 +87,11 @@ func ConvertWithFee(qrisString string, opts ConvertOptions) (string, error) {
 	// 8. Fixed Fee (56) or Percentage Fee (57) - handle fee if provided
 	if opts.FeeType != "" && opts.FeeValue > 0 {
 		if opts.FeeType == "fixed" {
-			feeStr := fmt.Sprintf("%.2f", opts.FeeValue)
+			feeStr := fmt.Sprintf("%.0f", opts.FeeValue)
 			feeTag := fmt.Sprintf("56%02d%s", len(feeStr), feeStr)
 			builder.WriteString(feeTag)
 		} else if opts.FeeType == "percentage" {
-			feeStr := fmt.Sprintf("%.2f", opts.FeeValue)
+			feeStr := fmt.Sprintf("%.2f", opts.FeeValue) // Percentage can have decimals
 			feeTag := fmt.Sprintf("57%02d%s", len(feeStr), feeStr)
 			builder.WriteString(feeTag)
 		}
@@ -111,15 +112,23 @@ func ConvertWithFee(qrisString string, opts ConvertOptions) (string, error) {
 		builder.WriteString(tlv.Raw)
 	}
 
-	// 12. Additional Data (62) - keep if present
+	// 12. Postal Code (61) - keep if present
+	if tlv := findTLV(parsed.RawTLVs, "61"); tlv != nil {
+		builder.WriteString(tlv.Raw)
+	}
+
+	// 13. Additional Data (62) - keep if present
 	if tlv := findTLV(parsed.RawTLVs, "62"); tlv != nil {
 		builder.WriteString(tlv.Raw)
 	}
 
-	// 13. CRC16 (63) - calculate new CRC
+	// 14. CRC16 (63) - calculate new CRC
+	// Note: CRC is calculated including "6304" (CRC tag + length indicator)
+	// This matches the EMVCo specification and reference implementations
 	dataBeforeCRC := builder.String()
-	crc := CRC16(dataBeforeCRC)
-	builder.WriteString(fmt.Sprintf("63%02d%s", len(crc), crc))
+	crcInput := dataBeforeCRC + "6304"
+	crc := CRC16(crcInput)
+	builder.WriteString("6304" + crc)
 
 	return builder.String(), nil
 }
