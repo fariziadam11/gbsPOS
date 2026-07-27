@@ -1,1 +1,0 @@
-DROP TABLE IF EXISTS pos_hold_sessions;
