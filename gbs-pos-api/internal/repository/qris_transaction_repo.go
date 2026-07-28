@@ -85,7 +85,7 @@ func (r *QrisTransactionRepository) MarkAsPaid(ctx context.Context, id string) e
 // Cancel cancels a QRIS transaction
 func (r *QrisTransactionRepository) Cancel(ctx context.Context, id string, cancelledBy string, reason string) error {
 	return r.db.WithContext(ctx).Model(&model.QrisTransaction{}).
-		Where("id = ? AND status = ?", id, model.QrisTransactionStatusPending).
+		Where("id = ? AND status IN (?, ?)", id, model.QrisTransactionStatusPending, model.QrisTransactionStatusAwaitingConfirmation).
 		Updates(map[string]interface{}{
 			"status":        model.QrisTransactionStatusCancelled,
 			"cancelled_at":  gorm.Expr("NOW()"),

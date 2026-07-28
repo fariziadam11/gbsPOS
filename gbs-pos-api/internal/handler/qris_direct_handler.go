@@ -290,3 +290,79 @@ func (h *QrisDirectHandler) CancelPayment(c *gin.Context) {
 		"message":  "Payment cancelled successfully",
 	})
 }
+
+// ConfirmPending godoc
+// @Summary Mark transaction as awaiting auto-confirmation
+// @Description Mark a QRIS transaction as awaiting confirmation - payment will be auto-confirmed after delay
+// @Description This is the trigger point: kasir confirms customer has scanned, then auto-confirm runs after delay
+// @Tags QRIS Direct
+// @Accept json
+// @Produce json
+// @Param request body dto.ConfirmQRISPaymentRequest true "Confirm Pending Request"
+// @Success 200 {object} response.Response
+// @Failure 400 {object} response.Response
+// @Failure 404 {object} response.Response
+// @Failure 409 {object} response.Response
+// @Failure 500 {object} response.Response
+// @Router /v1/qris-direct/transactions/{transactionId}/confirm-pending [post]
+// @Router /v1/qris-direct/confirm-pending [post]
+func (h *QrisDirectHandler) ConfirmPending(c *gin.Context) {
+	// First try to get transactionId from path parameter
+	transactionID := c.Param("transactionId")
+
+	// If not in path, try from body
+	if transactionID == "" {
+		var req dto.ConfirmQRISPaymentRequest
+		if err := c.ShouldBindJSON(&req); err != nil {
+			c.JSON(http.StatusUnprocessableEntity, gin.H{
+				"success": false,
+				"error":   "VALIDATION_ERROR",
+				"message":  err.Error(),
+			})
+			return
+		}
+		transactionID = req.TransactionID
+	}
+
+	if transactionID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"error":   "VALIDATION_ERROR",
+			"message":  "transactionId is required",
+		})
+		return
+	}
+
+	err := h.qrisDirectService.ConfirmPending(c.Request.Context(), transactionID)
+	if err != nil {
+		if strings.Contains(err.Error(), "not found") {
+			c.JSON(http.StatusNotFound, gin.H{
+				"success": false,
+				"error":   "NOT_FOUND",
+				"message":  err.Error(),
+			})
+			return
+		}
+		if strings.Contains(err.Error(), "not pending") || strings.Contains(err.Error(), "expired") {
+			c.JSON(http.StatusConflict, gin.H{
+				"success": false,
+				"error":   "INVALID_STATUS",
+				"message":  err.Error(),
+			})
+			return
+		}
+		log.Error().Err(err).Msg("Failed to set confirm pending")
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"error":   "INTERNAL_ERROR",
+			"message":  err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success":        true,
+		"message":        "Payment is being auto-confirmed, please wait...",
+		"autoConfirmed":  true,
+	})
+}

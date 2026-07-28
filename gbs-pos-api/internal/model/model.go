@@ -187,10 +187,11 @@ func (HoldSession) TableName() string {
 
 // QRIS Transaction Status
 const (
-	QrisTransactionStatusPending   = "PENDING"
-	QrisTransactionStatusPaid     = "PAID"
-	QrisTransactionStatusCancelled = "CANCELLED"
-	QrisTransactionStatusExpired   = "EXPIRED"
+	QrisTransactionStatusPending            = "PENDING"
+	QrisTransactionStatusAwaitingConfirmation = "AWAITING_CONFIRMATION"
+	QrisTransactionStatusPaid              = "PAID"
+	QrisTransactionStatusCancelled         = "CANCELLED"
+	QrisTransactionStatusExpired            = "EXPIRED"
 )
 
 // QrisTransaction represents a QRIS direct payment transaction (without gateway)
@@ -208,7 +209,7 @@ type QrisTransaction struct {
 	MerchantCity      string     `gorm:"size:100" json:"merchantCity"`
 	Provider          string     `gorm:"size:50" json:"provider"` // DANA, OVO, GoPay, etc.
 	TerminalID        string     `gorm:"size:32" json:"terminalId"`
-	Status            string     `gorm:"size:20;not null;default:PENDING;index" json:"status"`
+	Status            string     `gorm:"size:30;not null;default:PENDING;index" json:"status"`
 	PaidAt            *time.Time `json:"paidAt,omitempty"`
 	CancelledAt       *time.Time `json:"cancelledAt,omitempty"`
 	CancelledBy       string     `gorm:"size:100" json:"cancelledBy,omitempty"`

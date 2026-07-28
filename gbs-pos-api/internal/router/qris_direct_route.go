@@ -20,9 +20,14 @@ func setupQrisDirectRoutes(r *gin.RouterGroup, qrisDirectHandler *handler.QrisDi
 		// Get transaction status
 		qrisDirect.GET("/transactions/:transactionId", qrisDirectHandler.GetTransactionStatus)
 
-		// Confirm payment (kasir confirms customer has paid)
+		// Confirm payment (kasir confirms customer has paid) - immediate
 		qrisDirect.POST("/transactions/:transactionId/confirm", qrisDirectHandler.ConfirmPayment)
 		qrisDirect.POST("/confirm", qrisDirectHandler.ConfirmPayment)
+
+		// Confirm pending (trigger auto-confirm with delay)
+		// Kasir clicks this after verifying customer scanned, then auto-confirm runs after delay
+		qrisDirect.POST("/transactions/:transactionId/confirm-pending", qrisDirectHandler.ConfirmPending)
+		qrisDirect.POST("/confirm-pending", qrisDirectHandler.ConfirmPending)
 
 		// Cancel payment
 		qrisDirect.POST("/transactions/:transactionId/cancel", qrisDirectHandler.CancelPayment)

@@ -31,12 +31,13 @@ type Config struct {
 
 	// QRIS Direct (Static to Dynamic)
 	// Static QRIS string for Gojek/Mama Tari
-	QrisDirectStaticQRIS       string `env:"QRIS_DIRECT_STATIC_QRIS" envDefault:"00020101021126610014COM.GO-JEK.WWW01189360091434374848210210G4374848210303UMI51440014ID.CO.QRIS.WWW0215ID10265153412990303UMI5204581253033605802ID5925Snack Kering Mama Tari, K6013JAKARTA PUSAT61051064062140703A01110362163042807"`
-	QrisDirectMerchantName      string `env:"QRIS_DIRECT_MERCHANT_NAME" envDefault:"Snack Kering Mama Tari, K"`
-	QrisDirectMerchantCity      string `env:"QRIS_DIRECT_MERCHANT_CITY" envDefault:"JAKARTA PUSAT"`
-	QrisDirectProvider          string `env:"QRIS_DIRECT_PROVIDER" envDefault:"GoPay"`
-	QrisDirectExpiresMinutes   int    `env:"QRIS_DIRECT_EXPIRES_MINUTES" envDefault:"15"`
-	QrisDirectSkipCRCValidate bool   `env:"QRIS_DIRECT_SKIP_CRC_VALIDATE" envDefault:"true"`
+	QrisDirectStaticQRIS             string `env:"QRIS_DIRECT_STATIC_QRIS" envDefault:"00020101021126610014COM.GO-JEK.WWW01189360091434374848210210G4374848210303UMI51440014ID.CO.QRIS.WWW0215ID10265153412990303UMI5204581253033605802ID5925Snack Kering Mama Tari, K6013JAKARTA PUSAT61051064062140703A01110362163042807"`
+	QrisDirectMerchantName           string `env:"QRIS_DIRECT_MERCHANT_NAME" envDefault:"Snack Kering Mama Tari, K"`
+	QrisDirectMerchantCity           string `env:"QRIS_DIRECT_MERCHANT_CITY" envDefault:"JAKARTA PUSAT"`
+	QrisDirectProvider               string `env:"QRIS_DIRECT_PROVIDER" envDefault:"GoPay"`
+	QrisDirectExpiresMinutes         int    `env:"QRIS_DIRECT_EXPIRES_MINUTES" envDefault:"15"`
+	QrisDirectSkipCRCValidate        bool   `env:"QRIS_DIRECT_SKIP_CRC_VALIDATE" envDefault:"true"`
+	QrisDirectAutoConfirmDelaySeconds int    `env:"QRIS_DIRECT_AUTO_CONFIRM_DELAY_SECONDS" envDefault:"3"`
 }
 
 func (c *Config) UseKeycloak() bool {

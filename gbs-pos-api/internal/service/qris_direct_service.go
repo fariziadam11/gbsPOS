@@ -176,7 +176,8 @@ func (s *QrisDirectService) CancelPayment(ctx context.Context, transactionID str
 		return err
 	}
 
-	if tx.Status != model.QrisTransactionStatusPending {
+	// Allow cancellation for PENDING or AWAITING_CONFIRMATION status
+	if tx.Status != model.QrisTransactionStatusPending && tx.Status != model.QrisTransactionStatusAwaitingConfirmation {
 		return fmt.Errorf("transaction is not pending, current status: %s", tx.Status)
 	}
 
@@ -190,6 +191,66 @@ func (s *QrisDirectService) CancelPayment(ctx context.Context, transactionID str
 // GetPendingTransactions gets all pending QRIS transactions for a terminal
 func (s *QrisDirectService) GetPendingTransactions(ctx context.Context, terminalID string) ([]model.QrisTransaction, error) {
 	return s.qrisTxRepo.FindPendingByTerminalID(ctx, terminalID)
+}
+
+// ConfirmPending marks a transaction as awaiting auto-confirmation
+// It updates status to AWAITING_CONFIRMATION and spawns a goroutine
+// that will auto-confirm the payment after the configured delay
+func (s *QrisDirectService) ConfirmPending(ctx context.Context, transactionID string) error {
+	tx, err := s.qrisTxRepo.FindByID(ctx, transactionID)
+	if err != nil {
+		return err
+	}
+
+	if tx.Status != model.QrisTransactionStatusPending {
+		return fmt.Errorf("transaction is not pending, current status: %s", tx.Status)
+	}
+
+	if time.Now().After(tx.ExpiresAt) {
+		return fmt.Errorf("transaction has expired")
+	}
+
+	// Update status to AWAITING_CONFIRMATION
+	if err := s.qrisTxRepo.UpdateStatus(ctx, transactionID, model.QrisTransactionStatusAwaitingConfirmation); err != nil {
+		return fmt.Errorf("failed to update status: %v", err)
+	}
+
+	// Get delay from config (default 3 seconds)
+	delaySeconds := s.cfg.QrisDirectAutoConfirmDelaySeconds
+	if delaySeconds <= 0 {
+		delaySeconds = 3
+	}
+
+	// Spawn goroutine to auto-confirm after delay
+	go func() {
+		time.Sleep(time.Duration(delaySeconds) * time.Second)
+
+		// Re-fetch the transaction to verify it's still awaiting confirmation
+		// and not cancelled or expired
+		bgCtx := context.Background()
+		txCheck, err := s.qrisTxRepo.FindByID(bgCtx, transactionID)
+		if err != nil {
+			return
+		}
+
+		if txCheck.Status != model.QrisTransactionStatusAwaitingConfirmation {
+			// Status changed, don't confirm
+			return
+		}
+
+		if time.Now().After(txCheck.ExpiresAt) {
+			// Expired, don't confirm
+			return
+		}
+
+		// Confirm the payment
+		if err := s.qrisTxRepo.MarkAsPaid(bgCtx, transactionID); err != nil {
+			// Log error but don't return - goroutine
+			return
+		}
+	}()
+
+	return nil
 }
 
 // ProcessExpiredTransactions marks expired transactions
