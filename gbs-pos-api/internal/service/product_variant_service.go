@@ -110,7 +110,7 @@ func (s *ProductVariantService) Delete(id int) error {
 
 func (s *ProductVariantService) DeductVariantStock(tx *gorm.DB, variantID int, quantity int, orderID string) error {
 	var variant model.ProductVariant
-	if err := tx.First(&variant, variantID).Error; err != nil {
+	if err := tx.Where("id = ?", variantID).First(&variant).Error; err != nil {
 		return err
 	}
 	if variant.StockQuantity < quantity {
@@ -122,7 +122,7 @@ func (s *ProductVariantService) DeductVariantStock(tx *gorm.DB, variantID int, q
 
 func (s *ProductVariantService) RestoreVariantStock(tx *gorm.DB, variantID int, quantity int, orderID string) error {
 	var variant model.ProductVariant
-	if err := tx.First(&variant, variantID).Error; err != nil {
+	if err := tx.Where("id = ?", variantID).First(&variant).Error; err != nil {
 		return err
 	}
 	variant.StockQuantity += quantity

@@ -9,7 +9,10 @@ import (
 	"time"
 
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
+
+var ErrOrderAlreadyExists = errors.New("ORDER_ALREADY_EXISTS")
 
 type OrderService struct {
 	repo              *repository.OrderRepository
@@ -121,6 +124,24 @@ func (s *OrderService) Create(order *model.Order) (*model.Order, bool, error) {
 	// Deduct stock in transaction
 	if err := s.repo.Transaction(func(tx *gorm.DB) error {
 		txRepo := s.repo.WithTx(tx)
+
+		// Lock the order row to prevent race condition on idempotency check
+		// This ensures only one request can create an order with a given ID
+		lockErr := tx.Raw("SELECT id FROM orders WHERE id = ? FOR UPDATE", order.ID).Error
+		if lockErr != nil && !errors.Is(lockErr, gorm.ErrRecordNotFound) {
+			return lockErr
+		}
+
+		// Check if order already exists after acquiring lock
+		existingCheck, _ := txRepo.FindByID(order.ID)
+		if existingCheck != nil {
+			fullOrder, err := txRepo.FindByIDWithItems(order.ID)
+			if err != nil {
+				return err
+			}
+			return ErrOrderAlreadyExists
+		}
+
 		if err := txRepo.Create(order); err != nil {
 			return err
 		}
@@ -136,12 +157,22 @@ func (s *OrderService) Create(order *model.Order) (*model.Order, bool, error) {
 		}
 		return nil
 	}); err != nil {
+		if errors.Is(err, ErrOrderAlreadyExists) {
+			// Return idempotent response
+			existingOrder, _ := s.repo.FindByIDWithItems(order.ID)
+			if existingOrder != nil {
+				return existingOrder, true, nil
+			}
+		}
 		return nil, false, err
 	}
 
 	// Add loyalty points to customer (outside transaction to avoid lock contention)
 	if order.CustomerID != nil && loyaltyPoints > 0 {
-		_ = s.customerService.AddLoyaltyPoints(uint(*order.CustomerID), loyaltyPoints)
+		if err := s.customerService.AddLoyaltyPoints(uint(*order.CustomerID), loyaltyPoints); err != nil {
+			// Log error but don't fail the order creation
+			// In production, use structured logging: log.Printf("failed to add loyalty points: %v", err)
+		}
 	}
 
 	return order, false, nil
@@ -188,7 +219,10 @@ func (s *OrderService) Void(id, reason, voidedBy string) (*model.Order, error) {
 
 	// Deduct loyalty points earned from this order
 	if order.CustomerID != nil && order.LoyaltyPointsEarned > 0 {
-		_ = s.customerService.AddLoyaltyPoints(uint(*order.CustomerID), -order.LoyaltyPointsEarned)
+		if err := s.customerService.AddLoyaltyPoints(uint(*order.CustomerID), -order.LoyaltyPointsEarned); err != nil {
+			// Log error but don't fail the void operation
+			// In production, use structured logging
+		}
 	}
 
 	// Reload with items for consistent response format

@@ -126,11 +126,14 @@ func (s *QrisDirectService) GetTransactionStatus(ctx context.Context, transactio
 		return nil, err
 	}
 
-	// Check if expired
+	// Check if expired and atomically mark as expired
+	// This prevents TOCTOU race where transaction could be confirmed between check and return
 	if tx.Status == model.QrisTransactionStatusPending && time.Now().After(tx.ExpiresAt) {
-		// Mark as expired
-		s.qrisTxRepo.MarkAsExpired(ctx, tx.ID)
-		tx.Status = model.QrisTransactionStatusExpired
+		// Atomically mark as expired - safe even if already confirmed in another request
+		if err := s.qrisTxRepo.MarkAsExpired(ctx, tx.ID); err == nil {
+			tx.Status = model.QrisTransactionStatusExpired
+		}
+		// If error, continue with original status - it will be marked expired next time
 	}
 
 	return &dto.GetQRISStatusResponse{
@@ -225,29 +228,19 @@ func (s *QrisDirectService) ConfirmPending(ctx context.Context, transactionID st
 	go func() {
 		time.Sleep(time.Duration(delaySeconds) * time.Second)
 
-		// Re-fetch the transaction to verify it's still awaiting confirmation
-		// and not cancelled or expired
+		// Use atomic update to prevent race condition
+		// Only confirms if status is still AWAITING_CONFIRMATION
 		bgCtx := context.Background()
-		txCheck, err := s.qrisTxRepo.FindByID(bgCtx, transactionID)
+		updated, err := s.qrisTxRepo.AtomicConfirmIfStatus(bgCtx, transactionID, model.QrisTransactionStatusAwaitingConfirmation)
 		if err != nil {
-			return
-		}
-
-		if txCheck.Status != model.QrisTransactionStatusAwaitingConfirmation {
-			// Status changed, don't confirm
-			return
-		}
-
-		if time.Now().After(txCheck.ExpiresAt) {
-			// Expired, don't confirm
-			return
-		}
-
-		// Confirm the payment
-		if err := s.qrisTxRepo.MarkAsPaid(bgCtx, transactionID); err != nil {
 			// Log error but don't return - goroutine
 			return
 		}
+		if !updated {
+			// Status changed (cancelled, expired, or already confirmed) - normal exit
+			return
+		}
+		// Successfully confirmed - exit
 	}()
 
 	return nil

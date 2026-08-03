@@ -4,140 +4,134 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-GBS POS & CMS is a multi-service system for managing a fuel/gas station retail business. It consists of:
-- **gbs-pos-api**: Point of Sale backend (orders, products, settlements, fuel pumps, customers, dashboard)
-- **gbs-cms-api**: Content Management backend (ads, settings, user management)
-- **gbs-common**: Shared Go middleware (auth, CORS, logging)
-- **cms-web**: Vue 3 admin dashboard for managing both APIs
+GBS POS-CMS is a Go monorepo for a Point of Sale and Content Management System. It consists of:
+- **gbs-pos-api** (port 8080) - POS REST API for retail/F&B/fuel operations
+- **gbs-cms-api** (port 8081) - CMS REST API for ads, users, settings
+- **gbs-common** - Shared middleware (JWT, Keycloak, CORS, logging)
+- **cms-web** - Vue 3 Admin Panel
+- **migrations** - SQL migrations shared between APIs
 
-## Tech Stack
+## Development Commands
 
-| Component | Language/Framework |
-|-----------|-------------------|
-| APIs | Go 1.26.1 with Gin |
-| Database | PostgreSQL with GORM |
-| Authentication | JWT (HS256) with optional Keycloak (RS256) |
-| Frontend | Vue 3, PrimeVue 4, Pinia, Vue Router |
-| Build Tool | Vite |
-| Containerization | Docker & Docker Compose |
-
-## Common Commands
-
-### Go APIs
-
+### Build & Run
 ```bash
-# Run tests
-make test              # Run all tests (POS + CMS)
-make test-pos          # Run POS API tests only
-make test-cms          # Run CMS API tests only
-go test ./... -count=1 # Run with no caching
+make build        # Build both binaries
+make build-pos    # Build POS API only
+make build-cms    # Build CMS API only
 
-# Build binaries
-make build             # Build both APIs
-make build-pos         # Build POS API to ./bin/gbs-pos-api
-make build-cms         # Build CMS API to ./bin/gbs-cms-api
-
-# Run locally (from project root, loads .env files)
-make run-pos           # Run POS API on port 8080
-make run-cms           # Run CMS API on port 8081
-
-# Direct go commands
-cd gbs-pos-api && go run ./cmd/server
-cd gbs-cms-api && go run ./cmd/server
+make run-pos      # Run POS API on port 8080
+make run-cms      # Run CMS API on port 8081
 ```
 
-### Docker
-
+### Testing
 ```bash
-# Development environment (from project root)
-docker compose up          # Start all services
-docker compose up -d       # Run in background
-docker compose down        # Stop all services
+make test         # Run all tests
+make test-pos     # POS API tests only
+make test-cms     # CMS API tests only
 
-# Production (uses docker-compose.prod.yml with env vars from /opt/gbs/.env)
+# With coverage
+cd gbs-pos-api && go test -race -coverprofile=coverage.out ./...
+cd gbs-cms-api && go test -race -coverprofile=coverage.out ./...
 ```
 
-### Frontend (cms-web)
-
+### Linting
 ```bash
-cd cms-web
-npm install
-npm run dev          # Development server on port 5173
-npm run build        # Production build
-npm run preview       # Preview production build
+golangci-lint run ./...   # From repo root, lints all packages
+```
+
+### Docker Development
+```bash
+docker-compose up -d      # Start all services (POS, CMS, Postgres, KrakenD)
+docker-compose logs -f     # Follow logs
+docker-compose down        # Stop all services
+
+# Fix dirty migration state
+docker exec -it gbs-pos-cms-api-postgres-1 psql -U postgres -d gbs_pos \
+  -c "UPDATE schema_migrations SET dirty = false WHERE dirty = true;"
+docker restart gbs-pos-cms-api-pos-api-1
 ```
 
 ## Architecture
 
-### API Structure (Go)
+### Layered Structure (per API)
+Each API follows the pattern: `handler → service → repository`
 
-Each API follows layered architecture:
 ```
-cmd/server/main.go      # Entry point, dependency injection
-internal/
-  config/               # Environment variable loading
-  database/             # DB connection, migrations, seeding
-  model/                # GORM models
-  repository/            # Data access layer
-  service/              # Business logic
-  handler/              # HTTP handlers
-  router/               # Route definitions
-  dto/                  # Request/response structures
+cmd/server/main.go
+└── internal/
+    ├── config/      # Environment variables → Config struct
+    ├── database/    # DB connection, migrations, seed data
+    ├── dto/         # Request/Response structs
+    ├── handler/     # HTTP handlers (Parse, Validate, Call Service, Respond)
+    ├── model/       # GORM database models
+    ├── repository/  # Database queries (Create, Find, Update, Delete)
+    ├── router/      # Route definitions with middleware
+    └── service/     # Business logic, orchestrates repositories
 ```
+
+### Key Design Patterns
+
+1. **Dependency Injection**: All repositories/services are instantiated in `main.go` and injected
+2. **Shared Models**: GORM models in each API's `model/` package; some are shared
+3. **Dual Auth**: Middleware auto-detects HS256 (local JWT) vs RS256 (Keycloak) tokens
+4. **Pricing Engine**: Discount service calculates final prices, injected into product service
+
+### Authentication Flow
+```
+Request → CORSMiddleware → AuthMiddleware (HS256 or RS256) → RequireRole("ADMIN") → Handler
+```
+Token algorithm detection: RS256 → Keycloak JWKS validation, HS256 → JWT secret validation
 
 ### Database
+- PostgreSQL 15, database `gbs_pos`
+- GORM AutoMigrate by default (unless `MIGRATIONS_PATH` is set)
+- SQL migrations in `/migrations/` for schema changes
+- SQLite in-memory for tests
 
-Both APIs share the same PostgreSQL database (`gbs_pos`). Migrations can be:
-- **AutoMigrate**: Default (leave `MIGRATIONS_PATH` empty)
-- **golang-migrate**: Optional (set `MIGRATIONS_PATH=/path/to/migrations`)
+### Default Credentials (after seed)
+- Username: `admin`, Password: `admin123` (ADMIN role)
+- Username: `cashier`, Password: `cashier123` (CASHIER role)
 
-### Authentication
+## Key Configuration
 
-The system supports dual auth modes (determined by environment):
-1. **JWT Legacy** (`ENABLE_DEMO_AUTH=true`): Local JWT with HS256
-2. **Keycloak** (`KEYCLOAK_BASE_URL` + `KEYCLOAK_REALM` set): OIDC with RS256
-
-The `gbs-common/middleware/auth.go` `NewCompositeAuthMiddleware` detects token type automatically.
-
-### CMS Web
-
-The Vue frontend connects to both backend APIs:
-- `VITE_API_BASE_URL`: Points to gbs-cms-api
-- `VITE_POS_API_BASE_URL`: Points to gbs-pos-api
-
-It uses Pinia for state management and TanStack Vue Query for API calls.
-
-## Environment Variables
-
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `PORT` | Server port | 8080/8081 |
-| `DATABASE_URL` | PostgreSQL connection string | `postgres://gbspos:gbspos_secret@localhost:5432/gbs_pos?sslmode=disable` |
-| `JWT_SECRET` | JWT signing key (min 32 chars) | - |
-| `KEYCLOAK_BASE_URL` | Keycloak server URL | - |
-| `KEYCLOAK_REALM` | Keycloak realm name | - |
-| `ENABLE_DEMO_AUTH` | Enable local JWT auth | false |
-| `LOG_LEVEL` | Logging level | debug |
-| `UPLOAD_DIR` | CMS file upload directory | `./uploads/ads` |
-
-## Testing
-
-Tests use `github.com/stretchr/testify` and SQLite in-memory for isolation:
-- Repository tests in `internal/repository/*_test.go`
-- Service tests in `internal/service/*_test.go`
-- Handler tests in `internal/handler/*_test.go`
-
-Run specific test files:
-```bash
-go test ./internal/repository/... -v
-go test ./internal/service/order_service_test.go -v
+### POS API (.env)
+```env
+DATABASE_URL=postgres://user:pass@host:5432/gbs_pos?sslmode=disable
+JWT_SECRET=<min-32-chars>
+PORT=8080
+ENABLE_DEMO_AUTH=true        # Enable local /v1/login endpoint
+KEYCLOAK_BASE_URL=https://auth.armmada.id
+KEYCLOAK_REALM=gbs-pos
 ```
 
-## Key Files
+### CMS API (.env)
+```env
+DATABASE_URL=<same as POS>
+JWT_SECRET=<same as POS>
+PORT=8081
+UPLOAD_DIR=./uploads
+ENABLE_DEMO_AUTH=true
+```
 
-- `gbs-pos-api/cmd/server/main.go`: POS API entry point
-- `gbs-cms-api/cmd/server/main.go`: CMS API entry point (handles routing inline)
-- `gbs-common/middleware/auth.go`: JWT/Keycloak authentication
-- `docker-compose.yml`: Development environment
-- `docker-compose.prod.yml`: Production deployment
-- `Makefile`: Common development commands
+### CMS Web (.env)
+```env
+VITE_API_BASE_URL=http://localhost:8081
+VITE_POS_API_BASE_URL=http://localhost:8080
+VITE_KEYCLOAK_BASE_URL=https://auth.armmada.id
+VITE_KEYCLOAK_REALM=gbs-pos
+VITE_KEYCLOAK_CLIENT_ID=gbs-cms-web
+```
+
+## Important Notes
+
+1. **Shared Database**: Both APIs share the same PostgreSQL database (`gbs_pos`)
+2. **Keycloak Optional**: Set `KEYCLOAK_BASE_URL` empty to use local JWT auth only
+3. **GORM AutoMigrate**: Models are auto-migrated on startup; migrations folder is for schema snapshots
+4. **CMS Web Auth**: Uses Keycloak OIDC PKCE flow when `VITE_KEYCLOAK_*` vars are set
+5. **Multi-store Support**: Products and ads have `store_type` field (RETAIL, FB, FUEL, ALL)
+
+## CI/CD
+
+- **develop branch**: Auto-deploys to staging on push
+- **main branch**: Manual deploy to production via GitHub Actions
+- Pipeline: lint → test → security scan (Trivy, gosec) → Docker build → deploy

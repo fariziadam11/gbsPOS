@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -52,6 +53,9 @@ func (s *QrisService) InitPayment(ctx context.Context, req dto.CreateQrisPayment
 
 	// Check if payment already initialized
 	if order.QrisPaymentID != "" && order.QrisStatus == dto.QrisStatusPending {
+		if order.QrisExpiresAt == nil {
+			return nil, fmt.Errorf("QRIS_STATE_ERROR: payment initialized but expires_at is nil")
+		}
 		return &dto.QrisInitResponse{
 			OrderID:        order.ID,
 			PaymentID:      order.QrisPaymentID,
@@ -186,7 +190,7 @@ func (s *QrisService) handlePaymentExpired(ctx context.Context, order *model.Ord
 func (s *QrisService) findOrderByPaymentID(paymentID string) (*model.Order, error) {
 	var order model.Order
 	if err := s.db.Where("qris_payment_id = ?", paymentID).First(&order).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, fmt.Errorf("ORDER_NOT_FOUND: no order found with payment_id %s", paymentID)
 		}
 		return nil, fmt.Errorf("DATABASE_ERROR: %v", err)

@@ -227,7 +227,7 @@ func (s *ProductService) GetLowStockProducts(threshold int) ([]model.Product, er
 
 func (s *ProductService) DeductStock(tx *gorm.DB, productID int, quantity int, orderID string) error {
 	var product model.Product
-	if err := tx.First(&product, productID).Error; err != nil {
+	if err := tx.Where("id = ?", productID).First(&product).Error; err != nil {
 		return err
 	}
 	if product.StockQuantity < quantity {
@@ -249,7 +249,7 @@ func (s *ProductService) DeductStock(tx *gorm.DB, productID int, quantity int, o
 
 func (s *ProductService) RestoreStock(tx *gorm.DB, productID int, quantity int, orderID string) error {
 	var product model.Product
-	if err := tx.First(&product, productID).Error; err != nil {
+	if err := tx.Where("id = ?", productID).First(&product).Error; err != nil {
 		return err
 	}
 	product.StockQuantity += quantity

@@ -111,3 +111,18 @@ func (r *QrisTransactionRepository) MarkAsExpired(ctx context.Context, id string
 		Where("id = ?", id).
 		Update("status", model.QrisTransactionStatusExpired).Error
 }
+
+// AtomicConfirmIfStatus atomically confirms a transaction only if it has the expected status.
+// Returns (updated bool, error) - updated is true if the status was changed.
+func (r *QrisTransactionRepository) AtomicConfirmIfStatus(ctx context.Context, id string, expectedStatus string) (bool, error) {
+	result := r.db.WithContext(ctx).Model(&model.QrisTransaction{}).
+		Where("id = ? AND status = ?", id, expectedStatus).
+		Updates(map[string]interface{}{
+			"status":  model.QrisTransactionStatusPaid,
+			"paid_at": gorm.Expr("NOW()"),
+		})
+	if result.Error != nil {
+		return false, result.Error
+	}
+	return result.RowsAffected > 0, nil
+}

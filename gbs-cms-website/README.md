@@ -1,42 +1,171 @@
-# sv
+# GBS CMS Website
 
-Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
+A modern Content Management System for GBS POS. Built with Svelte 5, Vite, and TypeScript.
 
-## Creating a project
+## Tech Stack
 
-If you're seeing this, you've probably already done this step. Congrats!
+- **Framework**: Svelte 5 with Runes
+- **Build Tool**: Vite 8
+- **Runtime**: Bun
+- **Styling**: Tailwind CSS v4
+- **Icons**: Lucide Svelte
+- **Language**: TypeScript
 
-```sh
-# create a new project
-npx sv create my-app
+## Prerequisites
+
+- [Bun](https://bun.sh/) installed
+- GBS POS API running on port 8080
+- GBS CMS API running on port 8081
+
+## Getting Started
+
+### Install Dependencies
+
+```bash
+bun install
 ```
 
-To recreate this project with the same configuration:
+### Development
 
-```sh
-# recreate this project
-bun x sv@0.16.6 create --template minimal --types ts --add prettier eslint vitest="usages:unit,component" tailwindcss="plugins:typography,forms" sveltekit-adapter="adapter:auto" mcp="ide:claude-code+setup:local" --install bun gbs-cms-website
+```bash
+bun run dev
 ```
 
-## Developing
+The app will be available at `http://localhost:5173`
 
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
+### Production Build
 
-```sh
-npm run dev
-
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
+```bash
+bun run build
 ```
 
-## Building
+Preview the production build:
 
-To create a production version of your app:
-
-```sh
-npm run build
+```bash
+bun run preview
 ```
 
-You can preview the production build with `npm run preview`.
+## Configuration
 
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
+Create a `.env` file in the root directory:
+
+```env
+# API Configuration
+VITE_API_BASE_URL=http://localhost:8080/v1
+VITE_CMS_API_BASE_URL=http://localhost:8081/v1
+
+# Keycloak (optional - for production)
+VITE_KEYCLOAK_BASE_URL=https://auth.armmada.id
+VITE_KEYCLOAK_REALM=gbs-pos
+VITE_KEYCLOAK_CLIENT_ID=gbs-cms-web
+```
+
+## Project Structure
+
+```
+src/
+├── lib/
+│   ├── api/
+│   │   └── client.ts          # API client with auth handling
+│   ├── stores/
+│   │   └── auth.ts            # Auth store (Svelte 5 runes)
+│   ├── types/
+│   │   └── api.ts             # TypeScript types
+│   ├── components/
+│   │   ├── Layout.svelte     # Main layout with sidebar
+│   │   ├── Toast.svelte      # Toast notifications
+│   │   ├── Loading.svelte    # Loading spinner
+│   │   └── EmptyState.svelte # Empty state component
+│   └── router.ts             # Simple SPA router
+├── routes/
+│   ├── login/                # Login page
+│   ├── dashboard/            # Dashboard page
+│   ├── products/             # Products management
+│   ├── orders/               # Orders management
+│   ├── ads/                  # Ads management (ADMIN)
+│   └── settings/             # Settings page (ADMIN)
+├── App.svelte               # Main app component
+├── main.ts                  # Entry point
+└── app.css                  # Global styles
+```
+
+## Features
+
+### Authentication
+- JWT-based authentication
+- Role-based access (ADMIN / CASHIER)
+- Auto session restore
+- Demo credentials: `admin/admin123` or `cashier/cashier123`
+
+### Dashboard
+- Sales summary cards
+- Revenue trend
+- Top selling products
+- Payment breakdown (Cash/Card/QRIS)
+
+### Products (ADMIN)
+- List, create, edit, delete products
+- Search and filter
+- Low stock alerts
+- Barcode support
+
+### Orders
+- View order history
+- Order detail modal
+- Void orders (ADMIN only)
+
+### Ads Management (ADMIN)
+- Upload video/image ads
+- Toggle ad status
+- Set duration and store type
+
+### Settings (ADMIN)
+- Store configuration
+- Tax & pricing settings
+- Display settings
+- Notification preferences
+
+## Deployment
+
+### Build for Production
+
+```bash
+bun run build
+```
+
+The output will be in the `dist/` folder.
+
+### Static Hosting
+
+Upload the contents of `dist/` to any static hosting:
+
+- **Vercel**: `vercel deploy`
+- **Netlify**: Drag `dist/` to dashboard
+- **Cloudflare Pages**: Connect to Git repo
+- **Nginx**: Point to `dist/` folder
+
+### Environment Variables for Production
+
+Set these in your hosting provider:
+
+```env
+VITE_API_BASE_URL=https://api-pos.armmada.id/v1
+VITE_CMS_API_BASE_URL=https://api-cms.armmada.id/v1
+```
+
+## API Endpoints
+
+### POS API (port 8080)
+- `/v1/login` - Authentication
+- `/v1/dashboard/*` - Dashboard data
+- `/v1/products/*` - Products CRUD
+- `/v1/orders/*` - Orders management
+- `/v1/fuel-prices/*` - Fuel pricing
+
+### CMS API (port 8081)
+- `/v1/ads/*` - Ads management
+- `/v1/settings` - Settings management
+
+## License
+
+Private - All rights reserved

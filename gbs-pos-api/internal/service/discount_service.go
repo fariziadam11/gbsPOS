@@ -292,6 +292,10 @@ func (s *DiscountService) CalculateDiscountAmount(
 		amount = baseAmount * discount.Value / 100
 	case DiscountTypeFixed:
 		amount = discount.Value
+	default:
+		// Unknown discount type - return 0 but this indicates a data integrity issue
+		// In strict mode, could return error instead
+		return 0
 	}
 	if amount < 0 {
 		return 0
