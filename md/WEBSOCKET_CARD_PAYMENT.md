@@ -1,123 +1,301 @@
-# WebSocket & Card Payment Architecture
+# WEBSOCKET CARD PAYMENT ARCHITECTURE
 
 ## Overview
 
-Web POS (browser di Sunmi D3 Pro) memerlukan komunikasi real-time untuk card payment flow. Payment dilakukan di device terpisah (HP Android dengan NFC).
-
-## Architecture
+Revisi arsitektur card payment untuk menghilangkan mekanisme HTTP Polling pada Companion App. Implementasi menggunakan WebSocket persisten dua arah antara **Web POS ↔ Backend ↔ Companion App**.
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                         Sunmi D3 Pro                             │
-│  ┌─────────────────────────────────────────────────────────────┐│
-│  │                    Web POS (Browser)                         ││
-│  │  - Product Grid                                              ││
-│  │  - Cart Panel                                                ││
-│  │  - Checkout                                                  ││
-│  │  - Payment Card Waiting Screen                              ││
-│  │  - Receipt Screen                                           ││
-│  │                                                              ││
-│  │  WebSocket: ws://host/ws?terminal_id=POS-001                ││
-│  └─────────────────────────────────────────────────────────────┘│
-└─────────────────────────────────────────────────────────────────┘
-                              │
-                    HTTP POST /v1/card-payment/init
-                              │
-                              ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                    Backend (gbs-pos-api)                         │
-│                                                                  │
-│  ┌──────────────────┐    ┌──────────────────────────────────────┐│
-│  │  WebSocket Hub   │    │       Card Payment Service           ││
-│  │  - Register      │    │                                      ││
-│  │  - Unregister    │    │  - Create payment request            ││
-│  │  - Broadcast     │    │  - Confirm payment                   ││
-│  │  - Send to       │    │  - Cancel payment                    ││
-│  │    terminal      │    │  - Handle Neurogine callback         ││
-│  └──────────────────┘    └──────────────────────────────────────┘│
-│                                                                  │
-│  ┌──────────────────────────────────────────────────────────────┐│
-│  │                    Database: card_payments                    ││
-│  │  id, order_id, amount, status, device_id, transaction_id      ││
-│  └──────────────────────────────────────────────────────────────┘│
-└─────────────────────────────────────────────────────────────────┘
-                              │
-                    HTTP GET /v1/card-payment/pending
-                              │
-                              ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                  Companion App (HP Android)                       │
-│                                                                  │
-│  - Polls pending payments                                       │
-│  - Shows: "Pembayaran Rp XXX - Tap Kartu"                       │
-│  - Calls Neurogine SoftPOS SDK                                  │
-│  - Sends callback on completion                                 │
-└─────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────────────────┐
+│                              Sunmi D3 Pro (Browser)                                  │
+│  ┌───────────────────────────────────────────────────────────────────────────────┐  │
+│  │                              Web POS                                            │  │
+│  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐ │  │
+│  │  │   Product   │  │     Cart    │  │  Checkout   │  │  Payment Waiting     │ │  │
+│  │  │    Grid     │  │    Panel    │  │   Screen    │  │  / Receipt Screen    │ │  │
+│  │  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────────────┘ │  │
+│  │                                                                               │  │
+│  │  ═══════════════════════════════════════════════════════════════════════════   │  │
+│  │  WebSocket Client (Persistent Connection)                                      │  │
+│  │  ws://host:8080/ws?terminal_id=POS-001                                        │  │
+│  └───────────────────────────────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────────────────────────────┘
+                                        │ ▲
+                                        │ │ WebSocket (JSON)
+                                        ▼ │
+┌─────────────────────────────────────────────────────────────────────────────────────┐
+│                           Backend (gbs-pos-api)                                       │
+│                                                                                       │
+│  ┌───────────────────────────────────────────────────────────────────────────────┐   │
+│  │                         WebSocket Hub (Bidirectional)                            │   │
+│  │  ┌────────────────┐  ┌────────────────┐  ┌────────────────────────────────┐  │   │
+│  │  │  POS Clients   │  │ Companion      │  │  Message Router               │  │   │
+│  │  │  (terminal_id) │  │ Clients        │  │  - PAYMENT_REQUEST → Companion │  │   │
+│  │  └────────────────┘  │ (device_id)    │  │  - PAYMENT_STATUS → POS       │  │   │
+│  │                      └────────────────┘  └────────────────────────────────┘  │   │
+│  └───────────────────────────────────────────────────────────────────────────────┘   │
+│                                        │                                           │
+│  ┌─────────────────────────────────────▼───────────────────────────────────────┐   │
+│  │                      Card Payment Service                                      │   │
+│  │  - CreatePayment()      → buat payment record, broadcast ke Companion        │   │
+│  │  - UpdateStatus()       → update DB, broadcast ke POS via WebSocket          │   │
+│  │  - ExpirePayments()     → cleanup expired payments                          │   │
+│  └───────────────────────────────────────────────────────────────────────────────┘   │
+│                                        │                                           │
+│  ┌─────────────────────────────────────▼───────────────────────────────────────┐   │
+│  │                        Database: card_payments                                 │   │
+│  │  id, order_id, amount, status, terminal_id, device_id, transaction_id,          │   │
+│  │  card_brand, masked_card, auth_code, failure_reason, expires_at                │   │
+│  └───────────────────────────────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────────────────────────────┘
+                                        │ ▲
+                                        │ │ WebSocket (JSON)
+                                        ▼ │
+┌─────────────────────────────────────────────────────────────────────────────────────┐
+│                        Companion App (Android)                                        │
+│                                                                                       │
+│  ┌───────────────────────────────────────────────────────────────────────────────┐   │
+│  │                      WebSocket Client (Persistent)                             │   │
+│  │  ws://host:8080/ws?device_id=HP-KASIR-01                                     │   │
+│  │                                                                               │   │
+│  │  ═════════════════════════════════════════════════════════════════════════   │   │
+│  │  Connection State: CONNECTED / DISCONNECTED / RECONNECTING                    │   │
+│  │  Auto-reconnect with exponential backoff                                      │   │
+│  └───────────────────────────────────────────────────────────────────────────────┘   │
+│                                        │                                           │
+│  ┌─────────────────────────────────────▼───────────────────────────────────────┐   │
+│  │                      Payment State Machine                                     │   │
+│  │                                                                               │   │
+│  │  ┌──────────────┐    ┌──────────────┐    ┌──────────────┐    ┌───────────┐  │   │
+│  │  │WAITING_FOR_  │───▶│ PROCESSING   │───▶│   SUCCESS    │    │  FAILED   │  │   │
+│  │  │    CARD      │    │              │    │              │    │           │  │   │
+│  │  └──────────────┘    └──────────────┘    └──────────────┘    └───────────┘  │   │
+│  │         │                   │                                           │      │   │
+│  │         │                   └───────────────────────────────────────────┘      │   │
+│  │         ▼                                                                ▼      │   │
+│  │  ┌──────────────┐                                                  ┌─────────┐ │   │
+│  │  │  CANCELLED   │                                                  │ EXPIRED │ │   │
+│  │  └──────────────┘                                                  └─────────┘ │   │
+│  └───────────────────────────────────────────────────────────────────────────────┘   │
+│                                        │                                           │
+│  ┌─────────────────────────────────────▼───────────────────────────────────────┐   │
+│  │                      Neurogine SoftPOS SDK Integration                        │   │
+│  │  - Initialize SDK on app start                                               │   │
+│  │  - ProcessCardPayment(amount) → returns transaction result                   │   │
+│  │  - Handle card tap, PIN entry, NFC communication                           │   │
+│  └───────────────────────────────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
-## WebSocket Protocol
+## Flow Diagram: Complete Payment Cycle
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│                              FLOW: CARD PAYMENT VIA WEBSOCKET                           │
+└─────────────────────────────────────────────────────────────────────────────────────────┘
+
+    Web POS                      Backend                          Companion App
+    ───────                      ───────                          ──────────────
+       │                            │                                   │
+       │  1. User pilih "Kartu"     │                                   │
+       │  POST /v1/card-payment/init│                                   │
+       │──────────────────────────▶│                                   │
+       │                            │                                   │
+       │                            │  2. Create card_payment record     │
+       │                            │     status = WAITING_FOR_CARD     │
+       │                            │──────────────────────────────────▶│
+       │                            │                                   │
+       │                            │  3. PAYMENT_REQUEST event         │
+       │                            │     via WebSocket                 │
+       │                            │──────────────────────────────────▶│
+       │                            │                                   │
+       │                            │                                   │ 4. Receive event
+       │                            │                                   │ 5. Show UI:
+       │                            │                                   │    "Tap kartu untuk
+       │                            │                                   │     bayar Rp XXX"
+       │                            │                                   │
+       │  6. PAYMENT_STATUS event   │                                   │
+       │     (WAITING_FOR_CARD)     │                                   │
+       │◀──────────────────────────│                                   │
+       │                            │                                   │
+       │                            │                                   │ 7. User tap kartu
+       │                            │                                   │ 8. Call Neurogine SDK
+       │                            │                                   │ 9. Process payment
+       │                            │                                   │
+       │                            │ 10. PAYMENT_STATUS update         │
+       │                            │     (PROCESSING)                  │
+       │                            │◀──────────────────────────────────│
+       │  11. PAYMENT_STATUS event  │                                   │
+       │◀───────────────────────────│                                   │
+       │                            │                                   │
+       │  Show "Memproses..."       │                                   │
+       │                            │                                   │
+       │                            │                                   │ 12. SDK returns
+       │                            │                                   │     result
+       │                            │                                   │
+       │                            │ 13. PAYMENT_STATUS update         │
+       │                            │     (SUCCESS/FAILED)              │
+       │                            │◀──────────────────────────────────│
+       │                            │                                   │
+       │  14. PAYMENT_STATUS event  │                                   │
+       │     (SUCCESS/FAILED)       │                                   │
+       │◀───────────────────────────│                                   │
+       │                            │                                   │
+       │  15a. SUCCESS:             │                                   │
+       │     Show Receipt Screen    │                                   │
+       │                            │                                   │
+       │  15b. FAILED:              │                                   │
+       │     Show error + Retry     │                                   │
+       │                            │                                   │
+       │                            │                                   │
+
+
+═══════════════════════════════════════════════════════════════════════════════════════════
+
+                              TIMEOUT / EXPIRY FLOW
+
+    Web POS                      Backend                          Companion App
+       │                            │                                   │
+       │  T.1 PAYMENT_REQUEST expired│                                   │
+       │◀───────────────────────────│                                   │
+       │                            │                                   │
+       │  Show "Waktu habis"        │                                   │
+       │                            │                                   │
+```
+
+## WebSocket Message Protocol
 
 ### Endpoint
 ```
-ws://host:8080/ws?terminal_id=POS-001
+ws://host:8080/ws?client_type=pos&terminal_id=POS-001
+ws://host:8080/ws?client_type=companion&device_id=HP-KASIR-01
 ```
 
-### Message Format (JSON)
+### Connection Parameters
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `client_type` | string | Yes | `pos` atau `companion` |
+| `terminal_id` | string | Yes* | Terminal ID (untuk pos) |
+| `device_id` | string | Yes* | Device ID (untuk companion) |
 
-#### Server → Client
+*Required based on `client_type`
 
-**Payment Ready (waiting for tap)**
+---
+
+### Message Types: Server → Client
+
+#### PAYMENT_REQUEST (Server → Companion)
+Dikirim saat ada payment request baru dari Web POS.
+
 ```json
 {
-  "type": "PAYMENT_READY",
-  "payment_id": "uuid",
-  "order_id": "ORD-123",
+  "type": "PAYMENT_REQUEST",
+  "payment_id": "550e8400-e29b-41d4-a716-446655440000",
+  "order_id": "ORD-20260806-001",
   "amount": 150000,
-  "expires_at": "2024-01-01T12:30:00Z"
+  "currency": "IDR",
+  "expires_at": "2026-08-06T12:35:00Z",
+  "merchant_name": "GBS Store",
+  "terminal_id": "POS-001"
 }
 ```
 
-**Payment Completed**
+#### PAYMENT_STATUS (Server → POS)
+Dikirim saat status payment berubah.
+
 ```json
 {
-  "type": "PAYMENT_COMPLETED",
-  "payment_id": "uuid",
-  "status": "SUCCESS",
-  "transaction_id": "NEU-xxx",
-  "card_brand": "VISA",
-  "masked_card": "**** **** **** 1234"
+  "type": "PAYMENT_STATUS",
+  "payment_id": "550e8400-e29b-41d4-a716-446655440000",
+  "order_id": "ORD-20260806-001",
+  "status": "WAITING_FOR_CARD",
+  "message": "Silakan tap kartu di Companion App",
+  "amount": 150000,
+  "transaction_id": null,
+  "card_brand": null,
+  "masked_card": null,
+  "auth_code": null,
+  "failure_reason": null,
+  "updated_at": "2026-08-06T12:30:00Z"
 }
 ```
 
-**Payment Failed**
+Status Values:
+- `WAITING_FOR_CARD` - Menunggu customer tap kartu
+- `PROCESSING` - Sedang diproses oleh SDK
+- `SUCCESS` - Payment berhasil
+- `FAILED` - Payment gagal
+- `CANCELLED` - Payment dibatalkan oleh kasir
+- `EXPIRED` - Payment expired
+
+#### CONNECTION_ACK (Server → Client)
+Konfirmasi koneksi berhasil.
+
 ```json
 {
-  "type": "PAYMENT_FAILED",
-  "payment_id": "uuid",
-  "status": "FAILED",
-  "reason": "Card declined"
+  "type": "CONNECTION_ACK",
+  "client_type": "pos",
+  "client_id": "POS-001",
+  "session_id": "session-uuid",
+  "server_time": "2026-08-06T12:30:00Z"
 }
 ```
 
-#### Client → Server
+#### PONG (Server → Client)
+Response untuk ping keepalive.
 
-**Ping (keepalive)**
-```json
-{
-  "type": "PING"
-}
-```
-
-**Pong (response)**
 ```json
 {
   "type": "PONG"
 }
 ```
 
+---
+
+### Message Types: Client → Server
+
+#### PAYMENT_STATUS_UPDATE (Companion → Server)
+Update status dari Companion App setelah processing.
+
+```json
+{
+  "type": "PAYMENT_STATUS_UPDATE",
+  "payment_id": "550e8400-e29b-41d4-a716-446655440000",
+  "status": "SUCCESS",
+  "transaction_id": "NEU-20260806-123456",
+  "card_brand": "VISA",
+  "masked_card": "**** **** **** 1234",
+  "auth_code": "AUTH123456",
+  "failure_reason": null
+}
+```
+
+#### PING (Client → Server)
+Keepalive ping.
+
+```json
+{
+  "type": "PING"
+}
+```
+
+#### REGISTER_COMPANION (Companion → Server)
+Registration untuk companion app (optional, bisa via query param).
+
+```json
+{
+  "type": "REGISTER_COMPANION",
+  "device_id": "HP-KASIR-01",
+  "device_name": "Samsung Galaxy A54",
+  "sdk_version": "1.2.3",
+  "capabilities": ["NFC", "BLE"]
+}
+```
+
+---
+
 ## REST API Endpoints
 
-### 1. Initialize Payment
+### Card Payment Initialization
 ```
 POST /v1/card-payment/init
 ```
@@ -125,67 +303,50 @@ POST /v1/card-payment/init
 **Request:**
 ```json
 {
-  "order_id": "ORD-123",
-  "amount": 150000,
-  "device_id": "HP-KASIR-01"  // optional: specific device
+  "order_id": "ORD-20260806-001",
+  "amount": 150000
 }
 ```
 
 **Response:**
 ```json
 {
-  "payment_id": "uuid",
-  "status": "WAITING_FOR_TAP",
-  "amount": 150000,
-  "expires_at": "2024-01-01T12:30:00Z"
+  "success": true,
+  "data": {
+    "payment_id": "550e8400-e29b-41d4-a716-446655440000",
+    "order_id": "ORD-20260806-001",
+    "amount": 150000,
+    "status": "WAITING_FOR_CARD",
+    "expires_at": "2026-08-06T12:35:00Z"
+  }
 }
 ```
 
-### 2. Confirm Payment (from Companion App)
+### Get Payment Status
 ```
-POST /v1/card-payment/:id/confirm
-```
-
-**Request:**
-```json
-{
-  "status": "SUCCESS",
-  "transaction_id": "NEU-123456",
-  "card_brand": "VISA",
-  "masked_card": "**** **** **** 1234",
-  "auth_code": "AUTH123"
-}
+GET /v1/card-payment/:id
 ```
 
 **Response:**
 ```json
 {
-  "payment_id": "uuid",
-  "status": "SUCCESS",
-  "message": "Payment confirmed"
+  "success": true,
+  "data": {
+    "payment_id": "550e8400-e29b-41d4-a716-446655440000",
+    "order_id": "ORD-20260806-001",
+    "amount": 150000,
+    "status": "SUCCESS",
+    "transaction_id": "NEU-20260806-123456",
+    "card_brand": "VISA",
+    "masked_card": "**** **** **** 1234",
+    "auth_code": "AUTH123456",
+    "created_at": "2026-08-06T12:30:00Z",
+    "updated_at": "2026-08-06T12:31:00Z"
+  }
 }
 ```
 
-### 3. Get Pending Payments (for Companion App polling)
-```
-GET /v1/card-payment/pending?device_id=HP-KASIR-01
-```
-
-**Response:**
-```json
-{
-  "payments": [
-    {
-      "payment_id": "uuid",
-      "order_id": "ORD-123",
-      "amount": 150000,
-      "created_at": "2024-01-01T12:00:00Z"
-    }
-  ]
-}
-```
-
-### 4. Cancel Payment
+### Cancel Payment
 ```
 POST /v1/card-payment/:id/cancel
 ```
@@ -193,10 +354,15 @@ POST /v1/card-payment/:id/cancel
 **Response:**
 ```json
 {
-  "payment_id": "uuid",
-  "status": "CANCELLED"
+  "success": true,
+  "data": {
+    "payment_id": "550e8400-e29b-41d4-a716-446655440000",
+    "status": "CANCELLED"
+  }
 }
 ```
+
+---
 
 ## Database Schema
 
@@ -205,9 +371,9 @@ CREATE TABLE card_payments (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     order_id VARCHAR(50) NOT NULL,
     amount DECIMAL(15,2) NOT NULL,
-    status VARCHAR(20) NOT NULL DEFAULT 'WAITING_FOR_TAP',
+    status VARCHAR(30) NOT NULL DEFAULT 'WAITING_FOR_CARD',
+    terminal_id VARCHAR(50) NOT NULL,
     device_id VARCHAR(50),
-    terminal_id VARCHAR(50),
     transaction_id VARCHAR(100),
     card_brand VARCHAR(20),
     masked_card VARCHAR(20),
@@ -219,75 +385,280 @@ CREATE TABLE card_payments (
 );
 
 CREATE INDEX idx_card_payments_status ON card_payments(status);
-CREATE INDEX idx_card_payments_device ON card_payments(device_id);
 CREATE INDEX idx_card_payments_terminal ON card_payments(terminal_id);
+CREATE INDEX idx_card_payments_device ON card_payments(device_id);
+CREATE INDEX idx_card_payments_expires ON card_payments(expires_at);
 ```
+
+---
 
 ## Status Flow
 
 ```
-WAITING_FOR_TAP → SUCCESS    (card tapped successfully)
-WAITING_FOR_TAP → FAILED     (card declined/timeout)
-WAITING_FOR_TAP → CANCELLED (cashier cancelled)
+┌──────────────┐
+│WAITING_FOR_  │
+│    CARD      │
+└──────┬───────┘
+       │
+       ├──────────────────────────────────┐
+       │                                  │
+       ▼                                  ▼
+┌──────────────┐                  ┌──────────────┐
+│ PROCESSING   │                  │  CANCELLED   │
+└──────┬───────┘                  └──────────────┘
+       │
+       ├───────────────────────────┐
+       │                           │
+       ▼                           ▼
+┌──────────────┐           ┌──────────────┐
+│   SUCCESS    │           │    FAILED    │
+└──────────────┘           └──────────────┘
+
+Tiap status WAITING_FOR_CARD memiliki expiry timeout (default: 5 menit)
+Jika expired → status berubah ke EXPIRED
 ```
 
-## Payment Expiry
+---
 
-- Default expiry: 5 minutes
-- Background job cleans up expired payments
-- On expiry: status → EXPIRED, notify via WebSocket
+## Companion App States
 
-## Companion App Integration
-
-### Polling Strategy
-```
-1. App opens → GET /v1/card-payment/pending
-2. If empty → Poll every 3 seconds
-3. If payment found → Show notification
-4. User taps card → Call Neurogine SDK
-5. On result → POST /v1/card-payment/:id/confirm
-```
-
-### Alternative: Push Notification (FCM)
-```
-1. Backend receives payment request
-2. Send FCM push to device_id
-3. App wakes up, shows payment
-4. User taps card...
+### State Machine
+```kotlin
+sealed class PaymentState {
+    object Idle : PaymentState()
+    data class WaitingForCard(val payment: PaymentRequest) : PaymentState()
+    object Processing : PaymentState()
+    data class Success(val transaction: TransactionResult) : PaymentState()
+    data class Failed(val reason: String) : PaymentState()
+    object Cancelled : PaymentState()
+    object Expired : PaymentState()
+}
 ```
 
-## Security
+### State Transitions
+```
+Idle ─────────────────────────────▶ WaitingForCard
+    │                                     │
+    │ (PAYMENT_REQUEST received)          │ (User tap card / timeout)
+    │                                     ▼
+    │                              Processing ───────▶ Success
+    │                                     │              │
+    │                                     │              │ (SDK result)
+    │                                     │              │
+    │                                     ▼              │
+    │                              Failed ◀───────┘
+    │                                │
+    │                                │
+    │◀───────────────────────────────┘
+    │         (Error / Timeout)
+    │
+    │ (Cancel from POS)
+    ▼
+Cancelled
 
-1. **Terminal Authentication**: WebSocket requires valid JWT token
-2. **Device Registration**: Companion app registered with device_id
-3. **Rate Limiting**: Prevent polling abuse
-4. **Payment Signing**: Transaction ID signed by Neurogine
+Any ──────────────────────────────▶ Expired
+    │                                  ▲
+    │ (Expiry timeout)                  │ (Payment expired)
+    │                                  │
+    └──────────────────────────────────┘
+```
 
-## Implementation Files
+---
 
-### Backend
-| File | Purpose |
-|------|---------|
-| `internal/websocket/hub.go` | WebSocket connection hub |
-| `internal/websocket/client.go` | Individual client connection |
-| `internal/websocket/messages.go` | Message types |
-| `internal/model/card_payment.go` | CardPayment model |
-| `internal/handler/card_payment_handler.go` | REST endpoints |
-| `internal/service/card_payment_service.go` | Business logic |
-| `internal/router/card_payment_route.go` | Route definitions |
-| `internal/router/websocket_route.go` | WebSocket upgrade route |
+## Security Considerations
 
-### Frontend (Web POS)
-| File | Purpose |
-|------|---------|
-| `hooks/useWebSocket.ts` | WebSocket connection hook |
-| `hooks/useCardPayment.ts` | Card payment state machine |
-| `components/PaymentWaiting.tsx` | Waiting screen |
-| `pages/POSPage.tsx` | Main POS with WebSocket integration |
+1. **WebSocket Authentication**
+   - JWT token validation on connection
+   - Token passed via query param: `?token=<jwt>`
+   - Backend validates and extracts client identity
+
+2. **Client Type Validation**
+   - `client_type` determines routing rules
+   - POS clients only receive PAYMENT_STATUS updates for their terminal_id
+   - Companion clients only receive PAYMENT_REQUEST for their device_id
+
+3. **Rate Limiting**
+   - Max 10 connections per device_id
+   - Max 100 messages per minute per client
+   - Connection timeout: 30 seconds for handshake
+
+4. **Payment Security**
+   - Transaction signing by Neurogine SDK
+   - Backend validates transaction_id format
+   - No sensitive card data stored (only masked card)
+
+---
+
+## Reconnection Strategy
 
 ### Companion App
-| File | Purpose |
-|------|---------|
-| `PaymentService` | API calls to backend |
-| `NeurogineManager` | SDK wrapper |
-| `MainActivity` | Payment polling & UI |
+```
+1. Initial connection attempt
+2. On disconnect:
+   - Increment retry count
+   - Wait: min(30s, 2^retry * 1s) — exponential backoff, max 30s
+   - Attempt reconnect
+3. On reconnect:
+   - Re-register device_id
+   - Request pending payments via REST API
+4. Max retries: unlimited (always try to reconnect)
+```
+
+### Web POS
+```
+1. Initial connection on page load
+2. On disconnect:
+   - Show "Connection lost" indicator
+   - Retry every 3 seconds
+   - After 5 retries, show "Refresh page" button
+3. On reconnect:
+   - Request current payment status via REST API
+   - Resume normal operation
+```
+
+---
+
+## Error Handling
+
+### Backend Errors
+| Error Code | Description | Action |
+|------------|-------------|--------|
+| `INVALID_TOKEN` | JWT validation failed | Disconnect, prompt re-login |
+| `INVALID_CLIENT_TYPE` | Unknown client type | Disconnect |
+| `PAYMENT_NOT_FOUND` | Payment ID not found | Log error, ignore |
+| `PAYMENT_EXPIRED` | Payment already expired | Notify via WebSocket |
+| `RATE_LIMITED` | Too many messages | Slow down, disconnect if persistent |
+
+### SDK Errors (Companion App)
+| Error Code | Description | Action |
+|------------|-------------|--------|
+| `CARD_DECLINED` | Card rejected by bank | Send FAILED status |
+| `CARD_TIMEOUT` | No card detected | Show retry option |
+| `INVALID_CARD` | Unreadable card | Show error message |
+| `SDK_ERROR` | Neurogine SDK error | Send FAILED with reason |
+
+---
+
+## Monitoring & Logging
+
+### Metrics to Track
+- Active WebSocket connections (by type)
+- Messages per second
+- Payment success/fail rate
+- Average payment processing time
+- Connection failures per device
+
+### Log Events
+```
+[WS] Connection opened: client_type=pos, terminal_id=POS-001
+[WS] Connection closed: client_type=companion, device_id=HP-KASIR-01, reason=timeout
+[PAYMENT] Created: payment_id=xxx, order_id=xxx, amount=xxx
+[PAYMENT] Status changed: payment_id=xxx, old=WAITING_FOR_CARD, new=PROCESSING
+[PAYMENT] Completed: payment_id=xxx, status=SUCCESS, duration=2.3s
+[PAYMENT] Expired: payment_id=xxx
+```
+
+---
+
+## Migration from Polling
+
+### Old Flow (HTTP Polling)
+```
+Companion App                    Backend
+     │                              │
+     │  GET /v1/card-payment/pending
+     │─────────────────────────────▶│
+     │◀─────────────────────────────│ 200: { payments: [] }
+     │  (poll every 3 seconds)      │
+```
+
+### New Flow (WebSocket)
+```
+Companion App                    Backend                    Web POS
+     │                              │                          │
+     │  WS connect                   │                          │
+     │─────────────────────────────▶│                          │
+     │◀─────────────────────────────│ CONNECTION_ACK           │
+     │                              │                          │
+     │                              │  POST /v1/card-payment/init
+     │                              │◀─────────────────────────│
+     │                              │  PAYMENT_REQUEST         │
+     │  PAYMENT_REQUEST             │─────────────────────────▶│
+     │◀─────────────────────────────│                          │
+     │  (instant, no polling)        │                          │
+```
+
+---
+
+## File Structure
+
+```
+gbs-pos-api/
+├── internal/
+│   ├── websocket/                 # WebSocket infrastructure
+│   │   ├── hub.go                 # Central hub for all connections
+│   │   ├── client.go              # Individual client connection
+│   │   ├── messages.go            # Message type definitions
+│   │   └── router.go              # Message routing logic
+│   ├── cardpayment/               # Card payment module (BARU)
+│   │   ├── model.go               # CardPayment model
+│   │   ├── service.go             # CardPaymentService
+│   │   ├── handler.go             # REST endpoints
+│   │   └── repository.go          # Database operations
+│   └── router/
+│       ├── websocket_route.go    # WebSocket endpoint (BARU)
+│       ├── card_payment_route.go  # Card payment routes (BARU)
+│       └── router.go              # Updated to include new routes
+├── cmd/server/
+│   └── main.go                    # Updated to initialize WebSocket hub
+└── migrations/
+    └── 015_create_card_payments.sql (BARU)
+
+pos-web/
+├── src/
+│   ├── hooks/
+│   │   └── useWebSocket.ts        # WebSocket client hook (BARU)
+│   ├── components/
+│   │   └── PaymentWaiting.tsx     # Payment waiting screen (UPDATE)
+│   └── stores/
+│       └── paymentStore.ts        # Payment state (UPDATE)
+
+pos-payment-app/ (Android)
+├── app/src/main/java/com/gbs/pos/
+│   ├── PaymentWebSocketClient.kt  # WebSocket client (BARU)
+│   ├── PaymentStateMachine.kt     # State machine (BARU)
+│   ├── NeurogineManager.kt        # SDK wrapper (UPDATE)
+│   └── MainActivity.kt            # Main UI (UPDATE)
+└── build.gradle.kts
+```
+
+---
+
+## Implementation Checklist
+
+- [ ] 1. Add gorilla/websocket dependency
+- [ ] 2. Create WebSocket hub (hub.go)
+- [ ] 3. Create WebSocket client (client.go)
+- [ ] 4. Create message types (messages.go)
+- [ ] 5. Create message router (router.go)
+- [ ] 6. Create CardPayment model
+- [ ] 7. Create CardPayment repository
+- [ ] 8. Create CardPayment service
+- [ ] 9. Create CardPayment handler
+- [ ] 10. Create WebSocket route
+- [ ] 11. Create card payment route
+- [ ] 12. Update main.go with WebSocket integration
+- [ ] 13. Create migration 015_create_card_payments.sql
+- [ ] 14. Update Web POS useWebSocket hook
+- [ ] 15. Update Web POS PaymentWaiting component
+- [ ] 16. Create Companion App WebSocket client
+- [ ] 17. Create Companion App state machine
+- [ ] 18. Update Companion App UI
+- [ ] 19. Test end-to-end flow
+- [ ] 20. Update documentation
+
+---
+
+**Document Version:** 2.0  
+**Last Updated:** August 2026  
+**Status:** Ready for Implementation
