@@ -15,6 +15,7 @@ import (
 	"gbs-pos-api/internal/repository"
 	"gbs-pos-api/internal/router"
 	"gbs-pos-api/internal/service"
+	ws "gbs-pos-api/internal/websocket"
 
 	_ "gbs-pos-api/docs" // Swagger docs
 
@@ -86,6 +87,8 @@ func main() {
 		&model.Nozzle{},
 		&model.FuelSale{},
 		&model.QrisTransaction{},
+		&model.CardPayment{},
+		&model.CompanionDevice{},
 	); err != nil {
 		log.Fatal("failed to migrate database: ", err)
 	}
@@ -107,6 +110,10 @@ func main() {
 	nozzleRepo := repository.NewNozzleRepository(db)
 	fuelSaleRepo := repository.NewFuelSaleRepository(db)
 	qrisTransactionRepo := repository.NewQrisTransactionRepository(db)
+	cardPaymentRepo := repository.NewCardPaymentRepository(db)
+	companionDeviceRepo := repository.NewCompanionDeviceRepository(db)
+	websocketHub := ws.NewHub()
+	websocketHub.SetAllowedOrigins(cfg.WSAllowedOrigins)
 
 	dashboardRepo := repository.NewDashboardRepository(db)
 
@@ -130,6 +137,8 @@ func main() {
 	fuelService := service.NewFuelService(fuelPriceRepo, pumpRepo, nozzleRepo, fuelSaleRepo)
 	qrisService := service.NewQrisService(cfg, db, orderRepo)
 	qrisDirectService := service.NewQrisDirectService(cfg, qrisTransactionRepo, orderRepo)
+	cardPaymentService := service.NewCardPaymentService(cardPaymentRepo, orderService, companionDeviceRepo, websocketHub)
+	websocketHub.SetMessageHandler(cardPaymentService.HandleMessage)
 
 	authHandler := handler.NewAuthHandler(authService)
 	productHandler := handler.NewProductHandler(productService)
@@ -144,23 +153,28 @@ func main() {
 	fuelHandler := handler.NewFuelHandler(fuelService)
 	qrisHandler := handler.NewQrisHandler(qrisService, cfg)
 	qrisDirectHandler := handler.NewQrisDirectHandler(qrisDirectService)
+	cardPaymentHandler := handler.NewCardPaymentHandler(cardPaymentService)
+	companionDeviceHandler := handler.NewCompanionDeviceHandler(companionDeviceRepo)
 
 	r := router.Setup(
 		cfg,
 		router.Handlers{
-			Auth:           authHandler,
-			Product:        productHandler,
-			Discount:       discountHandler,
-			Order:          orderHandler,
-			Settlement:     settlementHandler,
-			Customer:       customerHandler,
-			Dashboard:      dashboardHandler,
-			ProductVariant: variantHandler,
-			Hold:           holdHandler,
-			Fuel:           fuelHandler,
-			CartDisplay:    cartDisplayHandler,
-			Qris:           qrisHandler,
-			QrisDirect:     qrisDirectHandler,
+			Auth:            authHandler,
+			Product:         productHandler,
+			Discount:        discountHandler,
+			Order:           orderHandler,
+			Settlement:      settlementHandler,
+			Customer:        customerHandler,
+			Dashboard:       dashboardHandler,
+			ProductVariant:  variantHandler,
+			Hold:            holdHandler,
+			Fuel:            fuelHandler,
+			CartDisplay:     cartDisplayHandler,
+			Qris:            qrisHandler,
+			QrisDirect:      qrisDirectHandler,
+			CardPayment:     cardPaymentHandler,
+			CompanionDevice: companionDeviceHandler,
+			WebSocket:       websocketHub,
 		},
 	)
 
@@ -182,6 +196,20 @@ func main() {
 	go func() {
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Fatal("server failed: ", err)
+		}
+	}()
+	go func() {
+		ticker := time.NewTicker(30 * time.Second)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ticker.C:
+				if err := cardPaymentService.Expire(context.Background()); err != nil {
+					log.Printf("card payment expiry failed: %v", err)
+				}
+			case <-ctx.Done():
+				return
+			}
 		}
 	}()
 

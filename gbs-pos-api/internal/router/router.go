@@ -4,6 +4,7 @@ import (
 	"gbs-common/middleware"
 	"gbs-pos-api/internal/config"
 	"gbs-pos-api/internal/handler"
+	ws "gbs-pos-api/internal/websocket"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -51,19 +52,22 @@ func Setup_(
 }
 
 type Handlers struct {
-	Auth           *handler.AuthHandler
-	Product        *handler.ProductHandler
-	Discount       *handler.DiscountHandler
-	Order          *handler.OrderHandler
-	Settlement     *handler.SettlementHandler
-	Customer       *handler.CustomerHandler
-	Dashboard      *handler.DashboardHandler
-	ProductVariant *handler.ProductVariantHandler
-	Hold           *handler.HoldHandler
-	Fuel           *handler.FuelHandler
-	CartDisplay    *handler.CartDisplayHandler
-	Qris           *handler.QrisHandler
-	QrisDirect     *handler.QrisDirectHandler
+	Auth            *handler.AuthHandler
+	Product         *handler.ProductHandler
+	Discount        *handler.DiscountHandler
+	Order           *handler.OrderHandler
+	Settlement      *handler.SettlementHandler
+	Customer        *handler.CustomerHandler
+	Dashboard       *handler.DashboardHandler
+	ProductVariant  *handler.ProductVariantHandler
+	Hold            *handler.HoldHandler
+	Fuel            *handler.FuelHandler
+	CartDisplay     *handler.CartDisplayHandler
+	Qris            *handler.QrisHandler
+	QrisDirect      *handler.QrisDirectHandler
+	CardPayment     *handler.CardPaymentHandler
+	CompanionDevice *handler.CompanionDeviceHandler
+	WebSocket       *ws.Hub
 }
 
 func buildAuthMiddleware(cfg *config.Config) (gin.HandlerFunc, error) {
@@ -122,6 +126,9 @@ func Setup(
 	setupCartDisplayRoutes(v1, h.CartDisplay, authMiddleware)
 	setupQrisRoutes(r, h.Qris)
 	setupQrisDirectRoutes(auth, h.QrisDirect)
+	setupCardPaymentRoutes(auth, h.CardPayment)
+	setupCompanionDeviceRoutes(auth, h.CompanionDevice)
+	setupWebSocketRoute(r, h.WebSocket, authMiddleware)
 
 	return r
 }

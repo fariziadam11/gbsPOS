@@ -9,16 +9,15 @@ import (
 	"time"
 
 	"gorm.io/gorm"
-	"gorm.io/gorm/clause"
 )
 
 var ErrOrderAlreadyExists = errors.New("ORDER_ALREADY_EXISTS")
 
 type OrderService struct {
-	repo              *repository.OrderRepository
-	productService    *ProductService
-	customerService   *CustomerService
-	variantService    *ProductVariantService
+	repo            *repository.OrderRepository
+	productService  *ProductService
+	customerService *CustomerService
+	variantService  *ProductVariantService
 }
 
 func NewOrderService(
@@ -135,10 +134,6 @@ func (s *OrderService) Create(order *model.Order) (*model.Order, bool, error) {
 		// Check if order already exists after acquiring lock
 		existingCheck, _ := txRepo.FindByID(order.ID)
 		if existingCheck != nil {
-			fullOrder, err := txRepo.FindByIDWithItems(order.ID)
-			if err != nil {
-				return err
-			}
 			return ErrOrderAlreadyExists
 		}
 

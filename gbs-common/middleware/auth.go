@@ -38,6 +38,9 @@ func NewCompositeAuthMiddleware(jwksURL, jwtSecret string) (gin.HandlerFunc, err
 
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
+		if authHeader == "" && c.Query("token") != "" {
+			authHeader = "Bearer " + c.Query("token")
+		}
 		if authHeader == "" {
 			c.AbortWithStatusJSON(
 				http.StatusUnauthorized,
@@ -106,6 +109,9 @@ func NewAuthMiddleware(jwtSecret string) gin.HandlerFunc {
 	secret := []byte(jwtSecret)
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
+		if authHeader == "" && c.Query("token") != "" {
+			authHeader = "Bearer " + c.Query("token")
+		}
 		if authHeader == "" {
 			c.AbortWithStatusJSON(
 				http.StatusUnauthorized,

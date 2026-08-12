@@ -1,0 +1,102 @@
+<script setup lang="ts">
+import { computed, reactive, ref } from 'vue'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
+import { useRoute } from 'vue-router'
+import { cmsApi, getErrorMessage, posApi, requestData, requestVoid } from '../lib/api'
+import { adSchema, customerSchema, discountSchema, orderSchema, paginationSchema, productSchema, userSchema } from '../lib/schemas'
+import { z } from 'zod'
+
+const route = useRoute()
+const queryClient = useQueryClient()
+const resource = computed(() => String(route.meta.resource))
+const title = computed(() => String(route.meta.title))
+const search = ref('')
+const page = ref(1)
+const editingId = ref<number | null>(null)
+const formError = ref('')
+const form = reactive({ name: '', username: '', password: '', role: 'CASHIER', gender: '', phone: '', email: '', address: '', price: 0, category: '', storeType: 'RETAIL', stockQuantity: 0, lowStockThreshold: 10, barcode: '', productId: '', scope: 'PRODUCT', type: 'PERCENTAGE', value: 0, startDate: '', endDate: '', file: null as File | null, storeTypes: 'RETAIL', playlistOrder: 0 })
+
+const configs: Record<string, { client: typeof cmsApi; url: string; schema: z.ZodTypeAny; columns: string[] }> = {
+  products: { client: posApi, url: '/products', schema: z.array(productSchema), columns: ['name', 'category', 'price', 'stockQuantity', 'storeType'] },
+  orders: { client: posApi, url: '/orders', schema: z.array(orderSchema), columns: ['id', 'total', 'paymentMethod', 'storeType', 'isSettled'] },
+  settlements: { client: posApi, url: '/settlements', schema: z.array(z.record(z.string(), z.unknown())), columns: ['id', 'totalAmount', 'batchCount', 'timestamp'] },
+  customers: { client: posApi, url: '/customers', schema: z.array(customerSchema), columns: ['name', 'phone', 'email'] },
+  discounts: { client: posApi, url: '/discounts', schema: z.array(discountSchema), columns: ['name', 'type', 'value', 'status'] },
+  users: { client: cmsApi, url: '/users', schema: z.array(userSchema), columns: ['username', 'name', 'role', 'gender'] },
+  ads: { client: cmsApi, url: '/ads', schema: z.object({ ads: z.array(adSchema), pagination: paginationSchema }), columns: ['name', 'filename', 'isActive', 'playlistOrder'] },
+  display: { client: cmsApi, url: '/display/terminals', schema: z.array(z.record(z.string(), z.unknown())), columns: ['terminalId', 'deviceInfo', 'updatedAt'] },
+}
+const config = computed(() => configs[resource.value])
+const query = useQuery({ queryKey: computed(() => ['resource', resource.value, page.value]), queryFn: () => requestData(config.value.client, { method: 'GET', url: config.value.url, params: resource.value === 'ads' ? { page: page.value, limit: 20 } : undefined }, config.value.schema), enabled: computed(() => Boolean(config.value)) })
+const rows = computed<Record<string, unknown>[]>(() => { const value = query.data.value; if (resource.value === 'ads' && value && !Array.isArray(value)) return (value as { ads: Record<string, unknown>[] }).ads; return Array.isArray(value) ? value : [] })
+const filteredRows = computed(() => rows.value.filter((row) => JSON.stringify(row).toLowerCase().includes(search.value.toLowerCase())))
+const canNext = computed(() => { const value = query.data.value; return Boolean(value && !Array.isArray(value) && ((value as { pagination?: { totalPages: number } }).pagination?.totalPages ?? page.value) > page.value) })
+const hasForm = computed(() => ['products', 'users', 'discounts', 'ads'].includes(resource.value))
+const formTitle = computed(() => editingId.value ? `Edit ${title.value}` : `Add ${title.value}`)
+const isSaving = computed(() => save.isPending.value)
+const queryPending = computed(() => query.isPending.value)
+const queryError = computed(() => query.isError.value)
+const queryErrorMessage = computed(() => getErrorMessage(query.error.value))
+
+function resetForm() { editingId.value = null; formError.value = ''; Object.assign(form, { name: '', username: '', password: '', role: 'CASHIER', gender: '', phone: '', email: '', address: '', price: 0, category: '', storeType: 'RETAIL', stockQuantity: 0, lowStockThreshold: 10, barcode: '', productId: '', scope: 'PRODUCT', type: 'PERCENTAGE', value: 0, startDate: '', endDate: '', file: null, storeTypes: 'RETAIL', playlistOrder: 0 }) }
+function editRow(row: Record<string, unknown>) { editingId.value = typeof row.id === 'number' ? row.id : null; Object.assign(form, { name: String(row.name ?? ''), username: String(row.username ?? ''), role: String(row.role ?? 'CASHIER'), gender: String(row.gender ?? ''), phone: String(row.phone ?? ''), email: String(row.email ?? ''), address: String(row.address ?? ''), price: Number(row.price ?? 0), category: String(row.category ?? ''), storeType: String(row.storeType ?? 'RETAIL'), stockQuantity: Number(row.stockQuantity ?? 0), lowStockThreshold: Number(row.lowStockThreshold ?? 10), barcode: String(row.barcode ?? ''), productId: String(row.productId ?? ''), type: String(row.type ?? 'PERCENTAGE'), value: Number(row.value ?? 0), startDate: String(row.startDate ?? '').slice(0, 10), endDate: String(row.endDate ?? '').slice(0, 10) }) }
+function format(key: string, value: unknown) { if (value === null || value === undefined || value === '') return '—'; if (key.includes('price') || key.includes('total') || key === 'value') return `Rp ${Number(value).toLocaleString('id-ID')}`; if (typeof value === 'boolean') return value ? 'Yes' : 'No'; if (key.includes('timestamp') || key.includes('date') || key.includes('At')) return new Date(String(value)).toLocaleString('id-ID'); if (Array.isArray(value)) return value.join(', '); if (typeof value === 'object') return JSON.stringify(value); return String(value) }
+
+const save = useMutation({
+  mutationFn: async () => {
+    formError.value = ''
+    if (resource.value === 'ads') {
+      if (!form.file && !editingId.value) throw new Error('Video file wajib dipilih')
+      const data = new FormData(); if (form.file) data.append('file', form.file); data.append('name', form.name); form.storeTypes.split(',').map((value) => value.trim()).filter(Boolean).forEach((value) => data.append('storeTypes', value)); data.append('playlistOrder', String(form.playlistOrder))
+      return requestData(cmsApi, { method: editingId.value ? 'PUT' : 'POST', url: editingId.value ? `/ads/${editingId.value}` : '/ads/upload', data }, adSchema)
+    }
+    if (resource.value === 'products') {
+      const payload = z.object({ name: z.string().min(1), price: z.number().nonnegative(), category: z.string().min(1), storeType: z.string().min(1), stockQuantity: z.number().int().nonnegative(), lowStockThreshold: z.number().int().nonnegative(), barcode: z.string() }).parse({ name: form.name, price: Number(form.price), category: form.category, storeType: form.storeType, stockQuantity: Number(form.stockQuantity), lowStockThreshold: Number(form.lowStockThreshold), barcode: form.barcode })
+      return requestData(posApi, { method: editingId.value ? 'PUT' : 'POST', url: editingId.value ? `/products/${editingId.value}` : '/products', data: payload }, productSchema)
+    }
+    if (resource.value === 'users') {
+      const payload = editingId.value ? { name: form.name, role: form.role, gender: form.gender, ...(form.password ? { password: form.password } : {}) } : z.object({ username: z.string().min(1), password: z.string().min(6), name: z.string(), role: z.enum(['ADMIN', 'CASHIER']), gender: z.string() }).parse({ username: form.username, password: form.password, name: form.name, role: form.role, gender: form.gender })
+      return requestData(cmsApi, { method: editingId.value ? 'PUT' : 'POST', url: editingId.value ? `/users/${editingId.value}` : '/users', data: payload }, userSchema)
+    }
+    if (resource.value === 'customers') {
+      const payload = z.object({ name: z.string(), phone: z.string().min(1), email: z.string(), address: z.string() }).parse({ name: form.name, phone: form.phone, email: form.email, address: form.address })
+      return requestData(posApi, { method: editingId.value ? 'PUT' : 'POST', url: editingId.value ? `/customers/${editingId.value}` : '/customers', data: payload }, customerSchema)
+    }
+    const payload = z.object({ name: z.string().min(1), type: z.enum(['PERCENTAGE', 'FIXED']), value: z.number().nonnegative(), startDate: z.string().min(1), endDate: z.string().min(1), scope: z.string(), productId: z.string() }).parse({ name: form.name, type: form.type, value: Number(form.value), startDate: form.startDate, endDate: form.endDate, scope: form.scope, productId: form.productId })
+    return requestData(posApi, { method: 'POST', url: '/discounts', data: { ...payload, productId: payload.productId ? Number(payload.productId) : 0 } }, discountSchema)
+  },
+  onSuccess: () => { resetForm(); void queryClient.invalidateQueries({ queryKey: ['resource', resource.value] }) },
+  onError: (error) => { formError.value = error instanceof Error ? error.message : 'Request gagal' },
+})
+const remove = useMutation({ mutationFn: (id: number) => requestVoid(resource.value === 'products' ? posApi : cmsApi, { method: 'DELETE', url: resource.value === 'ads' ? `/ads/${id}` : resource.value === 'users' ? `/users/${id}` : `/products/${id}` }), onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['resource', resource.value] }) })
+const toggleAd = useMutation({ mutationFn: (id: number) => requestData(cmsApi, { method: 'POST', url: `/ads/${id}/toggle` }, z.object({ id: z.number(), isActive: z.boolean() })), onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['resource', 'ads'] }) })
+const voidOrder = useMutation({ mutationFn: ({ id, reason }: { id: string; reason: string }) => requestData(posApi, { method: 'PATCH', url: `/orders/${id}/void`, data: { reason } }, orderSchema), onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['resource', 'orders'] }) })
+const settleOrder = useMutation({ mutationFn: (payload: { settlementId: string; terminalId: string; storeType: string }) => requestData(posApi, { method: 'POST', url: '/orders/settle', data: { ...payload, timestamp: Date.now() } }, z.record(z.string(), z.unknown())), onSuccess: () => { void queryClient.invalidateQueries({ queryKey: ['resource', 'orders'] }); void queryClient.invalidateQueries({ queryKey: ['resource', 'settlements'] }) } })
+const adjustStock = useMutation({ mutationFn: ({ id, type, quantity, reason }: { id: number; type: string; quantity: number; reason: string }) => requestData(posApi, { method: 'POST', url: `/products/${id}/stock`, data: { type, quantity, reason } }, z.object({ status: z.string() })), onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['resource', 'products'] }) })
+function submit() { save.mutate() }
+function deleteRow(row: Record<string, unknown>) { if (typeof row.id === 'number' && window.confirm('Hapus data ini?')) remove.mutate(row.id) }
+function refresh() { void query.refetch() }
+function selectFile(event: Event) { form.file = (event.target as HTMLInputElement).files?.[0] ?? null }
+function voidRow(row: Record<string, unknown>) { if (typeof row.id !== 'string') return; const reason = window.prompt('Alasan void order:'); if (reason) voidOrder.mutate({ id: row.id, reason }) }
+function settle() { const settlementId = window.prompt('Settlement ID:'); if (settlementId) settleOrder.mutate({ settlementId, terminalId: window.prompt('Terminal ID:') ?? '', storeType: window.prompt('Store type:') ?? '' }) }
+function adjustRow(row: Record<string, unknown>) { if (typeof row.id !== 'number') return; const type = window.prompt('Type: IN, OUT, atau ADJUSTMENT', 'IN'); const quantity = Number(window.prompt('Quantity:', '1')); const reason = window.prompt('Reason:', '') ?? ''; if (type && quantity > 0) adjustStock.mutate({ id: row.id, type, quantity, reason }) }
+</script>
+
+<template>
+  <div class="space-y-6">
+    <div class="flex flex-col justify-between gap-4 sm:flex-row sm:items-end"><div><p class="text-sm text-slate-500">Manage data and operations</p><h2 class="mt-1 text-3xl font-bold text-slate-900">{{ title }}</h2></div><div class="flex gap-2"><button v-if="hasForm" class="rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-700" @click="resetForm">{{ formTitle }}</button><button class="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50" @click="refresh">Refresh</button></div></div>
+    <section v-if="hasForm" class="rounded-2xl border border-slate-200 bg-white p-5"><div class="mb-4 flex items-center justify-between"><div><h3 class="font-bold text-slate-900">{{ formTitle }}</h3><p class="text-sm text-slate-500">Payload akan divalidasi sebelum dikirim.</p></div><button v-if="editingId" class="text-sm text-slate-500" @click="resetForm">Cancel edit</button></div><div v-if="formError" class="mb-4 rounded-xl bg-red-50 p-3 text-sm text-red-700">{{ formError }}</div><form class="grid gap-4 md:grid-cols-3" @submit.prevent="submit"><template v-if="resource === 'products'"><label class="field">Name<input v-model="form.name" required /></label><label class="field">Category<input v-model="form.category" required /></label><label class="field">Price<input v-model.number="form.price" type="number" min="0" required /></label><label class="field">Store type<select v-model="form.storeType"><option>RETAIL</option><option>FB</option><option>FUEL</option><option>ALL</option></select></label><label class="field">Stock<input v-model.number="form.stockQuantity" type="number" min="0" /></label><label class="field">Low stock threshold<input v-model.number="form.lowStockThreshold" type="number" min="0" /></label><label class="field">Barcode<input v-model="form.barcode" /></label></template><template v-else-if="resource === 'users'"><label class="field">Username<input v-model="form.username" :disabled="Boolean(editingId)" required /></label><label class="field">Name<input v-model="form.name" required /></label><label class="field">Password<input v-model="form.password" type="password" :required="!editingId" /></label><label class="field">Role<select v-model="form.role"><option>ADMIN</option><option>CASHIER</option></select></label><label class="field">Gender<input v-model="form.gender" /></label></template><template v-else-if="resource === 'discounts'"><label class="field">Name<input v-model="form.name" required /></label><label class="field">Type<select v-model="form.type"><option>PERCENTAGE</option><option>FIXED</option></select></label><label class="field">Value<input v-model.number="form.value" type="number" min="0" required /></label><label class="field">Product ID<input v-model="form.productId" type="number" /></label><label class="field">Start date<input v-model="form.startDate" type="date" required /></label><label class="field">End date<input v-model="form.endDate" type="date" required /></label></template><template v-else><label class="field md:col-span-2">Name<input v-model="form.name" required /></label><label class="field">Video file<input type="file" accept="video/mp4,video/webm,video/quicktime" @change="selectFile" /></label><label class="field">Store types<input v-model="form.storeTypes" placeholder="RETAIL" /></label><label class="field">Playlist order<input v-model.number="form.playlistOrder" type="number" min="0" /></label></template><div class="md:col-span-3"><button :disabled="isSaving" class="rounded-xl bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-50">{{ isSaving ? 'Saving...' : editingId ? 'Update' : 'Create' }}</button></div></form></section>
+    <section v-if="resource === 'customers'" class="rounded-2xl border border-slate-200 bg-white p-5"><h3 class="font-bold text-slate-900">Customer form</h3><div v-if="formError" class="my-3 rounded-xl bg-red-50 p-3 text-sm text-red-700">{{ formError }}</div><form class="mt-4 grid gap-4 md:grid-cols-4" @submit.prevent="submit"><label class="field">Name<input v-model="form.name" /></label><label class="field">Phone<input v-model="form.phone" required /></label><label class="field">Email<input v-model="form.email" type="email" /></label><label class="field">Address<input v-model="form.address" /></label><button class="rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white md:col-span-4">{{ editingId ? 'Update customer' : 'Create customer' }}</button></form></section>
+    <div class="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-4 sm:flex-row"><input v-model="search" class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm outline-none focus:border-brand-500 sm:max-w-sm" placeholder="Search records..." /><span class="self-center text-sm text-slate-500">{{ filteredRows.length }} records</span><button v-if="resource === 'orders'" class="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white" @click="settle">Settle orders</button></div>
+     <div v-if="queryError" class="rounded-2xl bg-red-50 p-4 text-sm text-red-700">{{ queryErrorMessage }}</div>
+    <section v-if="resource === 'customers' || resource === 'orders' || resource === 'products'" class="grid gap-3 md:grid-cols-2"><article v-for="row in filteredRows" :key="String(row.id)" class="flex items-center justify-between rounded-xl border border-slate-200 bg-white p-4"><div><p class="font-semibold text-slate-800">{{ String(row.name ?? row.id) }}</p><p class="text-xs text-slate-500">{{ resource === 'orders' ? format('total', row.total) : resource === 'products' ? format('stockQuantity', row.stockQuantity) + ' in stock' : String(row.phone ?? '') }}</p></div><div class="flex gap-2"><button v-if="resource === 'customers'" class="text-xs font-semibold text-brand-600" @click="editRow(row)">Edit</button><button v-if="resource === 'products' && typeof row.id === 'number'" class="text-xs font-semibold text-brand-600" @click="adjustRow(row)">Adjust stock</button><button v-if="resource === 'orders' && !row.isVoided && typeof row.id === 'string'" class="text-xs font-semibold text-amber-600" @click="voidRow(row)">Void</button></div></article></section>
+     <div class="overflow-x-auto rounded-2xl border border-slate-200 bg-white"><table class="w-full min-w-[720px] text-left text-sm"><thead class="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wider text-slate-500"><tr><th v-for="column in config?.columns" :key="column" class="px-5 py-4 font-semibold">{{ column }}</th><th v-if="['products', 'users', 'ads'].includes(resource)" class="px-5 py-4">Actions</th></tr></thead><tbody><tr v-if="queryPending"><td :colspan="(config?.columns?.length || 1) + 1" class="px-5 py-16 text-center text-slate-400">Loading payload...</td></tr><tr v-for="(row, index) in filteredRows" :key="String(row.id ?? index)" class="border-b border-slate-100 last:border-0 hover:bg-slate-50"><td v-for="column in config?.columns" :key="column" class="px-5 py-4 text-slate-700">{{ format(column, row[column]) }}</td><td v-if="['products', 'users', 'ads'].includes(resource)" class="space-x-3 px-5 py-4 whitespace-nowrap"><button v-if="resource === 'ads' && typeof row.id === 'number'" class="text-xs font-semibold text-brand-600" @click="toggleAd.mutate(row.id)">{{ row.isActive ? 'Deactivate' : 'Activate' }}</button><button v-if="resource !== 'ads'" class="text-xs font-semibold text-brand-600" @click="editRow(row)">Edit</button><button class="text-xs font-semibold text-red-600" @click="deleteRow(row)">Delete</button></td></tr><tr v-if="!queryPending && !filteredRows.length"><td :colspan="(config?.columns?.length || 1) + 1" class="px-5 py-16 text-center text-slate-400">No data returned by the API.</td></tr></tbody></table></div>
+    <div v-if="resource === 'ads'" class="flex justify-end gap-2"><button :disabled="page === 1" class="rounded-lg border border-slate-200 px-3 py-2 text-sm disabled:opacity-40" @click="page--">Previous</button><span class="px-3 py-2 text-sm text-slate-500">Page {{ page }}</span><button :disabled="!canNext" class="rounded-lg border border-slate-200 px-3 py-2 text-sm disabled:opacity-40" @click="page++">Next</button></div>
+  </div>
+</template>
+
+<style scoped>
+.field { display: flex; flex-direction: column; gap: .45rem; color: #475569; font-size: .875rem; font-weight: 600; }
+.field input, .field select { width: 100%; border: 1px solid #e2e8f0; border-radius: .75rem; padding: .65rem .8rem; font-weight: 400; outline: none; }
+.field input:focus, .field select:focus { border-color: #0f8f87; box-shadow: 0 0 0 3px #d7efec; }
+</style>

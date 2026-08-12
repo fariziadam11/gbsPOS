@@ -63,8 +63,8 @@ func seedOrder(
 				ProductID:    1,
 				ProductName:  "Chitato",
 				ProductPrice: req.Total,
-				Qty:           1,
-				Subtotal:      req.Total,
+				Qty:          1,
+				Subtotal:     req.Total,
 			},
 		},
 	}
