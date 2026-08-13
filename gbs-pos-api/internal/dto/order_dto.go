@@ -29,7 +29,7 @@ type CreateOrderRequest struct {
 		SKU          string  `json:"sku"`
 	} `json:"items" binding:"required"`
 	Subtotal      float64  `json:"subtotal" binding:"required"`
-	Tax           float64  `json:"tax" binding:"required"`
+	Tax           float64  `json:"tax"`
 	Total         float64  `json:"total" binding:"required"`
 	PaymentMethod string   `json:"paymentMethod" binding:"required"`
 	CashReceived  *float64 `json:"cashReceived"`

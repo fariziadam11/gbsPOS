@@ -1,6 +1,6 @@
-import type { Product, CardPayment } from './types'
+import type { Product, CardPayment, Order } from './types'
 
-const apiBase = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080'
+const apiBase = import.meta.env.VITE_API_BASE_URL ?? 'https://api-pos.armmada.id/v1'
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const token = localStorage.getItem('gbs_pos_token')
@@ -13,11 +13,11 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 }
 
 export async function login(username: string, password: string) {
-  return request<{ data: { token: string } }>('/v1/login', { method: 'POST', body: JSON.stringify({ username, password }) })
+  return request<{ data: { token: string } }>('/login', { method: 'POST', body: JSON.stringify({ username, password }) })
 }
 
 export async function getProducts() {
-  const response = await request<{ data: Product[] }>('/v1/products')
+  const response = await request<{ data: Product[] }>('/products')
   return response.data
 }
 
@@ -28,15 +28,20 @@ export async function createOrder(order: {
   total: number
   terminalId: string
 }) {
-  const response = await request<{ data: unknown }>('/v1/orders', {
+  const response = await request<{ data: Order }>('/orders', {
     method: 'POST',
     body: JSON.stringify({ ...order, tax: 0, paymentMethod: 'CARD', timestamp: Date.now() }),
   })
   return response.data
 }
 
+export async function getOrders(terminalId: string) {
+  const response = await request<{ data: Order[] }>(`/orders?terminalId=${encodeURIComponent(terminalId)}`)
+  return response.data
+}
+
 export async function initCardPayment(orderId: string, amount: number, terminalId: string, deviceId: string) {
-  const response = await request<{ data: CardPayment }>('/v1/card-payment/init', {
+  const response = await request<{ data: CardPayment }>('/card-payment/init', {
     method: 'POST',
     body: JSON.stringify({ orderId, amount, terminalId, deviceId }),
   })
@@ -44,10 +49,10 @@ export async function initCardPayment(orderId: string, amount: number, terminalI
 }
 
 export async function cancelCardPayment(paymentId: string) {
-  return request<{ data: CardPayment }>(`/v1/card-payment/${paymentId}/cancel`, { method: 'POST' })
+  return request<{ data: CardPayment }>(`/card-payment/${paymentId}/cancel`, { method: 'POST' })
 }
 
 export function websocketUrl(terminalId: string) {
-  const base = import.meta.env.VITE_WS_URL ?? 'ws://localhost:8080/ws'
+  const base = import.meta.env.VITE_WS_URL ?? 'wss://api-pos.armmada.id/ws'
   return `${base}?client_type=pos&terminal_id=${encodeURIComponent(terminalId)}&token=${encodeURIComponent(localStorage.getItem('gbs_pos_token') ?? '')}`
 }

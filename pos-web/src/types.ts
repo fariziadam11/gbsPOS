@@ -19,3 +19,16 @@ export interface CardPayment {
   transactionId?: string
   failureReason?: string
 }
+
+export interface Order {
+  id: string
+  items: Array<{ productName: string; productPrice: number; qty: number; subtotal: number }>
+  subtotal: number
+  tax: number
+  total: number
+  paymentMethod: string
+  timestamp: number
+  transactionId?: string
+  approvalCode?: string
+  maskedAccount?: string
+}
