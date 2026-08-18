@@ -31,4 +31,5 @@ export interface Order {
   transactionId?: string
   approvalCode?: string
   maskedAccount?: string
+  isVoided?: boolean
 }

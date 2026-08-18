@@ -76,7 +76,9 @@ function connect() {
         transactionId: message.transaction_id,
         failureReason: message.failure_reason,
       }
-      if (message.status === 'SUCCESS') cart.value = []
+      if (message.status === 'SUCCESS') {
+        cart.value = []
+      }
       if (message.status === 'SUCCESS' && currentOrder.value?.id === message.order_id) screen.value = 'receipt'
     }
   }
@@ -147,6 +149,18 @@ function showReceipt(order: Order) {
   screen.value = 'receipt'
 }
 
+// Transaksi kartu yang gagal = status payment FAILED/CANCELLED/EXPIRED, atau order CARD tanpa transactionId
+function isFailedOrder(order: Order) {
+  const livePayment = payment.value
+  if (livePayment && livePayment.orderId === order.id && (livePayment.status === 'FAILED' || livePayment.status === 'CANCELLED' || livePayment.status === 'EXPIRED')) return true
+  if (livePayment && livePayment.orderId === order.id && livePayment.status === 'SUCCESS') return false
+  return order.paymentMethod === 'CARD' && !order.transactionId
+}
+
+function orderStatus(order: Order) {
+  return isFailedOrder(order) ? 'Gagal' : 'Berhasil'
+}
+
 function newTransaction() {
   screen.value = 'checkout'
   payment.value = null
@@ -205,8 +219,15 @@ onUnmounted(() => {
     </section>
 
     <section v-else-if="screen === 'receipt'" class="single-panel">
-      <div v-if="currentOrder" class="receipt-card"><div class="success-badge">✓</div><p class="eyebrow">TRANSACTION COMPLETE</p><h2>Pembayaran berhasil</h2><p class="receipt-id">{{ currentOrder.id }}</p><div class="receipt-items"><div v-for="item in currentOrder.items" :key="`${currentOrder.id}-${item.productName}`" class="cart-item"><div class="cart-item-info"><strong>{{ item.productName }}</strong><small>{{ item.qty }} × Rp {{ item.productPrice.toLocaleString('id-ID') }}</small></div><strong>Rp {{ item.subtotal.toLocaleString('id-ID') }}</strong></div></div><div class="total-row"><span>Total</span><strong>Rp {{ currentOrder.total.toLocaleString('id-ID') }}</strong></div><p class="receipt-meta">{{ currentOrder.paymentMethod }} · {{ currentOrder.transactionId || payment?.transactionId || '-' }}</p><button class="primary-button pay" @click="newTransaction">Transaksi Baru <span>→</span></button></div><div v-else class="empty">Receipt belum tersedia.</div>
+      <div v-if="currentOrder" class="receipt-card">
+        <template v-if="isFailedOrder(currentOrder)">
+          <div class="fail-badge">✕</div><p class="eyebrow">TRANSACTION FAILED</p><h2>Pembayaran gagal</h2>
+        </template>
+        <template v-else>
+          <div class="success-badge">✓</div><p class="eyebrow">TRANSACTION COMPLETE</p><h2>Pembayaran berhasil</h2>
+        </template>
+        <p class="receipt-id">{{ currentOrder.id }}</p><div class="receipt-items"><div v-for="item in currentOrder.items" :key="`${currentOrder.id}-${item.productName}`" class="cart-item"><div class="cart-item-info"><strong>{{ item.productName }}</strong><small>{{ item.qty }} × Rp {{ item.productPrice.toLocaleString('id-ID') }}</small></div><strong>Rp {{ item.subtotal.toLocaleString('id-ID') }}</strong></div></div><div class="total-row"><span>Total</span><strong>Rp {{ currentOrder.total.toLocaleString('id-ID') }}</strong></div><p class="receipt-meta">{{ currentOrder.paymentMethod }} · {{ currentOrder.transactionId || payment?.transactionId || '-' }}</p><button class="primary-button pay" @click="newTransaction">Transaksi Baru <span>→</span></button></div><div v-else class="empty">Receipt belum tersedia.</div>
     </section>
-    <section v-else class="history-panel"><div class="section-heading"><div><p class="eyebrow">TERMINAL {{ terminalId }}</p><h2>Transaksi terakhir</h2></div><button class="quiet" @click="showHistory">Refresh</button></div><div v-if="historyLoading" class="empty">Memuat transaksi...</div><div v-else-if="!orders.length" class="empty">Belum ada transaksi.</div><template v-else><button v-for="order in orders" :key="order.id" class="history-row" @click="showReceipt(order)"><span><strong>{{ order.id }}</strong><small>{{ new Date(order.timestamp).toLocaleString('id-ID') }} · {{ order.paymentMethod }}</small></span><strong>Rp {{ order.total.toLocaleString('id-ID') }}</strong></button></template></section>
+    <section v-else class="history-panel"><div class="section-heading"><div><p class="eyebrow">TERMINAL {{ terminalId }}</p><h2>Transaksi terakhir</h2></div><button class="quiet" @click="showHistory">Refresh</button></div><div v-if="historyLoading" class="empty">Memuat transaksi...</div><div v-else-if="!orders.length" class="empty">Belum ada transaksi.</div><template v-else><button v-for="order in orders" :key="order.id" class="history-row" @click="showReceipt(order)"><span><strong>{{ order.id }}</strong><small>{{ new Date(order.timestamp).toLocaleString('id-ID') }} · {{ order.paymentMethod }} · <span :class="['status-label', { failed: isFailedOrder(order) }]">{{ orderStatus(order) }}</span></small></span><strong>Rp {{ order.total.toLocaleString('id-ID') }}</strong></button></template></section>
   </main>
 </template>

@@ -1,0 +1,31 @@
+{
+  "tasteLearning": true,
+  "permissions": {
+    "allow": [
+      "Shell(cmd:*)",
+      "Shell(dir:*)",
+      "Shell(C:\\Users\\ASBI\\AppData\\Roaming\\npm\\command-code.cmd:*)",
+      "Shell(type \"%USERPROFILE%\\.claude.json\" 2>nul | findstr /i \"memory codebase\")",
+      "Shell(findstr:*)",
+      "Shell(dir \"%USERPROFILE%\\.config\\opencode\" 2>nul & dir \"%USERPROFILE%\\.opencode.json\" 2>nul & type \"%USERPROFILE%\\.config\\opencode\\opencode.json\" 2>nul)",
+      "Shell(where:*)",
+      "Shell(npm:*)",
+      "Shell(python --version)",
+      "Shell(py:*)",
+      "Shell(python \"D:\\applications\\gbsPOS\\.commandcode\\skills\\ui-ux-pro-max\\scripts\\search.py\" \"payment terminal POS kiosk retail merchant\" --design-system -p \"GBS Payment Companion\" --stack jetpack-compose)",
+      "Shell(C:\\Users\\ASBI\\AppData\\Local\\Programs\\Python\\Python314\\python.exe:*)",
+      "Shell(gradlew.bat:*)",
+      "Shell(file tart 2>nul || head -c 200 tart)",
+      "Shell(type:*)",
+      "Shell(powershell -Command Add-Type -AssemblyName System.IO.Compression.FileSystem; =[System.IO.Compression.ZipFile]::OpenRead('app\\libs\\n2applib-release.aar'); .Entries | Where-Object { FullName -like 'classes.jar' } | ForEach-Object { FullName }; .Dispose())",
+      "Shell(powershell -Command Add-Type -AssemblyName System.IO.Compression.FileSystem; =[System.IO.Compression.ZipFile]::OpenRead('app\\libs\\n2applib-release.aar'); =.GetEntry('classes.jar'); ='%TEMP%\\n2applib-classes.jar'; =.Open(); =[System.IO.File]::Create(); .CopyTo(); .Close(); .Close(); .Dispose(); Write-Output )",
+      "Shell(jar:*)",
+      "Shell(C:\\Program Files\\Eclipse Adoptium\\jdk-21.0.8.9-hotspot\\bin\\jar.exe:*)",
+      "Shell(C:\\Program Files\\Eclipse Adoptium\\jdk-21.0.8.9-hotspot\\bin\\javap.exe:*)",
+      "Shell(call:*)",
+      "Shell(bun:*)"
+    ],
+    "deny": [],
+    "defaultMode": "default"
+  }
+}
