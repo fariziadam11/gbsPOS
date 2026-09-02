@@ -27,6 +27,34 @@ func (r *FuelSaleRepository) FindByID(id string) (*model.FuelSale, error) {
 	return &sale, nil
 }
 
+func (r *FuelSaleRepository) FindByReceiptToken(token string) (*model.FuelSale, error) {
+	var sale model.FuelSale
+	if err := r.db.First(&sale, "receipt_token = ?", token).Error; err != nil {
+		return nil, err
+	}
+	return &sale, nil
+}
+
+func (r *FuelSaleRepository) FindByAuthorizationToken(token string) (*model.FuelSale, error) {
+	var sale model.FuelSale
+	if err := r.db.First(&sale, "authorization_token = ?", token).Error; err != nil {
+		return nil, err
+	}
+	return &sale, nil
+}
+
+// Authorize marks a PAID sale as AUTHORIZED (single-use). Returns rows affected so
+// callers can detect a second scan (0 rows = already authorized/used).
+func (r *FuelSaleRepository) Authorize(id string, at time.Time) (int64, error) {
+	res := r.db.Model(&model.FuelSale{}).
+		Where("id = ? AND status = ?", id, model.FuelSaleStatusPaid).
+		Updates(map[string]interface{}{
+			"status":        model.FuelSaleStatusAuthorized,
+			"authorized_at": at,
+		})
+	return res.RowsAffected, res.Error
+}
+
 func (r *FuelSaleRepository) Report(from, to time.Time) (*model.FuelSalesReport, error) {
 	var summary []model.FuelSalesReportItem
 	if err := r.db.Raw(`

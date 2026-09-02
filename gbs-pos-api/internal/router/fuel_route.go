@@ -17,6 +17,15 @@ func setupFuelRoutes(rg *gin.RouterGroup, h *handler.FuelHandler) {
 		public.POST("/fuel-sales", h.CreateSale)
 	}
 
+	// Public receipt & dispenser authorization endpoints (paperless receipt + QR scan demo)
+	receiptPublic := rg.Group("/public")
+	{
+		receiptPublic.GET("/receipts/:token", h.GetReceiptHTML)
+		receiptPublic.GET("/receipts/:token/data", h.GetReceiptJSON)
+		receiptPublic.GET("/authorizations/:token", h.ValidateAuthorization)
+		receiptPublic.POST("/authorizations/:token/authorize", h.Authorize)
+	}
+
 	// Admin endpoints — require ADMIN role
 	admin := rg.Group("", middleware.RequireRole("ADMIN"))
 	{

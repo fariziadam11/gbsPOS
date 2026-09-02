@@ -66,20 +66,54 @@ type FuelSaleRequest struct {
 	TransactionID string    `json:"transactionId"`
 	PosMessageID  string    `json:"posMessageId"`
 	Timestamp     int64     `json:"timestamp"`
+	ReceiptToken  string    `json:"receiptToken"`
 }
 
 type FuelSaleResponse struct {
-	ID            string    `json:"id"`
-	PumpID        string    `json:"pumpId"`
-	NozzleID      string    `json:"nozzleId"`
-	FuelCode      string    `json:"fuelCode"`
-	PricePerLiter float64   `json:"pricePerLiter"`
-	Liters        float64   `json:"liters"`
-	TotalAmount   float64   `json:"totalAmount"`
-	PaymentMethod string    `json:"paymentMethod"`
-	TransactionID string    `json:"transactionId,omitempty"`
-	PosMessageID  string    `json:"posMessageId,omitempty"`
-	Timestamp     time.Time `json:"timestamp"`
+	ID                 string     `json:"id"`
+	PumpID             string     `json:"pumpId"`
+	NozzleID           string     `json:"nozzleId"`
+	FuelCode           string     `json:"fuelCode"`
+	PricePerLiter      float64    `json:"pricePerLiter"`
+	Liters             float64    `json:"liters"`
+	TotalAmount        float64    `json:"totalAmount"`
+	PaymentMethod      string     `json:"paymentMethod"`
+	TransactionID      string     `json:"transactionId,omitempty"`
+	PosMessageID       string     `json:"posMessageId,omitempty"`
+	Timestamp          time.Time  `json:"timestamp"`
+	ReceiptToken       string     `json:"receiptToken,omitempty"`
+	AuthorizationToken string     `json:"authorizationToken,omitempty"`
+	Status             string     `json:"status"`
+	AuthorizedAt       *time.Time `json:"authorizedAt,omitempty"`
+}
+
+// PublicReceiptResponse is the safe subset of a fuel sale exposed on the public
+// receipt page/JSON. It intentionally excludes transactionId/posMessageId.
+type PublicReceiptResponse struct {
+	ID            string     `json:"id"`
+	PumpID        string     `json:"pumpId"`
+	NozzleID      string     `json:"nozzleId"`
+	FuelCode      string     `json:"fuelCode"`
+	PricePerLiter float64    `json:"pricePerLiter"`
+	Liters        float64    `json:"liters"`
+	TotalAmount   float64    `json:"totalAmount"`
+	PaymentMethod string     `json:"paymentMethod"`
+	Timestamp     time.Time  `json:"timestamp"`
+	Status        string     `json:"status"`
+	AuthorizedAt  *time.Time `json:"authorizedAt,omitempty"`
+}
+
+// AuthorizationCheckResponse is returned by dispenser authorization endpoints.
+type AuthorizationCheckResponse struct {
+	Valid         bool       `json:"valid"`
+	Status        string     `json:"status"`
+	SaleID        string     `json:"saleId,omitempty"`
+	PumpID        string     `json:"pumpId,omitempty"`
+	NozzleID      string     `json:"nozzleId,omitempty"`
+	FuelCode      string     `json:"fuelCode,omitempty"`
+	Liters        float64    `json:"liters"`
+	TotalAmount   float64    `json:"totalAmount"`
+	AuthorizedAt  *time.Time `json:"authorizedAt,omitempty"`
 }
 
 type FuelReportItem struct {

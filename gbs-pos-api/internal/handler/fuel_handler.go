@@ -297,12 +297,17 @@ func (h *FuelHandler) CreateSale(c *gin.Context) {
 		c.JSON(http.StatusUnprocessableEntity, response.ValidationError("Invalid request body", nil))
 		return
 	}
-	sale, err := h.fuelService.CreateSale(req)
+	sale, created, err := h.fuelService.CreateSale(req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, response.Error("INTERNAL_SERVER_ERROR", err.Error()))
 		return
 	}
-	c.JSON(http.StatusCreated, response.Success(sale))
+	if created {
+		c.JSON(http.StatusCreated, response.Success(sale))
+		return
+	}
+	// Idempotent replay of an existing sale.
+	c.JSON(http.StatusOK, response.SuccessIdempotent(sale))
 }
 
 // Report godoc

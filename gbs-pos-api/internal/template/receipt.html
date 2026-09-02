@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Struk Digital</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      background: #f0f2f5;
+      color: #161616;
+      display: flex;
+      justify-content: center;
+      padding: 16px;
+      min-height: 100vh;
+    }
+    .receipt {
+      background: #ffffff;
+      width: 100%;
+      max-width: 420px;
+      border-radius: 16px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+      padding: 24px;
+    }
+    .header { text-align: center; margin-bottom: 16px; }
+    .header .brand { font-size: 22px; font-weight: 700; color: #0055A4; }
+    .header .sub { font-size: 13px; color: #6f6f6f; margin-top: 4px; }
+    .divider { border: none; border-top: 1px dashed #c6c6c6; margin: 16px 0; }
+    .row { display: flex; justify-content: space-between; padding: 4px 0; font-size: 14px; }
+    .row .label { color: #6f6f6f; }
+    .row .value { font-weight: 600; text-align: right; }
+    .total-row { display: flex; justify-content: space-between; align-items: baseline; margin-top: 8px; }
+    .total-row .label { font-size: 16px; font-weight: 700; }
+    .total-row .value { font-size: 24px; font-weight: 800; color: #0055A4; }
+    .qr-wrap { text-align: center; margin: 20px 0 8px; }
+    .qr-wrap img { width: 240px; height: 240px; image-rendering: pixelated; }
+    .qr-wrap .caption { font-size: 13px; color: #6f6f6f; margin-top: 8px; }
+    .status-badge {
+      display: inline-block;
+      padding: 6px 14px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 700;
+      margin-top: 12px;
+    }
+    .status-pending { background: #fde9e7; color: #da1e28; }
+    .status-used { background: #defbe6; color: #0e6027; }
+    .footer { text-align: center; font-size: 12px; color: #8c8c8c; margin-top: 16px; }
+  </style>
+</head>
+<body>
+  <div class="receipt">
+    <div class="header">
+      <div class="brand">SPBU Self-Service</div>
+      <div class="sub">Struk Digital — GBS Fuel POS</div>
+    </div>
+
+    <hr class="divider" />
+
+    <div class="row"><span class="label">ID Transaksi</span><span class="value">{{.ID}}</span></div>
+    <div class="row"><span class="label">Waktu</span><span class="value">{{.Timestamp}}</span></div>
+    <div class="row"><span class="label">Pompa</span><span class="value">{{.PumpID}}</span></div>
+    <div class="row"><span class="label">Nozzle</span><span class="value">{{.NozzleID}}</span></div>
+    <div class="row"><span class="label">Jenis BBM</span><span class="value">{{.FuelName}}</span></div>
+    <div class="row"><span class="label">Harga/Liter</span><span class="value">{{.PricePerLiter}}</span></div>
+    <div class="row"><span class="label">Liter</span><span class="value">{{.Liters}}</span></div>
+
+    <div class="total-row">
+      <span class="label">TOTAL</span>
+      <span class="value">{{.TotalAmount}}</span>
+    </div>
+
+    <div class="row" style="margin-top:8px"><span class="label">Metode</span><span class="value">{{.PaymentMethod}}</span></div>
+
+    <hr class="divider" />
+
+    <div class="qr-wrap">
+      <img src="{{.AuthQRDataURI}}" alt="QR Otorisasi Pengisian" />
+      <div class="caption">Scan QR ini pada mesin nozzle sebelum pengisian</div>
+      {{if .AlreadyUsed}}
+        <div><span class="status-badge status-used">✓ Sudah dipakai — {{.AuthorizedAt}}</span></div>
+      {{else}}
+        <div><span class="status-badge status-pending">Menunggu scan mesin</span></div>
+      {{end}}
+    </div>
+
+    <div class="footer">Terima kasih — struk ini adalah bukti pembayaran digital</div>
+  </div>
+</body>
+</html>
