@@ -134,7 +134,7 @@ func main() {
 	)
 	settlementService := service.NewSettlementService(orderRepo, settlementRepo)
 	dashboardService := service.NewDashboardService(dashboardRepo)
-	fuelService := service.NewFuelService(fuelPriceRepo, pumpRepo, nozzleRepo, fuelSaleRepo)
+	fuelService := service.NewFuelService(fuelPriceRepo, pumpRepo, nozzleRepo, fuelSaleRepo, cfg.PublicBaseURL)
 	qrisService := service.NewQrisService(cfg, db, orderRepo)
 	qrisDirectService := service.NewQrisDirectService(cfg, qrisTransactionRepo, orderRepo)
 	cardPaymentService := service.NewCardPaymentService(cardPaymentRepo, orderService, companionDeviceRepo, websocketHub)

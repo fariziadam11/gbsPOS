@@ -78,6 +78,28 @@ func (h *FuelHandler) ValidateAuthorization(c *gin.Context) {
 	c.JSON(http.StatusOK, response.Success(res))
 }
 
+// ScanAuthorize godoc
+//
+//	@Summary		Authorize dispenser from scan URL (GET, demo-friendly)
+//	@Description	Single-use PAID → AUTHORIZED. Opening this URL in a browser
+//	@Description	(phone camera scan of the receipt QR) performs the authorize and
+//	@Description	returns a mobile result page. Same single-use semantics as POST
+//	@Description	/authorize: a second scan shows an "already used" page.
+//	@Tags			Fuel Authorization
+//	@Produce		html
+//	@Param			token	path	string	true	"Authorization token"
+//	@Success		200
+//	@Router			/v1/public/authorizations/{token}/scan [get]
+func (h *FuelHandler) ScanAuthorize(c *gin.Context) {
+	page, err := h.fuelService.AuthorizeScanPage(c.Param("token"))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, response.Error("INTERNAL_SERVER_ERROR", err.Error()))
+		return
+	}
+	c.Header("Content-Type", "text/html; charset=utf-8")
+	c.String(http.StatusOK, page)
+}
+
 // Authorize godoc
 //
 //	@Summary		Authorize dispenser (single-use)

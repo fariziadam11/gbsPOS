@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Hasil otorisasi pengisian BBM — GBS Fuel POS." />
+  <meta name="theme-color" content="#0055A4" />
+  <title>Otorisasi Pengisian · SPBU Self-Service</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230055A4'/%3E%3Cpath d='M16 6c3.2 4.3 6.4 7.9 6.4 11.7a6.4 6.4 0 1 1-12.8 0C9.6 13.9 12.8 10.3 16 6z' fill='%23fff'/%3E%3C/svg%3E" />
+  <style>
+    /* ===== Design tokens — IBM Carbon + Pertamina ===== */
+    :root {
+      --brand: #0055A4;
+      --ink: #161616;
+      --gray-80: #393939;
+      --gray-70: #525252;
+      --gray-50: #8D8D8D;
+      --gray-20: #E0E0E0;
+      --gray-10: #F4F4F4;
+      --surface: #FFFFFF;
+      --success: #0E6027;
+      --success-bg: #DEFBE6;
+      --success-icon: #24A148;
+      --warn: #8A6D00;
+      --warn-bg: #FEF3C7;
+      --error: #DA1E28;
+      --error-bg: #FDE9E7;
+      --focus: #0F62FE;
+      --radius-card: 16px;
+      --radius-lg: 12px;
+      --font: -apple-system, BlinkMacSystemFont, "IBM Plex Sans", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { -webkit-text-size-adjust: 100%; }
+    body {
+      font-family: var(--font);
+      background: var(--gray-10);
+      color: var(--ink);
+      line-height: 1.5;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 24px 16px;
+    }
+    :focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; border-radius: 4px; }
+
+    .page { width: 100%; max-width: 440px; display: flex; flex-direction: column; gap: 16px; }
+
+    /* ===== Kartu ===== */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--gray-20);
+      border-radius: var(--radius-card);
+      padding: 24px;
+      box-shadow: 0 1px 2px rgba(22, 22, 22, 0.05);
+    }
+    .card--brand {
+      border: none;
+      background: var(--brand);
+      color: #fff;
+      text-align: center;
+      padding: 20px 24px;
+      box-shadow: none;
+    }
+    .card--brand .brand-name { font-size: 17px; font-weight: 700; letter-spacing: 0.2px; }
+    .card--brand .brand-sub { font-size: 13px; opacity: 0.85; margin-top: 2px; }
+
+    /* ===== Hasil ===== */
+    .result { display: flex; flex-direction: column; align-items: center; text-align: center; }
+    .result-icon {
+      width: 72px; height: 72px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 14px;
+    }
+    .result-icon svg { width: 40px; height: 40px; }
+    .result-icon--success { background: var(--success-bg); border: 1px solid #24A14866; }
+    .result-icon--warn { background: var(--warn-bg); border: 1px solid #F5B80066; }
+    .result-icon--error { background: var(--error-bg); border: 1px solid #DA1E2866; }
+    .result h1 { font-size: 19px; font-weight: 700; color: var(--ink); }
+    .result .desc { font-size: 14px; color: var(--gray-70); margin-top: 6px; max-width: 320px; }
+
+    .badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 7px 14px; border-radius: 999px;
+      font-size: 13px; font-weight: 700;
+      margin-top: 14px;
+    }
+    .badge svg { width: 15px; height: 15px; }
+    .badge--success { background: var(--success-bg); color: var(--success); }
+    .badge--warn { background: var(--warn-bg); color: #6F5400; }
+    .badge--error { background: var(--error-bg); color: var(--error); }
+
+    /* ===== Detail struk ===== */
+    .section-title {
+      font-size: 11px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.08em; color: var(--gray-50);
+      margin-bottom: 10px;
+    }
+    dl.detail { display: block; }
+    .drow { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; padding: 4px 0; }
+    .drow dt { font-size: 13px; color: var(--gray-70); flex: 0 0 auto; }
+    .drow dd { font-size: 13px; font-weight: 600; color: var(--ink); text-align: right; font-variant-numeric: tabular-nums; word-break: break-word; }
+    .divider { border: none; border-top: 1px dashed var(--gray-20); margin: 16px 0; }
+    .total-block {
+      background: var(--gray-10);
+      border-radius: var(--radius-lg);
+      padding: 12px 16px;
+      display: flex; align-items: baseline; justify-content: space-between; gap: 12px;
+      margin-top: 2px;
+    }
+    .total-block .total-label { font-size: 13px; font-weight: 700; color: var(--gray-80); }
+    .total-block .total-value { font-size: 22px; font-weight: 800; color: var(--brand); letter-spacing: -0.3px; font-variant-numeric: tabular-nums; }
+
+    /* ===== Aksi lanjut ===== */
+    .action { text-align: center; font-size: 13px; color: var(--gray-70); }
+    .action .action-title { display: block; font-weight: 700; color: var(--ink); margin-bottom: 2px; }
+
+    .footer { text-align: center; font-size: 12px; color: var(--gray-50); padding: 4px 8px 10px; }
+
+    /* ===== Print ===== */
+    @media print {
+      body { background: #fff; padding: 0; align-items: flex-start; }
+      .page { max-width: 76mm; gap: 0; }
+      .card { border: none; border-radius: 0; padding: 0 0 8px; box-shadow: none; }
+      .card--brand { color: var(--ink); padding-bottom: 8px; }
+      .card--brand .brand-name { color: var(--brand); }
+      .card--brand .brand-sub { color: var(--gray-70); opacity: 1; }
+      .result-icon { width: 56px; height: 56px; }
+      .result-icon svg { width: 32px; height: 32px; }
+      .footer { padding-bottom: 0; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header class="card card--brand">
+      <div class="brand-name">SPBU Self-Service</div>
+      <div class="brand-sub">GBS Fuel POS · Otorisasi Pengisian</div>
+    </header>
+
+    {{if eq .Outcome "success"}}
+    <!-- ===== Sukses: silakan mengisi ===== -->
+    <section class="card result" role="status" aria-live="polite">
+      <span class="result-icon result-icon--success" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#24A148" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+      </span>
+      <h1>Otorisasi berhasil</h1>
+      <p class="desc">Nozzle telah aktif. Silakan lakukan pengisian bahan bakar sesuai nominal.</p>
+      <span class="badge badge--success">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+        Siap mengisi
+      </span>
+    </section>
+
+    {{if .ShowDetails}}
+    <section class="card">
+      <h1 class="section-title">Detail Pengisian</h1>
+      <dl class="detail">
+        <div class="drow"><dt>Pompa</dt><dd>{{.PumpID}}</dd></div>
+        <div class="drow"><dt>Nozzle</dt><dd>{{.NozzleID}}</dd></div>
+        <div class="drow"><dt>Jenis BBM</dt><dd>{{.FuelName}}</dd></div>
+        <div class="drow"><dt>Volume</dt><dd>{{.Liters}}</dd></div>
+      </dl>
+      <hr class="divider" />
+      <div class="total-block">
+        <span class="total-label">TOTAL</span>
+        <span class="total-value">{{.TotalAmount}}</span>
+      </div>
+    </section>
+    {{end}}
+
+    <div class="action">
+      <span class="action-title">Sudah selesai mengisi?</span>
+      Silakan kembali ke layar SPBU untuk struk digital Anda.
+    </div>
+
+    {{else if eq .Outcome "already_used"}}
+    <!-- ===== Sudah dipakai ===== -->
+    <section class="card result" role="status" aria-live="polite">
+      <span class="result-icon result-icon--warn" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#B28600" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      </span>
+      <h1>QR sudah digunakan</h1>
+      <p class="desc">Kode otorisasi ini hanya berlaku untuk satu kali pengisian dan telah dipakai sebelumnya.</p>
+      <span class="badge badge--warn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        Tidak dapat dipakai lagi
+      </span>
+    </section>
+
+    <div class="action">
+      <span class="action-title">Perlu bantuan?</span>
+      Hubungi petugas SPBU jika Anda mengalami kendala pengisian.
+    </div>
+
+    {{else}}
+    <!-- ===== Tidak ditemukan / tidak valid ===== -->
+    <section class="card result" role="status" aria-live="polite">
+      <span class="result-icon result-icon--error" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#DA1E28" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+      </span>
+      <h1>QR tidak valid</h1>
+      <p class="desc">Kode yang dipindai tidak dikenali atau telah kedaluwarsa.</p>
+      <span class="badge badge--error">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+        Tidak valid
+      </span>
+    </section>
+
+    <div class="action">
+      <span class="action-title">Perlu bantuan?</span>
+      Hubungi petugas SPBU atau pindai ulang struk digital Anda.
+    </div>
+    {{end}}
+
+    <footer class="footer">GBS Fuel POS — struk digital</footer>
+  </main>
+</body>
+</html>

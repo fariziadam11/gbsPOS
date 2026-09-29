@@ -13,6 +13,10 @@ const (
 	CardPaymentFailed     = "FAILED"
 	CardPaymentCancelled  = "CANCELLED"
 	CardPaymentExpired    = "EXPIRED"
+
+	// CardPaymentExpiryDuration is how long a payment may stay in WAITING_FOR_CARD
+	// (or PROCESSING) before the expiry job voids it.
+	CardPaymentExpiryDuration = 5 * time.Minute
 )
 
 type CardPayment struct {

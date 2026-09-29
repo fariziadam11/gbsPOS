@@ -56,7 +56,7 @@ func (s *CardPaymentService) Create(ctx context.Context, orderID string, amount 
 		Status:     model.CardPaymentWaiting,
 		TerminalID: terminalID,
 		DeviceID:   deviceID,
-		ExpiresAt:  time.Now().Add(5 * time.Minute),
+		ExpiresAt:  time.Now().Add(model.CardPaymentExpiryDuration),
 	}
 	if err := s.repo.Create(ctx, payment); err != nil {
 		return nil, err
@@ -78,20 +78,25 @@ func (s *CardPaymentService) Pending(ctx context.Context, deviceID string) ([]mo
 }
 
 func (s *CardPaymentService) Cancel(ctx context.Context, id uuid.UUID) (*model.CardPayment, error) {
-	payment, err := s.repo.FindByID(ctx, id)
+	// Atomic: only cancels while the payment is still WAITING_FOR_CARD. If a SUCCESS
+	// from the companion landed first, this returns an error instead of voiding an
+	// order that may already have been paid.
+	updated, err := s.repo.CancelIfWaiting(ctx, id)
 	if err != nil {
 		return nil, err
 	}
-	if payment.Status != model.CardPaymentWaiting {
-		return nil, fmt.Errorf("payment cannot be cancelled in status %s", payment.Status)
+	if !updated {
+		return nil, fmt.Errorf("payment cannot be cancelled in current status")
 	}
-	payment.Status = model.CardPaymentCancelled
-	if err := s.repo.Update(ctx, payment); err != nil {
-		return nil, err
+	// Void the order even if the re-fetch fails — the payment is already CANCELLED
+	// and must not leave the order locked.
+	payment, findErr := s.repo.FindByID(ctx, id)
+	if findErr == nil {
+		s.voidOrder(payment.OrderID, "card payment cancelled")
+		s.broadcastStatus(payment)
+		return payment, nil
 	}
-	s.voidOrder(payment.OrderID, "card payment cancelled")
-	s.broadcastStatus(payment)
-	return payment, nil
+	return nil, findErr
 }
 
 func (s *CardPaymentService) UpdateFromCompanion(ctx context.Context, client *ws.Client, message ws.Message) error {
@@ -115,13 +120,68 @@ func (s *CardPaymentService) UpdateFromCompanion(ctx context.Context, client *ws
 	if message.Status == model.CardPaymentSuccess && message.TransactionID == "" {
 		return fmt.Errorf("successful payment requires transaction id")
 	}
-	if payment.Status == model.CardPaymentSuccess || payment.Status == model.CardPaymentCancelled || payment.Status == model.CardPaymentExpired {
+
+	// Duplicate terminal update from the companion — silently ignore.
+	if payment.Status == model.CardPaymentSuccess {
 		return nil
 	}
-	if message.Status == model.CardPaymentProcessing && payment.Status != model.CardPaymentWaiting {
-		return fmt.Errorf("payment cannot start processing from status %s", payment.Status)
+	// A late SUCCESS after the payment was expired or cancelled means money may have
+	// been charged on a SoftPOS while the order was (or is being) voided. Log loudly
+	// and notify the POS so staff can reconcile/refund — never hide it.
+	if payment.Status == model.CardPaymentExpired || payment.Status == model.CardPaymentCancelled {
+		if message.Status == model.CardPaymentSuccess {
+			log.Error().
+				Str("payment_id", payment.ID.String()).
+				Str("order_id", payment.OrderID).
+				Str("payment_status", payment.Status).
+				Str("transaction_id", message.TransactionID).
+				Msg("LATE card payment success after payment was " + payment.Status + " — verify charge & refund if needed")
+			s.hub.Send(ws.ClientPOS, payment.TerminalID, ws.Message{
+				Type:          "PAYMENT_LATE_SUCCESS",
+				PaymentID:     payment.ID.String(),
+				OrderID:       payment.OrderID,
+				Status:        message.Status,
+				TransactionID: message.TransactionID,
+				CardBrand:     message.CardBrand,
+				MaskedCard:    message.MaskedCard,
+				AuthCode:      message.AuthCode,
+				EntryMode:     message.EntryMode,
+				AcqMID:        message.AcqMID,
+				AcqTID:        message.AcqTID,
+				PosMessageID:  message.PosMessageID,
+				FailureReason: "payment " + payment.Status + " before success arrived — verify charge and refund if needed",
+			})
+		}
+		return nil
 	}
-	if (message.Status == model.CardPaymentSuccess || message.Status == model.CardPaymentFailed) && payment.Status != model.CardPaymentWaiting && payment.Status != model.CardPaymentProcessing {
+	if payment.Status == model.CardPaymentFailed {
+		return nil
+	}
+	if message.Status == model.CardPaymentProcessing {
+		if payment.Status != model.CardPaymentWaiting {
+			// Already PROCESSING (e.g. reconnect re-send) — idempotent, no expiry refresh.
+			return nil
+		}
+		// Atomic WAITING→PROCESSING with a refreshed expiry window so a slow
+		// SoftPOS transaction is not cut off by the expiry job. Loses the race
+		// (Cancel/Expire won) when this returns false.
+		newExpiry := time.Now().Add(model.CardPaymentExpiryDuration)
+		updated, err := s.repo.MarkProcessing(ctx, id, newExpiry)
+		if err != nil {
+			return err
+		}
+		if !updated {
+			return fmt.Errorf("payment is no longer waiting for card")
+		}
+		payment.Status = model.CardPaymentProcessing
+		payment.ExpiresAt = newExpiry
+		payment.UpdatedAt = time.Now()
+		payment.PosMessageID = message.PosMessageID
+		s.broadcastStatus(payment)
+		return nil
+	}
+
+	if payment.Status != model.CardPaymentWaiting && payment.Status != model.CardPaymentProcessing {
 		return fmt.Errorf("payment cannot complete from status %s", payment.Status)
 	}
 	payment.Status = message.Status
@@ -134,6 +194,7 @@ func (s *CardPaymentService) UpdateFromCompanion(ctx context.Context, client *ws
 	payment.AcqTID = message.AcqTID
 	payment.PosMessageID = message.PosMessageID
 	payment.FailureReason = message.FailureReason
+	payment.UpdatedAt = time.Now()
 	if payment.Status == model.CardPaymentSuccess {
 		if err := s.repo.FinalizeSuccess(ctx, payment); err != nil {
 			return err
@@ -143,7 +204,7 @@ func (s *CardPaymentService) UpdateFromCompanion(ctx context.Context, client *ws
 			return err
 		}
 	}
-	if payment.Status == model.CardPaymentFailed || payment.Status == model.CardPaymentCancelled {
+	if payment.Status == model.CardPaymentFailed {
 		s.voidOrder(payment.OrderID, "card payment not completed")
 	}
 	s.broadcastStatus(payment)
@@ -156,13 +217,21 @@ func (s *CardPaymentService) Expire(ctx context.Context) error {
 		return err
 	}
 	for _, payment := range payments {
+		// Only WAITING payments get their order voided: nothing has been charged yet.
+		// A PROCESSING payment that expired (e.g. companion died mid-transaction) is
+		// marked EXPIRED but its order is left open so staff can reconcile whether the
+		// SoftPOS actually charged the card.
+		wasProcessing := payment.Status == model.CardPaymentProcessing
 		updated, err := s.repo.MarkExpired(ctx, payment.ID, time.Now())
 		if err != nil {
 			return err
 		}
 		if updated {
 			payment.Status = model.CardPaymentExpired
-			s.voidOrder(payment.OrderID, "card payment expired")
+			payment.UpdatedAt = time.Now()
+			if !wasProcessing {
+				s.voidOrder(payment.OrderID, "card payment expired")
+			}
 			s.broadcastStatus(&payment)
 		}
 	}
@@ -181,7 +250,20 @@ func (s *CardPaymentService) HandleMessage(client *ws.Client, message ws.Message
 		return
 	}
 	if message.Type == "PAYMENT_STATUS_UPDATE" {
-		_ = s.UpdateFromCompanion(context.Background(), client, message)
+		if err := s.UpdateFromCompanion(context.Background(), client, message); err != nil {
+			log.Error().
+				Err(err).
+				Str("client", client.Type+":"+client.ID).
+				Str("payment_id", message.PaymentID).
+				Str("status", message.Status).
+				Msg("companion payment update failed")
+			s.hub.Send(client.Type, client.ID, ws.Message{
+				Type:          "PAYMENT_UPDATE_ERROR",
+				PaymentID:     message.PaymentID,
+				Status:        message.Status,
+				FailureReason: err.Error(),
+			})
+		}
 	}
 }
 

@@ -2,90 +2,320 @@
 <html lang="id">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Struk Digital</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Struk digital pembayaran BBM — GBS Fuel POS. Scan untuk otorisasi pengisian di nozzle." />
+  <meta name="theme-color" content="#0055A4" />
+  <title>Struk Digital · SPBU Self-Service</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230055A4'/%3E%3Cpath d='M16 6c3.2 4.3 6.4 7.9 6.4 11.7a6.4 6.4 0 1 1-12.8 0C9.6 13.9 12.8 10.3 16 6z' fill='%23fff'/%3E%3C/svg%3E" />
   <style>
+    /* ===== Design tokens — IBM Carbon + Pertamina ===== */
+    :root {
+      --brand: #0055A4;          /* Pertamina blue */
+      --brand-dark: #003C75;
+      --blue-60: #0F62FE;        /* Carbon interactive */
+      --ink: #161616;            /* Carbon Gray 100 */
+      --gray-80: #393939;        /* Carbon Gray 80 */
+      --gray-70: #525252;        /* Carbon Gray 70 — secondary */
+      --gray-50: #8D8D8D;        /* Carbon Gray 50 — tertiary/disabled */
+      --gray-20: #E0E0E0;        /* Carbon Gray 20 — hairline */
+      --gray-10: #F4F4F4;        /* Carbon Gray 10 — canvas */
+      --surface: #FFFFFF;
+      --success: #0E6027;        /* on success bg */
+      --success-bg: #DEFBE6;
+      --success-icon: #24A148;   /* Carbon green 50 */
+      --warn: #8A6D00;
+      --warn-bg: #FEF3C7;
+      --error: #DA1E28;          /* Carbon red 60 */
+      --error-bg: #FDE9E7;
+      --focus: #0F62FE;
+      --radius-card: 16px;
+      --radius-lg: 12px;
+      --radius-sm: 8px;
+      --font: -apple-system, BlinkMacSystemFont, "IBM Plex Sans", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
     * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { -webkit-text-size-adjust: 100%; }
     body {
-      font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-      background: #f0f2f5;
-      color: #161616;
+      font-family: var(--font);
+      background: var(--gray-10);
+      color: var(--ink);
+      line-height: 1.5;
+      min-height: 100vh;
       display: flex;
       justify-content: center;
-      padding: 16px;
-      min-height: 100vh;
+      padding: 24px 16px;
     }
+    /* Focus ring terlihat untuk navigasi keyboard */
+    :focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; border-radius: 4px; }
+
     .receipt {
-      background: #ffffff;
       width: 100%;
-      max-width: 420px;
-      border-radius: 16px;
-      box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+      max-width: 440px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    /* ===== Kartu ===== */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--gray-20);
+      border-radius: var(--radius-card);
       padding: 24px;
+      box-shadow: 0 1px 2px rgba(22, 22, 22, 0.05);
     }
-    .header { text-align: center; margin-bottom: 16px; }
-    .header .brand { font-size: 22px; font-weight: 700; color: #0055A4; }
-    .header .sub { font-size: 13px; color: #6f6f6f; margin-top: 4px; }
-    .divider { border: none; border-top: 1px dashed #c6c6c6; margin: 16px 0; }
-    .row { display: flex; justify-content: space-between; padding: 4px 0; font-size: 14px; }
-    .row .label { color: #6f6f6f; }
-    .row .value { font-weight: 600; text-align: right; }
-    .total-row { display: flex; justify-content: space-between; align-items: baseline; margin-top: 8px; }
-    .total-row .label { font-size: 16px; font-weight: 700; }
-    .total-row .value { font-size: 24px; font-weight: 800; color: #0055A4; }
-    .qr-wrap { text-align: center; margin: 20px 0 8px; }
-    .qr-wrap img { width: 240px; height: 240px; image-rendering: pixelated; }
-    .qr-wrap .caption { font-size: 13px; color: #6f6f6f; margin-top: 8px; }
-    .status-badge {
-      display: inline-block;
-      padding: 6px 14px;
-      border-radius: 999px;
+    .card--brand {
+      border: none;
+      background: var(--brand);
+      color: #fff;
+      text-align: center;
+      padding: 20px 24px;
+      box-shadow: none;
+    }
+    .card--brand .brand-name { font-size: 17px; font-weight: 700; letter-spacing: 0.2px; }
+    .card--brand .brand-sub { font-size: 13px; opacity: 0.85; margin-top: 2px; }
+
+    /* ===== Hero status ===== */
+    .status-hero { display: flex; align-items: center; gap: 14px; }
+    .status-hero .status-icon {
+      flex: 0 0 auto;
+      width: 44px; height: 44px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .status-hero .status-icon svg { width: 24px; height: 24px; }
+    .status-hero .status-title { font-size: 16px; font-weight: 700; color: var(--ink); }
+    .status-hero .status-desc { font-size: 13px; color: var(--gray-70); margin-top: 2px; }
+
+    .status-hero--pending { background: var(--warn-bg); }
+    .status-hero--pending .status-title,
+    .status-hero--pending .status-desc { color: #6F5400; }
+    .status-hero--pending .status-icon { background: #FFF6DC; border: 1px solid #F5D90066; }
+    .status-hero--done { background: var(--success-bg); }
+    .status-hero--done .status-title,
+    .status-hero--done .status-desc { color: var(--success); }
+    .status-hero--done .status-icon { background: #C7F0CE; border: 1px solid #24A14866; }
+
+    /* ===== Detail struk ===== */
+    .section-title {
+      font-size: 11px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.08em; color: var(--gray-50);
+      margin-bottom: 10px;
+    }
+    dl.detail { display: block; }
+    .drow { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; padding: 4px 0; }
+    .drow dt { font-size: 13px; color: var(--gray-70); flex: 0 0 auto; }
+    .drow dd { font-size: 13px; font-weight: 600; color: var(--ink); text-align: right; font-variant-numeric: tabular-nums; word-break: break-word; }
+    .divider { border: none; border-top: 1px dashed var(--gray-20); margin: 16px 0; }
+    .divider--solid { border-top-style: solid; border-color: var(--gray-20); }
+
+    /* Blok total */
+    .total-block {
+      background: var(--gray-10);
+      border-radius: var(--radius-lg);
+      padding: 14px 16px;
+      display: flex; align-items: baseline; justify-content: space-between; gap: 12px;
+      margin-top: 2px;
+    }
+    .total-block .total-label { font-size: 13px; font-weight: 700; color: var(--gray-80); }
+    .total-block .total-value { font-size: 24px; font-weight: 800; color: var(--brand); letter-spacing: -0.3px; font-variant-numeric: tabular-nums; }
+
+    .payment-line {
+      display: flex; justify-content: space-between; align-items: center; gap: 12px;
+      margin-top: 14px;
       font-size: 13px;
-      font-weight: 700;
-      margin-top: 12px;
     }
-    .status-pending { background: #fde9e7; color: #da1e28; }
-    .status-used { background: #defbe6; color: #0e6027; }
-    .footer { text-align: center; font-size: 12px; color: #8c8c8c; margin-top: 16px; }
+    .payment-line .label { color: var(--gray-70); }
+    .payment-line .value { font-weight: 700; color: var(--ink); }
+    .payment-line .value .method-icon { width: 15px; height: 15px; vertical-align: -2px; margin-right: 5px; color: var(--gray-80); }
+
+    /* ===== Panel QR ===== */
+    .qr-panel { text-align: center; padding: 20px 20px 16px; }
+    .qr-frame {
+      display: inline-block;
+      background: #fff;
+      border: 1px solid var(--gray-20);
+      border-radius: var(--radius-lg);
+      padding: 14px;
+    }
+    .qr-frame img { display: block; width: 208px; height: 208px; image-rendering: pixelated; }
+    .qr-caption { margin-top: 12px; font-size: 13px; font-weight: 600; color: var(--ink); }
+    .qr-hint { margin-top: 3px; font-size: 12px; color: var(--gray-70); }
+    .qr-panel .badge { margin-top: 14px; }
+
+    .badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 6px 12px; border-radius: 999px;
+      font-size: 13px; font-weight: 700;
+    }
+    .badge svg { width: 15px; height: 15px; }
+    .badge--pending { background: var(--warn-bg); color: #6F5400; }
+    .badge--done { background: var(--success-bg); color: var(--success); }
+    .badge--error { background: var(--error-bg); color: var(--error); }
+
+    .pulse { animation: pulse 1.8s ease-in-out infinite; }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.55; } }
+
+    .footer { text-align: center; font-size: 12px; color: var(--gray-50); padding: 4px 8px 10px; }
+    .footer strong { color: var(--gray-70); font-weight: 600; }
+
+    /* ===== Print: struk thermal 80mm ===== */
+    @media print {
+      body { background: #fff; padding: 0; }
+      .receipt { max-width: 76mm; gap: 0; }
+      .card { border: none; border-radius: 0; padding: 0 0 8px; box-shadow: none; }
+      .card--brand { padding: 0 0 8px; color: var(--ink); }
+      .card--brand .brand-name { color: var(--brand); }
+      .card--brand .brand-sub { color: var(--gray-70); opacity: 1; }
+      .status-hero { border: 1px solid var(--gray-20); border-radius: 8px; padding: 10px; margin: 4px 0 6px; }
+      .status-hero--pending, .status-hero--done { background: #fff; }
+      .status-hero--pending .status-title, .status-hero--pending .status-desc { color: var(--ink); }
+      .status-hero--done .status-title, .status-hero--done .status-desc { color: var(--ink); }
+      .qr-frame { border: none; padding: 4px; }
+      .qr-frame img { width: 160px; height: 160px; }
+      .pulse { animation: none; }
+      .footer { padding-bottom: 0; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .pulse { animation: none; }
+    }
   </style>
 </head>
 <body>
-  <div class="receipt">
-    <div class="header">
-      <div class="brand">SPBU Self-Service</div>
-      <div class="sub">Struk Digital — GBS Fuel POS</div>
-    </div>
+  <main class="receipt">
+    <header class="card card--brand">
+      <div class="brand-name">SPBU Self-Service</div>
+      <div class="brand-sub">GBS Fuel POS · Struk Digital</div>
+    </header>
 
-    <hr class="divider" />
+    <!-- Status otorisasi — diperbarui live oleh polling -->
+    <section class="card status-hero {{if .AlreadyUsed}}status-hero--done{{else}}status-hero--pending{{end}}"
+             id="auth-status" role="status" aria-live="polite" data-token="{{.AuthorizationToken}}">
+      <span class="status-icon" aria-hidden="true">
+        {{if .AlreadyUsed}}
+        <svg viewBox="0 0 24 24" fill="none" stroke="#24A148" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        {{else}}
+        <svg viewBox="0 0 24 24" fill="none" stroke="#8A6D00" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" class="pulse"/><polyline points="12 6 12 12 16 14"/></svg>
+        {{end}}
+      </span>
+      <span>
+        <span class="status-title" id="auth-status-title">
+          {{if .AlreadyUsed}}Otorisasi selesai{{else}}Menunggu scan di nozzle{{end}}
+        </span>
+        <span class="status-desc" id="auth-status-desc">
+          {{if .AlreadyUsed}}QR ini sudah dipakai pada {{.AuthorizedAt}}{{else}}Scan QR di bawah ini pada mesin nozzle untuk mulai mengisi{{end}}
+        </span>
+      </span>
+    </section>
 
-    <div class="row"><span class="label">ID Transaksi</span><span class="value">{{.ID}}</span></div>
-    <div class="row"><span class="label">Waktu</span><span class="value">{{.Timestamp}}</span></div>
-    <div class="row"><span class="label">Pompa</span><span class="value">{{.PumpID}}</span></div>
-    <div class="row"><span class="label">Nozzle</span><span class="value">{{.NozzleID}}</span></div>
-    <div class="row"><span class="label">Jenis BBM</span><span class="value">{{.FuelName}}</span></div>
-    <div class="row"><span class="label">Harga/Liter</span><span class="value">{{.PricePerLiter}}</span></div>
-    <div class="row"><span class="label">Liter</span><span class="value">{{.Liters}}</span></div>
+    <section class="card">
+      <h1 class="section-title">Detail Transaksi</h1>
+      <dl class="detail">
+        <div class="drow"><dt>ID Transaksi</dt><dd>{{.ID}}</dd></div>
+        <div class="drow"><dt>Waktu</dt><dd><time>{{.Timestamp}}</time></dd></div>
+        <div class="drow"><dt>Pompa</dt><dd>{{.PumpID}}</dd></div>
+        <div class="drow"><dt>Nozzle</dt><dd>{{.NozzleID}}</dd></div>
+        <div class="drow"><dt>Jenis BBM</dt><dd>{{.FuelName}}</dd></div>
+        <div class="drow"><dt>Harga/Liter</dt><dd>{{.PricePerLiter}}</dd></div>
+        <div class="drow"><dt>Volume</dt><dd>{{.Liters}}</dd></div>
+      </dl>
+      <hr class="divider divider--solid" />
+      <div class="total-block">
+        <span class="total-label">TOTAL</span>
+        <span class="total-value">{{.TotalAmount}}</span>
+      </div>
+      <div class="payment-line">
+        <span class="label">Metode Pembayaran</span>
+        <span class="value">
+          {{if eq .PaymentMethod "QRIS"}}
+          <svg class="method-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+          {{else}}
+          <svg class="method-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+          {{end}}
+          {{.PaymentMethod}}
+        </span>
+      </div>
+    </section>
 
-    <div class="total-row">
-      <span class="label">TOTAL</span>
-      <span class="value">{{.TotalAmount}}</span>
-    </div>
+    <section class="card qr-panel">
+      <div class="qr-frame">
+        <img src="{{.AuthQRDataURI}}" alt="QR otorisasi pengisian BBM" width="208" height="208" />
+      </div>
+      <p class="qr-caption">Scan untuk otorisasi pengisian</p>
+      <p class="qr-hint">Arahkan QR ini ke scanner pada mesin nozzle</p>
+      <span class="badge {{if .AlreadyUsed}}badge--done{{else}}badge--pending pulse{{end}}" id="auth-badge">
+        {{if .AlreadyUsed}}
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+        Sudah dipakai
+        {{else}}
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10" class="pulse"/><polyline points="12 6 12 12 16 14"/></svg>
+        Menunggu scan
+        {{end}}
+      </span>
+    </section>
 
-    <div class="row" style="margin-top:8px"><span class="label">Metode</span><span class="value">{{.PaymentMethod}}</span></div>
+    <footer class="footer">Terima kasih — <strong>struk ini adalah bukti pembayaran digital Anda.</strong></footer>
+  </main>
 
-    <hr class="divider" />
+  <script>
+    // Poll status otorisasi single-use: saat dispenser (atau HP demo) memanggil
+    // authorize, sale berubah PAID → AUTHORIZED dan halaman ini memperbarui
+    // dirinya tanpa reload manual. Polling dijeda saat tab tidak terlihat.
+    (function () {
+      var hero = document.getElementById('auth-status');
+      var titleEl = document.getElementById('auth-status-title');
+      var descEl = document.getElementById('auth-status-desc');
+      var badge = document.getElementById('auth-badge');
+      if (!hero) return;
+      var token = hero.getAttribute('data-token');
+      if (!token) return;
+      var base = window.location.pathname.replace(/\/receipts\/[^/]+$/, '/authorizations/') + token;
+      var done = hero.classList.contains('status-hero--done');
+      var timer = null;
 
-    <div class="qr-wrap">
-      <img src="{{.AuthQRDataURI}}" alt="QR Otorisasi Pengisian" />
-      <div class="caption">Scan QR ini pada mesin nozzle sebelum pengisian</div>
-      {{if .AlreadyUsed}}
-        <div><span class="status-badge status-used">✓ Sudah dipakai — {{.AuthorizedAt}}</span></div>
-      {{else}}
-        <div><span class="status-badge status-pending">Menunggu scan mesin</span></div>
-      {{end}}
-    </div>
+      function fmt(iso) {
+        if (!iso) return '';
+        var d = new Date(iso);
+        function p(n) { return (n < 10 ? '0' : '') + n; }
+        return p(d.getDate()) + '/' + p(d.getMonth() + 1) + '/' + d.getFullYear() + ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
+      }
 
-    <div class="footer">Terima kasih — struk ini adalah bukti pembayaran digital</div>
-  </div>
+      function setDone(iso) {
+        if (done) return;
+        done = true;
+        hero.classList.remove('status-hero--pending');
+        hero.classList.add('status-hero--done');
+        hero.querySelector('.status-icon').innerHTML =
+          '<svg viewBox="0 0 24 24" fill="none" stroke="#24A148" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>';
+        titleEl.textContent = 'Otorisasi selesai';
+        descEl.textContent = 'QR ini sudah dipakai pada ' + fmt(iso);
+        badge.classList.remove('badge--pending', 'pulse');
+        badge.classList.add('badge--done');
+        badge.innerHTML =
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg> Sudah dipakai';
+        stopPolling();
+      }
+
+      function update() {
+        fetch(base, { cache: 'no-store' })
+          .then(function (r) { return r.ok ? r.json() : null; })
+          .then(function (body) {
+            if (!body || !body.success) return;
+            var st = body.data && body.data.status;
+            if (st === 'AUTHORIZED') setDone(body.data.authorizedAt);
+          })
+          .catch(function () { /* transient network error — tetap polling */ });
+      }
+
+      function startPolling() { if (!done && !timer) timer = setInterval(update, 2000); }
+      function stopPolling() { if (timer) { clearInterval(timer); timer = null; } }
+
+      // Jeda polling saat tab tidak terlihat — hemat baterai & bandwidth.
+      document.addEventListener('visibilitychange', function () {
+        if (document.hidden) stopPolling(); else startPolling();
+      });
+      if (!done) startPolling();
+    })();
+  </script>
 </body>
 </html>

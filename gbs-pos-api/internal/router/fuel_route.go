@@ -23,6 +23,7 @@ func setupFuelRoutes(rg *gin.RouterGroup, h *handler.FuelHandler) {
 		receiptPublic.GET("/receipts/:token", h.GetReceiptHTML)
 		receiptPublic.GET("/receipts/:token/data", h.GetReceiptJSON)
 		receiptPublic.GET("/authorizations/:token", h.ValidateAuthorization)
+		receiptPublic.GET("/authorizations/:token/scan", h.ScanAuthorize)
 		receiptPublic.POST("/authorizations/:token/authorize", h.Authorize)
 	}
 

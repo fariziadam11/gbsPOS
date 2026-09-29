@@ -18,10 +18,13 @@ import (
 )
 
 type FuelService struct {
-	priceRepo *repository.FuelPriceRepository
-	pumpRepo  *repository.PumpRepository
+	priceRepo  *repository.FuelPriceRepository
+	pumpRepo   *repository.PumpRepository
 	nozzleRepo *repository.NozzleRepository
-	saleRepo  *repository.FuelSaleRepository
+	saleRepo   *repository.FuelSaleRepository
+	// publicBaseURL is the externally reachable base URL (no trailing slash),
+	// used to build the dispenser authorization scan URL encoded in the QR.
+	publicBaseURL string
 }
 
 func NewFuelService(
@@ -29,12 +32,14 @@ func NewFuelService(
 	pumpRepo *repository.PumpRepository,
 	nozzleRepo *repository.NozzleRepository,
 	saleRepo *repository.FuelSaleRepository,
+	publicBaseURL string,
 ) *FuelService {
 	return &FuelService{
-		priceRepo: priceRepo,
-		pumpRepo:  pumpRepo,
-		nozzleRepo: nozzleRepo,
-		saleRepo:  saleRepo,
+		priceRepo:     priceRepo,
+		pumpRepo:      pumpRepo,
+		nozzleRepo:    nozzleRepo,
+		saleRepo:      saleRepo,
+		publicBaseURL: publicBaseURL,
 	}
 }
 
@@ -371,6 +376,58 @@ func (s *FuelService) Authorize(authToken string) (*dto.AuthorizationCheckRespon
 	}, false, nil
 }
 
+// AuthorizeScanPage executes the single-use authorize for a token (the action
+// behind the public scan URL embedded in the receipt QR) and renders a mobile
+// result page: success with sale details, already-used, or not-found.
+func (s *FuelService) AuthorizeScanPage(authToken string) (string, error) {
+	res, alreadyUsed, err := s.Authorize(authToken)
+	if err != nil {
+		if IsFuelNotFound(err) {
+			page, renderErr := gbsTemplate.RenderScanResultPage(gbsTemplate.ScanResultPageData{
+				Outcome: gbsTemplate.ScanOutcomeNotFound,
+			})
+			if renderErr != nil {
+				return "", renderErr
+			}
+			return page, nil
+		}
+		return "", err
+	}
+
+	if alreadyUsed {
+		page, renderErr := gbsTemplate.RenderScanResultPage(gbsTemplate.ScanResultPageData{
+			Outcome: gbsTemplate.ScanOutcomeAlreadyUsed,
+		})
+		if renderErr != nil {
+			return "", renderErr
+		}
+		return page, nil
+	}
+
+	// Success: resolve the sale to show the same details as the receipt.
+	sale, findErr := s.saleRepo.FindByID(res.SaleID)
+	if findErr != nil {
+		return "", findErr
+	}
+	fuelName := sale.FuelCode
+	if price, priceErr := s.priceRepo.FindByCode(sale.FuelCode); priceErr == nil {
+		fuelName = price.Name
+	}
+	page, renderErr := gbsTemplate.RenderScanResultPage(gbsTemplate.ScanResultPageData{
+		Outcome:     gbsTemplate.ScanOutcomeSuccess,
+		ShowDetails: true,
+		PumpID:      sale.PumpID,
+		NozzleID:    sale.NozzleID,
+		FuelName:    fuelName,
+		Liters:      formatDecimal(sale.Liters) + " L",
+		TotalAmount: formatRupiah(sale.TotalAmount),
+	})
+	if renderErr != nil {
+		return "", renderErr
+	}
+	return page, nil
+}
+
 func (s *FuelService) Report(from, to time.Time) (*dto.FuelSalesReportResponse, error) {
 	report, err := s.saleRepo.Report(from, to)
 	if err != nil {
@@ -410,7 +467,12 @@ func (s *FuelService) RenderReceiptPage(receiptToken string) (string, error) {
 		fuelName = price.Name
 	}
 
-	authQR, err := qrcode.Encode(sale.AuthorizationToken, qrcode.Medium, 512)
+	// QR encodes a public scan URL. Opening it (phone camera or dispenser
+	// scanner) triggers the single-use PAID → AUTHORIZED transition; the raw
+	// token stays embedded in the URL path so machine clients can still call
+	// POST /authorizations/:token/authorize directly.
+	authURL := fmt.Sprintf("%s/v1/public/authorizations/%s/scan", s.publicBaseURL, sale.AuthorizationToken)
+	authQR, err := qrcode.Encode(authURL, qrcode.Medium, 512)
 	if err != nil {
 		return "", fmt.Errorf("generate authorization QR: %w", err)
 	}
@@ -435,8 +497,9 @@ func (s *FuelService) RenderReceiptPage(receiptToken string) (string, error) {
 		PaymentMethod: displayPaymentMethod(sale.PaymentMethod),
 		Status:        sale.Status,
 		AuthorizedAt:  authorizedAtStr,
-		AuthQRDataURI: authDataURI,
-		AlreadyUsed:   alreadyUsed,
+		AuthQRDataURI:      authDataURI,
+		AlreadyUsed:        alreadyUsed,
+		AuthorizationToken: sale.AuthorizationToken,
 	}
 	return gbsTemplate.RenderReceiptPage(data)
 }

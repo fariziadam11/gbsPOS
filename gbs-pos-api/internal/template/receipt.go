@@ -28,6 +28,10 @@ type ReceiptPageData struct {
 	// (a plain string would be replaced with #ZgotmplZ by the urlFilter).
 	AuthQRDataURI template.URL
 	AlreadyUsed   bool // true when the authorization token was already scanned
+	// AuthorizationToken is the raw single-use token encoded in the QR. Injected
+	// into the page so the client-side status poller can watch for the PAID →
+	// AUTHORIZED transition without a manual refresh.
+	AuthorizationToken string
 }
 
 func RenderReceiptPage(data ReceiptPageData) (string, error) {

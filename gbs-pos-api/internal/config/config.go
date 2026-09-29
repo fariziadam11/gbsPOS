@@ -21,6 +21,10 @@ type Config struct {
 	KeycloakRealm    string `env:"KEYCLOAK_REALM"    envDefault:""`
 	EnableDemoAuth   bool   `env:"ENABLE_DEMO_AUTH"  envDefault:"false"`
 	WSAllowedOrigins string `env:"WS_ALLOWED_ORIGINS" envDefault:""`
+	// PublicBaseURL is the externally reachable base URL (no trailing slash).
+	// Used to build public URLs embedded in QR codes (e.g. the fuel dispenser
+	// authorization scan URL). Defaults to the production API domain.
+	PublicBaseURL string `env:"PUBLIC_BASE_URL" envDefault:"https://api-pos.armmada.id"`
 
 	// SumoPod QRIS Payment Gateway
 	SumoPodAPIURL       string `env:"SUMOPOD_API_URL"        envDefault:"https://api-pay-sandbox.sumopod.com/api/v1"`
@@ -77,6 +81,10 @@ func Load() (*Config, error) {
 
 	// Trim whitespace from QRIS string (handles accidental newlines/spaces in .env)
 	cfg.QrisDirectStaticQRIS = strings.TrimSpace(cfg.QrisDirectStaticQRIS)
+
+	// Trim trailing slash from the public base URL (kept in config.Load, not
+	// Validate, so consumers can rely on a clean join with path segments).
+	cfg.PublicBaseURL = strings.TrimRight(strings.TrimSpace(cfg.PublicBaseURL), "/")
 
 	if err := cfg.Validate(); err != nil {
 		return nil, err
