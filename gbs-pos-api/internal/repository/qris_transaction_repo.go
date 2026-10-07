@@ -2,7 +2,9 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"time"
 
 	"gbs-pos-api/internal/model"
 
@@ -45,6 +47,84 @@ func (r *QrisTransactionRepository) FindByOrderID(ctx context.Context, orderID s
 	return txs, nil
 }
 
+func (r *QrisTransactionRepository) FindLatestByOrderIDAndProvider(ctx context.Context, orderID, provider string) (*model.QrisTransaction, error) {
+	var tx model.QrisTransaction
+	if err := r.db.WithContext(ctx).
+		Where("order_id = ? AND provider = ?", orderID, provider).
+		Order("created_at DESC").First(&tx).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &tx, nil
+}
+
+func (r *QrisTransactionRepository) FindByPartnerReferenceNo(ctx context.Context, reference string) (*model.QrisTransaction, error) {
+	var tx model.QrisTransaction
+	if err := r.db.WithContext(ctx).Where("partner_reference_no = ?", reference).First(&tx).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, fmt.Errorf("QRIS transaction not found")
+		}
+		return nil, err
+	}
+	return &tx, nil
+}
+
+func (r *QrisTransactionRepository) UpdateBTNGenerated(ctx context.Context, id, bankReferenceNo, qrContent, merchantName, terminalID string) error {
+	result := r.db.WithContext(ctx).Model(&model.QrisTransaction{}).
+		Where("id = ? AND provider = ? AND status IN ?", id, model.QrisProviderBTNSnap, []string{model.QrisTransactionStatusPending, model.QrisTransactionStatusUnknown}).
+		Updates(map[string]interface{}{
+			"bank_reference_no":   bankReferenceNo,
+			"dynamic_qris_string": qrContent,
+			"merchant_name":       merchantName,
+			"terminal_id":         terminalID,
+		})
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return fmt.Errorf("BTN QR transaction is no longer pending")
+	}
+	return nil
+}
+
+func (r *QrisTransactionRepository) ApplyBTNStatus(
+	ctx context.Context,
+	id, status, bankStatus, description, reference, paymentReference string,
+	bankPaidAt *time.Time,
+) (bool, error) {
+	query := r.db.WithContext(ctx).Model(&model.QrisTransaction{}).Where("id = ? AND provider = ?", id, model.QrisProviderBTNSnap)
+	updates := map[string]interface{}{
+		"status":                  status,
+		"bank_status":             bankStatus,
+		"bank_status_description": description,
+	}
+	if reference != "" {
+		updates["bank_reference_no"] = reference
+	}
+	if paymentReference != "" {
+		updates["bank_payment_reference"] = paymentReference
+	}
+	if status == model.QrisTransactionStatusPaid {
+		if bankPaidAt == nil {
+			return false, fmt.Errorf("bank paid time is required for BTN success")
+		}
+		updates["paid_at"] = bankPaidAt
+		updates["bank_paid_at"] = bankPaidAt
+		query = query.Where("status NOT IN ?", []string{model.QrisTransactionStatusRefunded})
+	} else if status == model.QrisTransactionStatusRefunded {
+		query = query.Where("status IN ?", []string{model.QrisTransactionStatusPaid, model.QrisTransactionStatusRefunded})
+	} else {
+		query = query.Where("status NOT IN ?", []string{model.QrisTransactionStatusPaid, model.QrisTransactionStatusRefunded})
+	}
+	result := query.Updates(updates)
+	if result.Error != nil {
+		return false, result.Error
+	}
+	return result.RowsAffected > 0, nil
+}
+
 // FindPendingByTerminalID finds all pending QRIS transactions for a terminal
 func (r *QrisTransactionRepository) FindPendingByTerminalID(ctx context.Context, terminalID string) ([]model.QrisTransaction, error) {
 	var txs []model.QrisTransaction
@@ -74,12 +154,19 @@ func (r *QrisTransactionRepository) UpdateStatus(ctx context.Context, id string,
 
 // MarkAsPaid marks a QRIS transaction as paid
 func (r *QrisTransactionRepository) MarkAsPaid(ctx context.Context, id string) error {
-	return r.db.WithContext(ctx).Model(&model.QrisTransaction{}).
-		Where("id = ?", id).
+	result := r.db.WithContext(ctx).Model(&model.QrisTransaction{}).
+		Where("id = ? AND status IN ?", id, []string{model.QrisTransactionStatusPending, model.QrisTransactionStatusAwaitingConfirmation}).
 		Updates(map[string]interface{}{
-			"status":   model.QrisTransactionStatusPaid,
-			"paid_at":  gorm.Expr("NOW()"),
-		}).Error
+			"status":  model.QrisTransactionStatusPaid,
+			"paid_at": gorm.Expr("NOW()"),
+		})
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return fmt.Errorf("QRIS transaction status changed")
+	}
+	return nil
 }
 
 // Cancel cancels a QRIS transaction
@@ -98,7 +185,7 @@ func (r *QrisTransactionRepository) Cancel(ctx context.Context, id string, cance
 func (r *QrisTransactionRepository) FindExpired(ctx context.Context) ([]model.QrisTransaction, error) {
 	var txs []model.QrisTransaction
 	if err := r.db.WithContext(ctx).
-		Where("status = ? AND expires_at < NOW()", model.QrisTransactionStatusPending).
+		Where("status = ? AND provider <> ? AND expires_at < NOW()", model.QrisTransactionStatusPending, model.QrisProviderBTNSnap).
 		Find(&txs).Error; err != nil {
 		return nil, err
 	}
@@ -108,7 +195,7 @@ func (r *QrisTransactionRepository) FindExpired(ctx context.Context) ([]model.Qr
 // MarkAsExpired marks a QRIS transaction as expired
 func (r *QrisTransactionRepository) MarkAsExpired(ctx context.Context, id string) error {
 	return r.db.WithContext(ctx).Model(&model.QrisTransaction{}).
-		Where("id = ?", id).
+		Where("id = ? AND status = ?", id, model.QrisTransactionStatusPending).
 		Update("status", model.QrisTransactionStatusExpired).Error
 }
 

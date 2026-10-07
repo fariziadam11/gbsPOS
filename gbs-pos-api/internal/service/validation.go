@@ -1,7 +1,9 @@
 package service
 
 import (
+	"encoding/json"
 	"fmt"
+	"gbs-pos-api/internal/dto"
 	"gbs-pos-api/internal/model"
 )
 
@@ -26,7 +28,13 @@ func ValidateOrder(order *model.Order) error {
 	if order.StoreType != "" && !validStoreTypes[order.StoreType] {
 		return fmt.Errorf("VALIDATION_ERROR: storeType must be one of: RETAIL, FNB, OUTFIT")
 	}
-	if len(order.Items) == 0 {
+	var ppobItems []dto.QrisCheckoutPpobItem
+	if len(order.PpobItems) > 0 && string(order.PpobItems) != "null" {
+		if err := json.Unmarshal(order.PpobItems, &ppobItems); err != nil {
+			return fmt.Errorf("VALIDATION_ERROR: invalid ppobItems")
+		}
+	}
+	if len(order.Items) == 0 && len(ppobItems) == 0 {
 		return fmt.Errorf("VALIDATION_ERROR: items cannot be empty")
 	}
 	for _, item := range order.Items {
@@ -35,6 +43,11 @@ func ValidateOrder(order *model.Order) error {
 		}
 		if item.ProductName == "" {
 			return fmt.Errorf("VALIDATION_ERROR: item productName is required")
+		}
+	}
+	for _, item := range ppobItems {
+		if item.PpobProductID == "" || item.CustomerID == "" || item.Amount < 0 || item.AdminFee < 0 || item.Total != item.Amount+item.AdminFee {
+			return fmt.Errorf("VALIDATION_ERROR: invalid PPOB item")
 		}
 	}
 	return nil

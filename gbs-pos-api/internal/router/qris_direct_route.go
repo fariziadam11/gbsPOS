@@ -19,6 +19,7 @@ func setupQrisDirectRoutes(r *gin.RouterGroup, qrisDirectHandler *handler.QrisDi
 
 		// Get transaction status
 		qrisDirect.GET("/transactions/:transactionId", qrisDirectHandler.GetTransactionStatus)
+		qrisDirect.GET("/orders/:orderId", qrisDirectHandler.GetLatestBTNStatusForOrder)
 
 		// Confirm payment (kasir confirms customer has paid) - immediate
 		qrisDirect.POST("/transactions/:transactionId/confirm", qrisDirectHandler.ConfirmPayment)

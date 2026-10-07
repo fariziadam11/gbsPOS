@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"net/url"
 	"strings"
 
 	"github.com/caarlos0/env/v10"
@@ -43,6 +44,18 @@ type Config struct {
 	QrisDirectExpiresMinutes          int    `env:"QRIS_DIRECT_EXPIRES_MINUTES" envDefault:"15"`
 	QrisDirectSkipCRCValidate         bool   `env:"QRIS_DIRECT_SKIP_CRC_VALIDATE" envDefault:"true"`
 	QrisDirectAutoConfirmDelaySeconds int    `env:"QRIS_DIRECT_AUTO_CONFIRM_DELAY_SECONDS" envDefault:"3"`
+
+	BtnSnapEnabled        bool    `env:"BTN_SNAP_ENABLED" envDefault:"false"`
+	BtnSnapBaseURL        string  `env:"BTN_SNAP_BASE_URL" envDefault:"https://devapi.btn.co.id"`
+	BtnSnapClientKey      string  `env:"BTN_SNAP_CLIENT_KEY"`
+	BtnSnapPartnerID      string  `env:"BTN_SNAP_PARTNER_ID"`
+	BtnSnapClientSecret   string  `env:"BTN_SNAP_CLIENT_SECRET"`
+	BtnSnapPrivateKeyPath string  `env:"BTN_SNAP_PRIVATE_KEY_PATH"`
+	BtnSnapChannelID      string  `env:"BTN_SNAP_CHANNEL_ID"`
+	BtnSnapOrigin         string  `env:"BTN_SNAP_ORIGIN"`
+	BtnSnapMerchantID     string  `env:"BTN_SNAP_MERCHANT_ID"`
+	BtnSnapTerminalID     string  `env:"BTN_SNAP_TERMINAL_ID"`
+	PosTaxRate            float64 `env:"POS_TAX_RATE" envDefault:"0.10"`
 }
 
 func (c *Config) UseKeycloak() bool {
@@ -54,6 +67,29 @@ func (c *Config) KeycloakJWKSURL() string {
 }
 
 func (c *Config) Validate() error {
+	if c.PosTaxRate < 0 || c.PosTaxRate > 1 {
+		return fmt.Errorf("POS_TAX_RATE must be between 0 and 1")
+	}
+	if c.BtnSnapEnabled {
+		if c.BtnSnapClientKey == "" || c.BtnSnapPartnerID == "" || c.BtnSnapClientSecret == "" ||
+			c.BtnSnapPrivateKeyPath == "" || c.BtnSnapChannelID == "" || c.BtnSnapOrigin == "" ||
+			c.BtnSnapMerchantID == "" || c.BtnSnapTerminalID == "" {
+			return fmt.Errorf("all BTN_SNAP credentials, merchant, terminal, channel, and origin values are required when BTN_SNAP_ENABLED is true")
+		}
+		baseURL, err := url.ParseRequestURI(c.BtnSnapBaseURL)
+		if err != nil || baseURL.Scheme != "https" || baseURL.Host == "" || (baseURL.Path != "" && baseURL.Path != "/") || baseURL.RawQuery != "" || baseURL.Fragment != "" {
+			return fmt.Errorf("BTN_SNAP_BASE_URL must be an HTTPS base URL without query or fragment")
+		}
+		if len(c.BtnSnapChannelID) != 5 {
+			return fmt.Errorf("BTN_SNAP_CHANNEL_ID must contain exactly 5 digits")
+		}
+		for _, r := range c.BtnSnapChannelID {
+			if r < '0' || r > '9' {
+				return fmt.Errorf("BTN_SNAP_CHANNEL_ID must contain exactly 5 digits")
+			}
+		}
+	}
+
 	if c.UseKeycloak() {
 		if c.EnableDemoAuth && (c.JWTSecret == "" || len(c.JWTSecret) < 32) {
 			return fmt.Errorf("JWT_SECRET is required and must be at least 32 characters when ENABLE_DEMO_AUTH is true")

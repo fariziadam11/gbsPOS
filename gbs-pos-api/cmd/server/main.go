@@ -132,11 +132,13 @@ func main() {
 		customerService,
 		variantService,
 	)
+	orderService.ConfigureBTNQRISValidation(qrisTransactionRepo, cfg.BtnSnapEnabled, cfg.PosTaxRate)
 	settlementService := service.NewSettlementService(orderRepo, settlementRepo)
 	dashboardService := service.NewDashboardService(dashboardRepo)
 	fuelService := service.NewFuelService(fuelPriceRepo, pumpRepo, nozzleRepo, fuelSaleRepo, cfg.PublicBaseURL)
 	qrisService := service.NewQrisService(cfg, db, orderRepo)
 	qrisDirectService := service.NewQrisDirectService(cfg, qrisTransactionRepo, orderRepo)
+	qrisDirectService.SetOrderService(orderService)
 	cardPaymentService := service.NewCardPaymentService(cardPaymentRepo, orderService, companionDeviceRepo, websocketHub)
 	websocketHub.SetMessageHandler(cardPaymentService.HandleMessage)
 

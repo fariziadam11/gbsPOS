@@ -55,46 +55,47 @@ type Discount struct {
 }
 
 type Order struct {
-	ID                  string      `gorm:"primaryKey;size:32" json:"id"`
-	Subtotal            float64     `gorm:"type:decimal(12,2);not null" json:"subtotal"`
-	Tax                 float64     `gorm:"type:decimal(12,2);not null" json:"tax"`
-	Total               float64     `gorm:"type:decimal(12,2);not null" json:"total"`
-	PaymentMethod       string      `gorm:"size:20;not null" json:"paymentMethod"`
-	CashReceived        *float64    `gorm:"type:decimal(12,2)" json:"cashReceived"`
-	ChangeAmount        *float64    `gorm:"type:decimal(12,2)" json:"changeAmount"`
-	Timestamp           int64       `gorm:"not null" json:"timestamp"`
-	IsVoided            bool        `gorm:"not null;default:false" json:"isVoided"`
-	IsSettled           bool        `gorm:"not null;default:false" json:"isSettled"`
-	TransactionID       string      `gorm:"size:100" json:"transactionId"`
-	ApprovalCode        string      `gorm:"size:50" json:"approvalCode"`
-	EntryMode           string      `gorm:"size:20" json:"entryMode"`
-	MaskedAccount       string      `gorm:"size:50" json:"maskedAccount"`
-	AcqMid              string      `gorm:"size:50" json:"acqMid"`
-	AcqTid              string      `gorm:"size:50" json:"acqTid"`
-	PosMessageID        string      `gorm:"size:100" json:"posMessageId"`
-	BankName            string      `gorm:"size:50" json:"bankName"`
-	StoreType           string      `gorm:"size:20" json:"storeType"`
-	TerminalID          string      `gorm:"size:32" json:"terminalId"`
-	VoidReason          string      `gorm:"size:255" json:"voidReason"`
-	VoidedBy            string      `gorm:"size:50" json:"voidedBy"`
-	VoidedAt            *time.Time  `json:"voidedAt"`
-	CustomerID          *int        `gorm:"index" json:"customerId"`
-	CustomerPhone       string      `gorm:"size:50" json:"customerPhone"`
-	CustomerName        string      `gorm:"size:255" json:"customerName"`
-	LoyaltyPointsEarned int         `gorm:"not null;default:0" json:"loyaltyPointsEarned"`
-	DiscountType        string      `gorm:"size:20" json:"discountType"`
-	DiscountValue       *float64    `gorm:"type:decimal(12,2)" json:"discountValue"`
-	DiscountAmount      *float64    `gorm:"type:decimal(12,2)" json:"discountAmount"`
+	ID                  string         `gorm:"primaryKey;size:32" json:"id"`
+	Subtotal            float64        `gorm:"type:decimal(12,2);not null" json:"subtotal"`
+	Tax                 float64        `gorm:"type:decimal(12,2);not null" json:"tax"`
+	Total               float64        `gorm:"type:decimal(12,2);not null" json:"total"`
+	PaymentMethod       string         `gorm:"size:20;not null" json:"paymentMethod"`
+	CashReceived        *float64       `gorm:"type:decimal(12,2)" json:"cashReceived"`
+	ChangeAmount        *float64       `gorm:"type:decimal(12,2)" json:"changeAmount"`
+	Timestamp           int64          `gorm:"not null" json:"timestamp"`
+	IsVoided            bool           `gorm:"not null;default:false" json:"isVoided"`
+	IsSettled           bool           `gorm:"not null;default:false" json:"isSettled"`
+	TransactionID       string         `gorm:"size:100" json:"transactionId"`
+	ApprovalCode        string         `gorm:"size:50" json:"approvalCode"`
+	EntryMode           string         `gorm:"size:20" json:"entryMode"`
+	MaskedAccount       string         `gorm:"size:50" json:"maskedAccount"`
+	AcqMid              string         `gorm:"size:50" json:"acqMid"`
+	AcqTid              string         `gorm:"size:50" json:"acqTid"`
+	PosMessageID        string         `gorm:"size:100" json:"posMessageId"`
+	BankName            string         `gorm:"size:50" json:"bankName"`
+	StoreType           string         `gorm:"size:20" json:"storeType"`
+	TerminalID          string         `gorm:"size:32" json:"terminalId"`
+	VoidReason          string         `gorm:"size:255" json:"voidReason"`
+	VoidedBy            string         `gorm:"size:50" json:"voidedBy"`
+	VoidedAt            *time.Time     `json:"voidedAt"`
+	CustomerID          *int           `gorm:"index" json:"customerId"`
+	CustomerPhone       string         `gorm:"size:50" json:"customerPhone"`
+	CustomerName        string         `gorm:"size:255" json:"customerName"`
+	LoyaltyPointsEarned int            `gorm:"not null;default:0" json:"loyaltyPointsEarned"`
+	DiscountType        string         `gorm:"size:20" json:"discountType"`
+	DiscountValue       *float64       `gorm:"type:decimal(12,2)" json:"discountValue"`
+	DiscountAmount      *float64       `gorm:"type:decimal(12,2)" json:"discountAmount"`
+	PpobItems           datatypes.JSON `gorm:"type:jsonb" json:"ppobItems,omitempty"`
 	// QRIS Payment Gateway Fields (SumoPod)
-	QrisPaymentID   string     `gorm:"size:100;index" json:"qrisPaymentId,omitempty"`
-	QrisStatus      string     `gorm:"size:20;default:pending;index" json:"qrisStatus,omitempty"`
-	QrisLinkURL     string     `gorm:"type:text" json:"qrisLinkUrl,omitempty"`
-	QrisExpiresAt   *time.Time `json:"qrisExpiresAt,omitempty"`
-	QrisFee         float64    `gorm:"type:decimal(12,2);default:0" json:"qrisFee,omitempty"`
-	QrisNetAmount   float64    `gorm:"type:decimal(12,2);default:0" json:"qrisNetAmount,omitempty"`
-	QrisCompletedAt *time.Time `json:"qrisCompletedAt,omitempty"`
-	CreatedAt       time.Time  `json:"createdAt"`
-	UpdatedAt       time.Time  `json:"updatedAt"`
+	QrisPaymentID   string      `gorm:"size:100;index" json:"qrisPaymentId,omitempty"`
+	QrisStatus      string      `gorm:"size:20;default:pending;index" json:"qrisStatus,omitempty"`
+	QrisLinkURL     string      `gorm:"type:text" json:"qrisLinkUrl,omitempty"`
+	QrisExpiresAt   *time.Time  `json:"qrisExpiresAt,omitempty"`
+	QrisFee         float64     `gorm:"type:decimal(12,2);default:0" json:"qrisFee,omitempty"`
+	QrisNetAmount   float64     `gorm:"type:decimal(12,2);default:0" json:"qrisNetAmount,omitempty"`
+	QrisCompletedAt *time.Time  `json:"qrisCompletedAt,omitempty"`
+	CreatedAt       time.Time   `json:"createdAt"`
+	UpdatedAt       time.Time   `json:"updatedAt"`
 	Items           []OrderItem `gorm:"foreignKey:OrderID;constraint:OnDelete:CASCADE" json:"items"`
 }
 
@@ -187,36 +188,49 @@ func (HoldSession) TableName() string {
 
 // QRIS Transaction Status
 const (
-	QrisTransactionStatusPending            = "PENDING"
+	QrisTransactionStatusPending              = "PENDING"
 	QrisTransactionStatusAwaitingConfirmation = "AWAITING_CONFIRMATION"
-	QrisTransactionStatusPaid              = "PAID"
-	QrisTransactionStatusCancelled         = "CANCELLED"
-	QrisTransactionStatusExpired            = "EXPIRED"
+	QrisTransactionStatusPaid                 = "PAID"
+	QrisTransactionStatusCancelled            = "CANCELLED"
+	QrisTransactionStatusExpired              = "EXPIRED"
+	QrisTransactionStatusFailed               = "FAILED"
+	QrisTransactionStatusUnknown              = "UNKNOWN"
+	QrisTransactionStatusRefunded             = "REFUNDED"
+	QrisProviderBTNSnap                       = "BTN_SNAP"
 )
 
 // QrisTransaction represents a QRIS direct payment transaction (without gateway)
 type QrisTransaction struct {
-	ID                string     `gorm:"primaryKey;size:64" json:"id"`
-	OrderID           string     `gorm:"size:32;index" json:"orderId"`
-	StaticQrisString  string     `gorm:"type:text;not null" json:"staticQrisString"`
-	DynamicQrisString string     `gorm:"type:text" json:"dynamicQrisString"`
-	Amount            float64    `gorm:"type:decimal(12,2);not null" json:"amount"`
-	FeeType           string     `gorm:"size:20" json:"feeType,omitempty"`           // "fixed" or "percentage"
-	FeeValue          float64    `gorm:"type:decimal(12,2);default:0" json:"feeValue,omitempty"`
-	FeeAmount         float64    `gorm:"type:decimal(12,2);default:0" json:"feeAmount"`
-	TotalAmount       float64    `gorm:"type:decimal(12,2);not null" json:"totalAmount"`
-	MerchantName      string     `gorm:"size:255" json:"merchantName"`
-	MerchantCity      string     `gorm:"size:100" json:"merchantCity"`
-	Provider          string     `gorm:"size:50" json:"provider"` // DANA, OVO, GoPay, etc.
-	TerminalID        string     `gorm:"size:32" json:"terminalId"`
-	Status            string     `gorm:"size:30;not null;default:PENDING;index" json:"status"`
-	PaidAt            *time.Time `json:"paidAt,omitempty"`
-	CancelledAt       *time.Time `json:"cancelledAt,omitempty"`
-	CancelledBy       string     `gorm:"size:100" json:"cancelledBy,omitempty"`
-	CancelReason      string     `gorm:"size:255" json:"cancelReason,omitempty"`
-	ExpiresAt         time.Time `json:"expiresAt"`
-	CreatedAt         time.Time  `json:"createdAt"`
-	UpdatedAt         time.Time  `json:"updatedAt"`
+	ID                    string         `gorm:"primaryKey;size:64" json:"id"`
+	OrderID               string         `gorm:"size:32;index" json:"orderId"`
+	StaticQrisString      string         `gorm:"type:text" json:"staticQrisString,omitempty"`
+	DynamicQrisString     string         `gorm:"type:text" json:"dynamicQrisString"`
+	PartnerReferenceNo    string         `gorm:"size:64;uniqueIndex:idx_qris_partner_reference,where:partner_reference_no <> ''" json:"partnerReferenceNo,omitempty"`
+	BankReferenceNo       string         `gorm:"size:64" json:"bankReferenceNo,omitempty"`
+	BankPaymentReference  string         `gorm:"size:20" json:"bankPaymentReference,omitempty"`
+	BankStatus            string         `gorm:"size:2" json:"bankStatus,omitempty"`
+	BankStatusDescription string         `gorm:"size:50" json:"bankStatusDescription,omitempty"`
+	Amount                float64        `gorm:"type:decimal(12,2);not null" json:"amount"`
+	FeeType               string         `gorm:"size:20" json:"feeType,omitempty"` // "fixed" or "percentage"
+	FeeValue              float64        `gorm:"type:decimal(12,2);default:0" json:"feeValue,omitempty"`
+	FeeAmount             float64        `gorm:"type:decimal(12,2);default:0" json:"feeAmount"`
+	TotalAmount           float64        `gorm:"type:decimal(12,2);not null" json:"totalAmount"`
+	MerchantName          string         `gorm:"size:255" json:"merchantName"`
+	MerchantCity          string         `gorm:"size:100" json:"merchantCity"`
+	Provider              string         `gorm:"size:50" json:"provider"` // DANA, OVO, GoPay, etc.
+	MerchantID            string         `gorm:"size:64" json:"merchantId,omitempty"`
+	Currency              string         `gorm:"size:3" json:"currency,omitempty"`
+	TerminalID            string         `gorm:"size:32" json:"terminalId"`
+	Status                string         `gorm:"size:30;not null;default:PENDING;index" json:"status"`
+	PaidAt                *time.Time     `json:"paidAt,omitempty"`
+	BankPaidAt            *time.Time     `json:"bankPaidAt,omitempty"`
+	CheckoutSnapshot      datatypes.JSON `gorm:"type:jsonb" json:"checkoutSnapshot,omitempty"`
+	CancelledAt           *time.Time     `json:"cancelledAt,omitempty"`
+	CancelledBy           string         `gorm:"size:100" json:"cancelledBy,omitempty"`
+	CancelReason          string         `gorm:"size:255" json:"cancelReason,omitempty"`
+	ExpiresAt             time.Time      `json:"expiresAt"`
+	CreatedAt             time.Time      `json:"createdAt"`
+	UpdatedAt             time.Time      `json:"updatedAt"`
 }
 
 func (QrisTransaction) TableName() string {

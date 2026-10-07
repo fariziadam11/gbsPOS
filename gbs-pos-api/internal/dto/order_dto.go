@@ -27,29 +27,31 @@ type CreateOrderRequest struct {
 		VariantID    *int    `json:"variantId"`
 		VariantName  string  `json:"variantName"`
 		SKU          string  `json:"sku"`
-	} `json:"items" binding:"required"`
-	Subtotal      float64  `json:"subtotal" binding:"required"`
-	Tax           float64  `json:"tax"`
-	Total         float64  `json:"total" binding:"required"`
-	PaymentMethod string   `json:"paymentMethod" binding:"required"`
-	CashReceived  *float64 `json:"cashReceived"`
-	ChangeAmount  *float64 `json:"changeAmount"`
-	Timestamp     int64    `json:"timestamp" binding:"required"`
-	StoreType     string   `json:"storeType"`
-	TerminalID    string   `json:"terminalId"`
-	TransactionID string   `json:"transactionId"`
-	ApprovalCode  string   `json:"approvalCode"`
-	EntryMode     string   `json:"entryMode"`
-	MaskedAccount string   `json:"maskedAccount"`
-	AcqMid        string   `json:"acqMid"`
-	AcqTid        string   `json:"acqTid"`
-	PosMessageID  string   `json:"posMessageId"`
-	BankName      string   `json:"bankName"`
-	CustomerID    *int     `json:"customerId"`
-	CustomerPhone string   `json:"customerPhone"`
-	CustomerName  string   `json:"customerName"`
-	DiscountType  string   `json:"discountType"`
-	DiscountValue *float64 `json:"discountValue"`
+	} `json:"items"`
+	PpobItems      []QrisCheckoutPpobItem `json:"ppobItems,omitempty"`
+	Subtotal       float64                `json:"subtotal" binding:"required"`
+	Tax            float64                `json:"tax"`
+	Total          float64                `json:"total" binding:"required"`
+	PaymentMethod  string                 `json:"paymentMethod" binding:"required"`
+	CashReceived   *float64               `json:"cashReceived"`
+	ChangeAmount   *float64               `json:"changeAmount"`
+	Timestamp      int64                  `json:"timestamp" binding:"required"`
+	StoreType      string                 `json:"storeType"`
+	TerminalID     string                 `json:"terminalId"`
+	TransactionID  string                 `json:"transactionId"`
+	ApprovalCode   string                 `json:"approvalCode"`
+	EntryMode      string                 `json:"entryMode"`
+	MaskedAccount  string                 `json:"maskedAccount"`
+	AcqMid         string                 `json:"acqMid"`
+	AcqTid         string                 `json:"acqTid"`
+	PosMessageID   string                 `json:"posMessageId"`
+	BankName       string                 `json:"bankName"`
+	CustomerID     *int                   `json:"customerId"`
+	CustomerPhone  string                 `json:"customerPhone"`
+	CustomerName   string                 `json:"customerName"`
+	DiscountType   string                 `json:"discountType"`
+	DiscountValue  *float64               `json:"discountValue"`
+	DiscountAmount *float64               `json:"discountAmount"`
 }
 
 type VoidOrderRequest struct {

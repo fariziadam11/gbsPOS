@@ -40,7 +40,7 @@ func (h *QrisDirectHandler) ConvertQRIS(c *gin.Context) {
 		c.JSON(http.StatusUnprocessableEntity, gin.H{
 			"success": false,
 			"error":   "VALIDATION_ERROR",
-			"message":  err.Error(),
+			"message": err.Error(),
 		})
 		return
 	}
@@ -50,7 +50,7 @@ func (h *QrisDirectHandler) ConvertQRIS(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"success": false,
 			"error":   "VALIDATION_ERROR",
-			"message":  "feeType must be 'fixed' or 'percentage'",
+			"message": "feeType must be 'fixed' or 'percentage'",
 		})
 		return
 	}
@@ -61,7 +61,7 @@ func (h *QrisDirectHandler) ConvertQRIS(c *gin.Context) {
 			c.JSON(http.StatusNotFound, gin.H{
 				"success": false,
 				"error":   "ORDER_NOT_FOUND",
-				"message":  err.Error(),
+				"message": err.Error(),
 			})
 			return
 		}
@@ -69,7 +69,7 @@ func (h *QrisDirectHandler) ConvertQRIS(c *gin.Context) {
 			c.JSON(http.StatusBadRequest, gin.H{
 				"success": false,
 				"error":   "INVALID_PAYMENT_METHOD",
-				"message":  err.Error(),
+				"message": err.Error(),
 			})
 			return
 		}
@@ -77,7 +77,7 @@ func (h *QrisDirectHandler) ConvertQRIS(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"success": false,
 			"error":   "CONVERSION_ERROR",
-			"message":  err.Error(),
+			"message": err.Error(),
 		})
 		return
 	}
@@ -105,7 +105,7 @@ func (h *QrisDirectHandler) GetTransactionStatus(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"success": false,
 			"error":   "VALIDATION_ERROR",
-			"message":  "transactionId is required",
+			"message": "transactionId is required",
 		})
 		return
 	}
@@ -116,7 +116,7 @@ func (h *QrisDirectHandler) GetTransactionStatus(c *gin.Context) {
 			c.JSON(http.StatusNotFound, gin.H{
 				"success": false,
 				"error":   "NOT_FOUND",
-				"message":  err.Error(),
+				"message": err.Error(),
 			})
 			return
 		}
@@ -124,7 +124,7 @@ func (h *QrisDirectHandler) GetTransactionStatus(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"success": false,
 			"error":   "INTERNAL_ERROR",
-			"message":  err.Error(),
+			"message": err.Error(),
 		})
 		return
 	}
@@ -133,6 +133,25 @@ func (h *QrisDirectHandler) GetTransactionStatus(c *gin.Context) {
 		"success": true,
 		"data":    result,
 	})
+}
+
+func (h *QrisDirectHandler) GetLatestBTNStatusForOrder(c *gin.Context) {
+	orderID := c.Param("orderId")
+	if orderID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "error": "VALIDATION_ERROR", "message": "orderId is required"})
+		return
+	}
+	result, err := h.qrisDirectService.GetLatestBTNStatusForOrder(c.Request.Context(), orderID)
+	if err != nil {
+		if strings.Contains(err.Error(), "not found") {
+			c.JSON(http.StatusNotFound, gin.H{"success": false, "error": "NOT_FOUND", "message": err.Error()})
+			return
+		}
+		log.Error().Err(err).Msg("Failed to get BTN transaction by order")
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "error": "INTERNAL_ERROR", "message": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"success": true, "data": result})
 }
 
 // ConfirmPayment godoc
@@ -160,7 +179,7 @@ func (h *QrisDirectHandler) ConfirmPayment(c *gin.Context) {
 			c.JSON(http.StatusUnprocessableEntity, gin.H{
 				"success": false,
 				"error":   "VALIDATION_ERROR",
-				"message":  err.Error(),
+				"message": err.Error(),
 			})
 			return
 		}
@@ -171,7 +190,7 @@ func (h *QrisDirectHandler) ConfirmPayment(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"success": false,
 			"error":   "VALIDATION_ERROR",
-			"message":  "transactionId is required",
+			"message": "transactionId is required",
 		})
 		return
 	}
@@ -182,15 +201,15 @@ func (h *QrisDirectHandler) ConfirmPayment(c *gin.Context) {
 			c.JSON(http.StatusNotFound, gin.H{
 				"success": false,
 				"error":   "NOT_FOUND",
-				"message":  err.Error(),
+				"message": err.Error(),
 			})
 			return
 		}
-		if strings.Contains(err.Error(), "not pending") || strings.Contains(err.Error(), "expired") {
+		if strings.Contains(err.Error(), "not pending") || strings.Contains(err.Error(), "expired") || strings.Contains(err.Error(), "BTN payment must") {
 			c.JSON(http.StatusConflict, gin.H{
 				"success": false,
 				"error":   "INVALID_STATUS",
-				"message":  err.Error(),
+				"message": err.Error(),
 			})
 			return
 		}
@@ -198,14 +217,14 @@ func (h *QrisDirectHandler) ConfirmPayment(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"success": false,
 			"error":   "INTERNAL_ERROR",
-			"message":  err.Error(),
+			"message": err.Error(),
 		})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
-		"message":  "Payment confirmed successfully",
+		"message": "Payment confirmed successfully",
 	})
 }
 
@@ -235,7 +254,7 @@ func (h *QrisDirectHandler) CancelPayment(c *gin.Context) {
 			c.JSON(http.StatusUnprocessableEntity, gin.H{
 				"success": false,
 				"error":   "VALIDATION_ERROR",
-				"message":  err.Error(),
+				"message": err.Error(),
 			})
 			return
 		}
@@ -247,7 +266,7 @@ func (h *QrisDirectHandler) CancelPayment(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"success": false,
 			"error":   "VALIDATION_ERROR",
-			"message":  "transactionId is required",
+			"message": "transactionId is required",
 		})
 		return
 	}
@@ -264,15 +283,15 @@ func (h *QrisDirectHandler) CancelPayment(c *gin.Context) {
 			c.JSON(http.StatusNotFound, gin.H{
 				"success": false,
 				"error":   "NOT_FOUND",
-				"message":  err.Error(),
+				"message": err.Error(),
 			})
 			return
 		}
-		if strings.Contains(err.Error(), "not pending") {
+		if strings.Contains(err.Error(), "not pending") || strings.Contains(err.Error(), "BTN QR cannot") {
 			c.JSON(http.StatusConflict, gin.H{
 				"success": false,
 				"error":   "INVALID_STATUS",
-				"message":  err.Error(),
+				"message": err.Error(),
 			})
 			return
 		}
@@ -280,14 +299,14 @@ func (h *QrisDirectHandler) CancelPayment(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"success": false,
 			"error":   "INTERNAL_ERROR",
-			"message":  err.Error(),
+			"message": err.Error(),
 		})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
-		"message":  "Payment cancelled successfully",
+		"message": "Payment cancelled successfully",
 	})
 }
 
@@ -317,7 +336,7 @@ func (h *QrisDirectHandler) ConfirmPending(c *gin.Context) {
 			c.JSON(http.StatusUnprocessableEntity, gin.H{
 				"success": false,
 				"error":   "VALIDATION_ERROR",
-				"message":  err.Error(),
+				"message": err.Error(),
 			})
 			return
 		}
@@ -328,7 +347,7 @@ func (h *QrisDirectHandler) ConfirmPending(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"success": false,
 			"error":   "VALIDATION_ERROR",
-			"message":  "transactionId is required",
+			"message": "transactionId is required",
 		})
 		return
 	}
@@ -339,15 +358,15 @@ func (h *QrisDirectHandler) ConfirmPending(c *gin.Context) {
 			c.JSON(http.StatusNotFound, gin.H{
 				"success": false,
 				"error":   "NOT_FOUND",
-				"message":  err.Error(),
+				"message": err.Error(),
 			})
 			return
 		}
-		if strings.Contains(err.Error(), "not pending") || strings.Contains(err.Error(), "expired") {
+		if strings.Contains(err.Error(), "not pending") || strings.Contains(err.Error(), "expired") || strings.Contains(err.Error(), "BTN payment must") {
 			c.JSON(http.StatusConflict, gin.H{
 				"success": false,
 				"error":   "INVALID_STATUS",
-				"message":  err.Error(),
+				"message": err.Error(),
 			})
 			return
 		}
@@ -355,14 +374,14 @@ func (h *QrisDirectHandler) ConfirmPending(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"success": false,
 			"error":   "INTERNAL_ERROR",
-			"message":  err.Error(),
+			"message": err.Error(),
 		})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"success":        true,
-		"message":        "Payment is being auto-confirmed, please wait...",
-		"autoConfirmed":  true,
+		"success":       true,
+		"message":       "Payment is being auto-confirmed, please wait...",
+		"autoConfirmed": true,
 	})
 }

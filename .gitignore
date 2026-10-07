@@ -26,6 +26,7 @@ Thumbs.db
 # Environment
 .env
 cms-web/.env.production
+gbs-pos-api/.secrets/
 
 # Uploads
 uploads/

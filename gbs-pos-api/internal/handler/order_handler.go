@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"encoding/json"
 	"errors"
 	"gbs-common/pkg/response"
 	"gbs-pos-api/internal/dto"
@@ -10,6 +11,7 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"gorm.io/datatypes"
 	"gorm.io/gorm"
 )
 
@@ -139,31 +141,42 @@ func (h *OrderHandler) Create(c *gin.Context) {
 			SKU:          it.SKU,
 		}
 	}
+	var ppobItems []byte
+	if len(req.PpobItems) > 0 {
+		var err error
+		ppobItems, err = json.Marshal(req.PpobItems)
+		if err != nil {
+			c.JSON(http.StatusUnprocessableEntity, response.ValidationError("Invalid PPOB items", nil))
+			return
+		}
+	}
 	newOrder := &model.Order{
-		ID:            req.ID,
-		Items:         items,
-		Subtotal:      req.Subtotal,
-		Tax:           req.Tax,
-		Total:         req.Total,
-		PaymentMethod: req.PaymentMethod,
-		CashReceived:  req.CashReceived,
-		ChangeAmount:  req.ChangeAmount,
-		Timestamp:     req.Timestamp,
-		StoreType:     req.StoreType,
-		TerminalID:    req.TerminalID,
-		TransactionID: req.TransactionID,
-		ApprovalCode:  req.ApprovalCode,
-		EntryMode:     req.EntryMode,
-		MaskedAccount: req.MaskedAccount,
-		AcqMid:        req.AcqMid,
-		AcqTid:        req.AcqTid,
-		PosMessageID:  req.PosMessageID,
-		BankName:      req.BankName,
-		CustomerID:    req.CustomerID,
-		CustomerPhone: req.CustomerPhone,
-		CustomerName:  req.CustomerName,
-		DiscountType:  req.DiscountType,
-		DiscountValue: req.DiscountValue,
+		ID:             req.ID,
+		Items:          items,
+		Subtotal:       req.Subtotal,
+		Tax:            req.Tax,
+		Total:          req.Total,
+		PaymentMethod:  req.PaymentMethod,
+		CashReceived:   req.CashReceived,
+		ChangeAmount:   req.ChangeAmount,
+		Timestamp:      req.Timestamp,
+		StoreType:      req.StoreType,
+		TerminalID:     req.TerminalID,
+		TransactionID:  req.TransactionID,
+		ApprovalCode:   req.ApprovalCode,
+		EntryMode:      req.EntryMode,
+		MaskedAccount:  req.MaskedAccount,
+		AcqMid:         req.AcqMid,
+		AcqTid:         req.AcqTid,
+		PosMessageID:   req.PosMessageID,
+		BankName:       req.BankName,
+		CustomerID:     req.CustomerID,
+		CustomerPhone:  req.CustomerPhone,
+		CustomerName:   req.CustomerName,
+		DiscountType:   req.DiscountType,
+		DiscountValue:  req.DiscountValue,
+		DiscountAmount: req.DiscountAmount,
+		PpobItems:      datatypes.JSON(ppobItems),
 	}
 	if err := service.ValidateOrder(newOrder); err != nil {
 		c.JSON(http.StatusUnprocessableEntity, response.ValidationError(err.Error(), nil))
@@ -171,6 +184,10 @@ func (h *OrderHandler) Create(c *gin.Context) {
 	}
 	result, idempotent, err := h.orderService.Create(newOrder)
 	if err != nil {
+		if errors.Is(err, service.ErrBTNQRISPaymentNotVerified) {
+			c.JSON(http.StatusConflict, response.Error("PAYMENT_NOT_VERIFIED", err.Error()))
+			return
+		}
 		c.JSON(http.StatusInternalServerError, response.Error("INTERNAL_SERVER_ERROR", err.Error()))
 		return
 	}
