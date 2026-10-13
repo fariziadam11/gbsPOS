@@ -198,12 +198,16 @@ func (s *QrisDirectService) convertBTNSnap(ctx context.Context, req dto.ConvertQ
 			previous.Status == model.QrisTransactionStatusPending || previous.Status == model.QrisTransactionStatusAwaitingConfirmation ||
 			(previous.Status == model.QrisTransactionStatusExpired && previous.BankStatus != "07") ||
 			(previous.Status == model.QrisTransactionStatusCancelled && previous.BankStatus != "05") ||
-			(previous.Status == model.QrisTransactionStatusFailed && previous.BankStatus != "06") {
+			(previous.Status == model.QrisTransactionStatusFailed && previous.BankStatus != "06" && !strings.HasPrefix(previous.BankStatusDescription, "Generate rejected: ")) {
 			if previous.DynamicQrisString != "" {
 				return s.btnConvertResponse(previous)
 			}
 			return nil, fmt.Errorf("previous BTN QR result is unknown; check its status before retrying")
 		}
+	}
+	accessToken, err := s.btnClient.accessToken(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("prepare BTN access token before Generate: %w", err)
 	}
 
 	partnerReferenceNo := uuid.NewString()
@@ -240,24 +244,43 @@ func (s *QrisDirectService) convertBTNSnap(ctx context.Context, req dto.ConvertQ
 	}
 
 	validityPeriod := expiresAt.Format(time.RFC3339)
-	generated, err := s.btnClient.GenerateQR(ctx, dto.BtnSnapGenerateRequest{
+	generated, err := s.btnClient.generateQRWithToken(ctx, dto.BtnSnapGenerateRequest{
 		PartnerReferenceNo: partnerReferenceNo,
 		Amount:             dto.BtnSnapAmount{Value: fmt.Sprintf("%d.%02d", requestedCents/100, requestedCents%100), Currency: "IDR"},
 		MerchantID:         s.cfg.BtnSnapMerchantID,
 		TerminalID:         s.cfg.BtnSnapTerminalID,
 		ValidityPeriod:     validityPeriod,
 		AdditionalInfo:     map[string]any{"type_qris": "D"},
-	})
+	}, accessToken)
 	if err != nil {
-		_, _ = s.qrisTxRepo.ApplyBTNStatus(ctx, tx.ID, model.QrisTransactionStatusUnknown, "", "Generate result unknown", "", "", nil)
-		return nil, fmt.Errorf("BTN Generate outcome is unknown; reconcile using the same reference: %w", err)
+		var rejected *BtnSnapRejectedError
+		if errors.As(err, &rejected) {
+			updated, updateErr := s.qrisTxRepo.ApplyBTNStatus(
+				ctx, tx.ID, model.QrisTransactionStatusFailed, "", "Generate rejected: "+rejected.ResponseCode, "", "", nil,
+			)
+			if updateErr == nil && updated {
+				return nil, rejected
+			}
+			if updateErr != nil {
+				return nil, &BtnSnapOutcomeUnknownError{Cause: fmt.Errorf("BTN rejected Generate, but its result could not be saved: %w", updateErr)}
+			}
+			return nil, &BtnSnapOutcomeUnknownError{Cause: fmt.Errorf("BTN transaction status changed before its rejection was saved")}
+		}
+		_, updateErr := s.qrisTxRepo.ApplyBTNStatus(ctx, tx.ID, model.QrisTransactionStatusUnknown, "", "Generate result unknown", "", "", nil)
+		if updateErr != nil {
+			err = fmt.Errorf("%w (failed to save unknown result: %v)", err, updateErr)
+		}
+		return nil, &BtnSnapOutcomeUnknownError{Cause: err}
 	}
 	if generated.PartnerReferenceNo != partnerReferenceNo || generated.QRContent == "" || generated.TerminalID != tx.TerminalID {
-		_, _ = s.qrisTxRepo.ApplyBTNStatus(ctx, tx.ID, model.QrisTransactionStatusUnknown, "", "Generate response did not match request", generated.ReferenceNo, "", nil)
-		return nil, fmt.Errorf("BTN Generate response did not match the saved payment attempt")
+		_, updateErr := s.qrisTxRepo.ApplyBTNStatus(ctx, tx.ID, model.QrisTransactionStatusUnknown, "", "Generate response did not match request", generated.ReferenceNo, "", nil)
+		if updateErr != nil {
+			return nil, &BtnSnapOutcomeUnknownError{Cause: fmt.Errorf("Generate response did not match the saved payment attempt; persist status: %w", updateErr)}
+		}
+		return nil, &BtnSnapOutcomeUnknownError{Cause: fmt.Errorf("Generate response did not match the saved payment attempt")}
 	}
 	if err := s.qrisTxRepo.UpdateBTNGenerated(ctx, tx.ID, generated.ReferenceNo, generated.QRContent, generated.MerchantName, tx.TerminalID); err != nil {
-		return nil, fmt.Errorf("save BTN QR response: %w", err)
+		return nil, &BtnSnapOutcomeUnknownError{Cause: fmt.Errorf("save BTN QR response: %w", err)}
 	}
 	tx.BankReferenceNo = generated.ReferenceNo
 	tx.DynamicQrisString = generated.QRContent
@@ -350,6 +373,10 @@ func (s *QrisDirectService) GetTransactionStatus(ctx context.Context, transactio
 	if err != nil {
 		return nil, err
 	}
+	if tx.Provider == model.QrisProviderBTNSnap && tx.Status == model.QrisTransactionStatusFailed &&
+		strings.HasPrefix(tx.BankStatusDescription, "Generate rejected: ") {
+		return s.btnStatusResponse(tx)
+	}
 	if tx.Provider == model.QrisProviderBTNSnap {
 		return s.getBTNStatus(ctx, tx)
 	}
@@ -389,18 +416,14 @@ func (s *QrisDirectService) GetTransactionStatus(ctx context.Context, transactio
 }
 
 func (s *QrisDirectService) GetLatestBTNStatusForOrder(ctx context.Context, orderID string) (*dto.GetQRISStatusResponse, error) {
-	provider := s.cfg.QrisDirectProvider
-	if s.cfg.BtnSnapEnabled {
-		provider = model.QrisProviderBTNSnap
-	}
-	tx, err := s.qrisTxRepo.FindLatestByOrderIDAndProvider(ctx, orderID, provider)
+	transactions, err := s.qrisTxRepo.FindByOrderID(ctx, orderID)
 	if err != nil {
 		return nil, err
 	}
-	if tx == nil {
+	if len(transactions) == 0 {
 		return nil, fmt.Errorf("QRIS transaction not found")
 	}
-	return s.GetTransactionStatus(ctx, tx.ID)
+	return s.GetTransactionStatus(ctx, transactions[0].ID)
 }
 
 func (s *QrisDirectService) getBTNStatus(ctx context.Context, tx *model.QrisTransaction) (*dto.GetQRISStatusResponse, error) {
@@ -530,6 +553,9 @@ func (s *QrisDirectService) ConfirmPayment(ctx context.Context, transactionID st
 	if tx.Provider == model.QrisProviderBTNSnap {
 		return fmt.Errorf("BTN payment must be confirmed by Query Payment")
 	}
+	if tx.Status == model.QrisTransactionStatusAwaitingConfirmation || tx.Status == model.QrisTransactionStatusPaid {
+		return nil
+	}
 
 	if tx.Status != model.QrisTransactionStatusPending {
 		return fmt.Errorf("transaction is not pending, current status: %s", tx.Status)
@@ -584,6 +610,9 @@ func (s *QrisDirectService) ConfirmPending(ctx context.Context, transactionID st
 	if tx.Provider == model.QrisProviderBTNSnap {
 		return fmt.Errorf("BTN payment must be confirmed by Query Payment")
 	}
+	if tx.Status == model.QrisTransactionStatusAwaitingConfirmation || tx.Status == model.QrisTransactionStatusPaid {
+		return nil
+	}
 
 	if tx.Status != model.QrisTransactionStatusPending {
 		return fmt.Errorf("transaction is not pending, current status: %s", tx.Status)
@@ -593,9 +622,19 @@ func (s *QrisDirectService) ConfirmPending(ctx context.Context, transactionID st
 		return fmt.Errorf("transaction has expired")
 	}
 
-	// Update status to AWAITING_CONFIRMATION
-	if err := s.qrisTxRepo.UpdateStatus(ctx, transactionID, model.QrisTransactionStatusAwaitingConfirmation); err != nil {
+	updated, err := s.qrisTxRepo.MarkAwaitingConfirmation(ctx, transactionID)
+	if err != nil {
 		return fmt.Errorf("failed to update status: %v", err)
+	}
+	if !updated {
+		latest, err := s.qrisTxRepo.FindByID(ctx, transactionID)
+		if err != nil {
+			return err
+		}
+		if latest.Status == model.QrisTransactionStatusAwaitingConfirmation || latest.Status == model.QrisTransactionStatusPaid {
+			return nil
+		}
+		return fmt.Errorf("transaction is not pending, current status: %s", latest.Status)
 	}
 
 	// Get delay from config (default 3 seconds)

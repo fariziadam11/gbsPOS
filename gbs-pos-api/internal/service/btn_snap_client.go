@@ -41,6 +41,27 @@ type BtnSnapClient struct {
 	tokenUntil time.Time
 }
 
+// BtnSnapRejectedError is a definitive Generate response that did not create a QR payment.
+type BtnSnapRejectedError struct {
+	ResponseCode    string
+	ResponseMessage string
+}
+
+func (e *BtnSnapRejectedError) Error() string {
+	return fmt.Sprintf("BTN Generate QR rejected: %s %s", e.ResponseCode, e.ResponseMessage)
+}
+
+// BtnSnapOutcomeUnknownError means a Generate request may have reached BTN but its result could not be verified.
+type BtnSnapOutcomeUnknownError struct {
+	Cause error
+}
+
+func (e *BtnSnapOutcomeUnknownError) Error() string {
+	return fmt.Sprintf("BTN Generate outcome is unknown; reconcile using the same reference: %v", e.Cause)
+}
+
+func (e *BtnSnapOutcomeUnknownError) Unwrap() error { return e.Cause }
+
 func NewBtnSnapClient(cfg *config.Config) *BtnSnapClient {
 	return &BtnSnapClient{
 		cfg:        cfg,
@@ -49,40 +70,59 @@ func NewBtnSnapClient(cfg *config.Config) *BtnSnapClient {
 }
 
 func (c *BtnSnapClient) GenerateQR(ctx context.Context, payload dto.BtnSnapGenerateRequest) (*dto.BtnSnapGenerateResponse, error) {
-	var result dto.BtnSnapGenerateResponse
-	if err := c.post(ctx, btnGeneratePath, payload, &result); err != nil {
+	token, err := c.accessToken(ctx)
+	if err != nil {
 		return nil, err
 	}
-	if result.ResponseCode != "2004700" {
-		return nil, fmt.Errorf("BTN Generate QR rejected: %s %s", result.ResponseCode, result.ResponseMessage)
+	return c.generateQRWithToken(ctx, payload, token)
+}
+
+func (c *BtnSnapClient) generateQRWithToken(ctx context.Context, payload dto.BtnSnapGenerateRequest, token string) (*dto.BtnSnapGenerateResponse, error) {
+	var result dto.BtnSnapGenerateResponse
+	statusCode, err := c.postWithToken(ctx, btnGeneratePath, payload, &result, token)
+	if err != nil {
+		return nil, err
 	}
-	return &result, nil
+	if statusCode == http.StatusOK && result.ResponseCode == "2004700" {
+		return &result, nil
+	}
+	if definitiveBTNGenerateRejection(statusCode, result.ResponseCode) {
+		return nil, &BtnSnapRejectedError{ResponseCode: result.ResponseCode, ResponseMessage: result.ResponseMessage}
+	}
+	return nil, fmt.Errorf("BTN Generate response could not be verified (HTTP %d, responseCode %q)", statusCode, result.ResponseCode)
 }
 
 func (c *BtnSnapClient) QueryPayment(ctx context.Context, payload dto.BtnSnapQueryRequest) (*dto.BtnSnapQueryResponse, error) {
 	var result dto.BtnSnapQueryResponse
-	if err := c.post(ctx, btnQueryPath, payload, &result); err != nil {
+	statusCode, err := c.post(ctx, btnQueryPath, payload, &result)
+	if err != nil {
 		return nil, err
+	}
+	if statusCode != http.StatusOK {
+		return nil, fmt.Errorf("BTN Query returned HTTP %d", statusCode)
 	}
 	return &result, nil
 }
 
-func (c *BtnSnapClient) post(ctx context.Context, path string, payload any, result any) error {
-	body, err := json.Marshal(payload)
-	if err != nil {
-		return fmt.Errorf("encode BTN request: %w", err)
-	}
-
+func (c *BtnSnapClient) post(ctx context.Context, path string, payload any, result any) (int, error) {
 	token, err := c.accessToken(ctx)
 	if err != nil {
-		return err
+		return 0, err
+	}
+	return c.postWithToken(ctx, path, payload, result, token)
+}
+
+func (c *BtnSnapClient) postWithToken(ctx context.Context, path string, payload any, result any, token string) (int, error) {
+	body, err := json.Marshal(payload)
+	if err != nil {
+		return 0, fmt.Errorf("encode BTN request: %w", err)
 	}
 
 	now := time.Now().In(time.FixedZone("WIB", 7*60*60))
 	timestamp := now.Format("2006-01-02T15:04:05-07:00")
 	externalID, err := newBTNExternalID()
 	if err != nil {
-		return fmt.Errorf("create BTN request ID: %w", err)
+		return 0, fmt.Errorf("create BTN request ID: %w", err)
 	}
 
 	hash := sha256.Sum256(body)
@@ -93,7 +133,7 @@ func (c *BtnSnapClient) post(ctx context.Context, path string, payload any, resu
 	url := strings.TrimRight(c.cfg.BtnSnapBaseURL, "/") + path
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(body))
 	if err != nil {
-		return fmt.Errorf("create BTN request: %w", err)
+		return 0, fmt.Errorf("create BTN request: %w", err)
 	}
 	req.Header.Set("Authorization", "Bearer "+token)
 	req.Header.Set("Content-Type", "application/json")
@@ -106,18 +146,39 @@ func (c *BtnSnapClient) post(ctx context.Context, path string, payload any, resu
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return fmt.Errorf("BTN request failed: %w", err)
+		return 0, fmt.Errorf("BTN request failed: %w", err)
 	}
 	defer resp.Body.Close()
 
 	responseBody, err := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
 	if err != nil {
-		return fmt.Errorf("read BTN response: %w", err)
+		return resp.StatusCode, fmt.Errorf("read BTN response: %w", err)
 	}
 	if err := json.Unmarshal(responseBody, result); err != nil {
-		return fmt.Errorf("decode BTN response (HTTP %d): %w", resp.StatusCode, err)
+		return resp.StatusCode, fmt.Errorf("decode BTN response (HTTP %d): %w", resp.StatusCode, err)
 	}
-	return nil
+	return resp.StatusCode, nil
+}
+
+func definitiveBTNGenerateRejection(statusCode int, responseCode string) bool {
+	if len(responseCode) != 7 || responseCode[3:5] != "47" {
+		return false
+	}
+	for _, digit := range responseCode {
+		if digit < '0' || digit > '9' {
+			return false
+		}
+	}
+	httpCode, err := strconv.Atoi(responseCode[:3])
+	if err != nil || httpCode != statusCode {
+		return false
+	}
+	switch httpCode {
+	case http.StatusBadRequest, http.StatusUnauthorized, http.StatusForbidden, http.StatusNotFound, http.StatusTooManyRequests:
+		return true
+	default:
+		return false
+	}
 }
 
 func (c *BtnSnapClient) accessToken(ctx context.Context) (string, error) {
@@ -162,6 +223,9 @@ func (c *BtnSnapClient) accessToken(ctx context.Context) (string, error) {
 		return "", fmt.Errorf("BTN token request failed: %w", err)
 	}
 	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("BTN token request returned HTTP %d", resp.StatusCode)
+	}
 
 	var tokenResponse dto.BtnSnapTokenResponse
 	if err := json.NewDecoder(io.LimitReader(resp.Body, 1<<20)).Decode(&tokenResponse); err != nil {

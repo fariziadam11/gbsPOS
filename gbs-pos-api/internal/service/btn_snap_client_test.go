@@ -12,6 +12,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"encoding/pem"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -221,6 +222,117 @@ func TestQrisDirectServiceBTNGenerateQueryAndConfirmGuards(t *testing.T) {
 	}
 	if stored.Status != model.QrisTransactionStatusPaid || stored.StaticQrisString != "" {
 		t.Fatalf("unexpected saved BTN transaction: %+v", stored)
+	}
+}
+
+func TestBTNGenerateSeparatesRejectionFromUnknownOutcome(t *testing.T) {
+	for _, tt := range []struct {
+		name         string
+		wantStatus   string
+		wantGenerate int
+		httpStatus   int
+		responseCode string
+		responseText string
+		definitive   bool
+	}{
+		{name: "definitive rejection", wantStatus: model.QrisTransactionStatusFailed, wantGenerate: 2, httpStatus: http.StatusUnauthorized, responseCode: "4014701", responseText: "Access Token Invalid", definitive: true},
+		{name: "duplicate reference", wantStatus: model.QrisTransactionStatusUnknown, wantGenerate: 1, httpStatus: http.StatusConflict, responseCode: "4094701", responseText: "Duplicate partnerReferenceNo"},
+		{name: "server outcome unknown", wantStatus: model.QrisTransactionStatusUnknown, wantGenerate: 1, httpStatus: http.StatusInternalServerError, responseCode: "5004700", responseText: "General Error"},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			_, keyPath := writeTestRSAPrivateKey(t)
+			generateCalls := 0
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				switch r.URL.Path {
+				case btnTokenPath:
+					_, _ = w.Write([]byte(`{"responseCode":"2007300","accessToken":"test-token","expiresIn":"900"}`))
+				case btnGeneratePath:
+					generateCalls++
+					var request dto.BtnSnapGenerateRequest
+					if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+						t.Errorf("decode Generate request: %v", err)
+						http.Error(w, "bad body", http.StatusBadRequest)
+						return
+					}
+					if !tt.definitive || generateCalls == 1 {
+						w.WriteHeader(tt.httpStatus)
+						_, _ = fmt.Fprintf(w, `{"responseCode":%q,"responseMessage":%q}`, tt.responseCode, tt.responseText)
+						return
+					}
+					_, _ = fmt.Fprintf(w, `{"responseCode":"2004700","referenceNo":"bank-reference-retry","partnerReferenceNo":%q,"qrContent":"retry-qr","merchantName":"Test Merchant","terminalId":"%s"}`, request.PartnerReferenceNo, btnTestTerminalID)
+				default:
+					http.NotFound(w, r)
+				}
+			}))
+			defer server.Close()
+
+			db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+			if err != nil {
+				t.Fatal(err)
+			}
+			if err := db.AutoMigrate(&model.QrisTransaction{}, &model.Product{}); err != nil {
+				t.Fatal(err)
+			}
+			if err := db.Create(&model.Product{ID: 1, Name: "Product", Price: 12500, StockQuantity: 10}).Error; err != nil {
+				t.Fatal(err)
+			}
+			repo := repository.NewQrisTransactionRepository(db)
+			cfg := btnTestConfig(server.URL, keyPath)
+			cfg.BtnSnapEnabled = true
+			service := NewQrisDirectService(cfg, repo, nil)
+			productService := NewProductService(repository.NewProductRepository(db), nil)
+			orderService := NewOrderService(nil, productService, nil, nil)
+			orderService.ConfigureBTNQRISValidation(repo, true, 0)
+			service.SetOrderService(orderService)
+			snapshot := &dto.QrisCheckoutSnapshotRequest{
+				ID: "ORDER-GENERATE-ERROR",
+				Items: []dto.QrisCheckoutItem{{
+					ProductID: 1, ProductName: "Product", ProductPrice: 12500,
+					Qty: 1, Subtotal: 12500,
+				}},
+				Subtotal: 12500, Tax: 0, Total: 12500,
+			}
+			request := dto.ConvertQRISRequest{OrderID: snapshot.ID, Amount: 12500, CheckoutSnapshot: snapshot}
+
+			_, err = service.ConvertQRIS(t.Context(), request)
+			if err == nil {
+				t.Fatal("Generate error was accepted")
+			}
+			if tt.definitive {
+				var rejected *BtnSnapRejectedError
+				if !errors.As(err, &rejected) || rejected.ResponseCode != "4014701" {
+					t.Fatalf("expected a definitive BTN rejection, got %v", err)
+				}
+			} else {
+				var unknown *BtnSnapOutcomeUnknownError
+				if !errors.As(err, &unknown) {
+					t.Fatalf("expected an unknown BTN outcome, got %v", err)
+				}
+			}
+
+			transactions, err := repo.FindByOrderID(t.Context(), snapshot.ID)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if len(transactions) != 1 || transactions[0].Status != tt.wantStatus {
+				t.Fatalf("saved attempt = %+v, want status %s", transactions, tt.wantStatus)
+			}
+			if tt.definitive {
+				status, err := service.GetLatestBTNStatusForOrder(t.Context(), snapshot.ID)
+				if err != nil || status.Status != model.QrisTransactionStatusFailed {
+					t.Fatalf("persisted Generate rejection status = %+v, error=%v", status, err)
+				}
+				generated, err := service.ConvertQRIS(t.Context(), request)
+				if err != nil || generated.DynamicQris != "retry-qr" {
+					t.Fatalf("definitive rejection should allow a fresh attempt: response=%+v error=%v", generated, err)
+				}
+			} else if _, err := service.ConvertQRIS(t.Context(), request); err == nil {
+				t.Fatal("unknown outcome must not start a fresh Generate request")
+			}
+			if generateCalls != tt.wantGenerate {
+				t.Fatalf("Generate calls = %d, want %d", generateCalls, tt.wantGenerate)
+			}
+		})
 	}
 }
 

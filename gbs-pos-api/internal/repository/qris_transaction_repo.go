@@ -152,6 +152,16 @@ func (r *QrisTransactionRepository) UpdateStatus(ctx context.Context, id string,
 		Updates(updates).Error
 }
 
+func (r *QrisTransactionRepository) MarkAwaitingConfirmation(ctx context.Context, id string) (bool, error) {
+	result := r.db.WithContext(ctx).Model(&model.QrisTransaction{}).
+		Where("id = ? AND status = ?", id, model.QrisTransactionStatusPending).
+		Update("status", model.QrisTransactionStatusAwaitingConfirmation)
+	if result.Error != nil {
+		return false, result.Error
+	}
+	return result.RowsAffected > 0, nil
+}
+
 // MarkAsPaid marks a QRIS transaction as paid
 func (r *QrisTransactionRepository) MarkAsPaid(ctx context.Context, id string) error {
 	result := r.db.WithContext(ctx).Model(&model.QrisTransaction{}).
@@ -171,14 +181,21 @@ func (r *QrisTransactionRepository) MarkAsPaid(ctx context.Context, id string) e
 
 // Cancel cancels a QRIS transaction
 func (r *QrisTransactionRepository) Cancel(ctx context.Context, id string, cancelledBy string, reason string) error {
-	return r.db.WithContext(ctx).Model(&model.QrisTransaction{}).
+	result := r.db.WithContext(ctx).Model(&model.QrisTransaction{}).
 		Where("id = ? AND status IN (?, ?)", id, model.QrisTransactionStatusPending, model.QrisTransactionStatusAwaitingConfirmation).
 		Updates(map[string]interface{}{
 			"status":        model.QrisTransactionStatusCancelled,
 			"cancelled_at":  gorm.Expr("NOW()"),
 			"cancelled_by":  cancelledBy,
 			"cancel_reason": reason,
-		}).Error
+		})
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return fmt.Errorf("QRIS transaction status changed")
+	}
+	return nil
 }
 
 // FindExpired finds and marks expired QRIS transactions

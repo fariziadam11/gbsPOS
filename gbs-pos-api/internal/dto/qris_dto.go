@@ -90,6 +90,7 @@ type QrisInitResponse struct {
 // The static QRIS string is taken from config (QRIS_DIRECT_STATIC_QRIS)
 type ConvertQRISRequest struct {
 	Amount           float64                      `json:"amount" binding:"required,gt=0"`
+	Provider         string                       `json:"provider,omitempty"`
 	FeeType          string                       `json:"feeType,omitempty"` // "fixed" or "percentage"
 	FeeValue         float64                      `json:"feeValue,omitempty"`
 	OrderID          string                       `json:"orderId,omitempty"`

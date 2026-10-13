@@ -10,10 +10,10 @@ setlocal EnableExtensions
 
 REM === Configuration ===
 set REGISTRY=ghcr.io/fariziadam11
-set VPS_HOST=159.89.204.100
-set VPS_USER=adam
-set VPS_PATH=/opt/gbs/gbs-pos-cms-api
-set VPS_ENV_FILE=/opt/gbs/.env
+set VPS_HOST=159.89.198.208
+set VPS_USER=bedul
+set VPS_PATH=/home/bedul/gbs-pos-cms-api
+set VPS_ENV_FILE=/home/bedul/gbs-pos-cms-api/.env
 
 REM === Color codes (ANSI) ===
 set BLUE=[94m
@@ -36,6 +36,9 @@ echo.
 REM === Parse Arguments ===
 set "SERVICE=%~1"
 if "%SERVICE%"=="" set "SERVICE=all"
+set "COMPOSE_SERVICES=pos-api cms-api"
+if /i "%SERVICE%"=="pos" set "COMPOSE_SERVICES=pos-api"
+if /i "%SERVICE%"=="cms" set "COMPOSE_SERVICES=cms-api"
 
 echo %CYAN%[STEP] Checking Docker...%NC%
 docker --version >nul 2>&1
@@ -67,6 +70,11 @@ if errorlevel 1 (
 )
 echo %GREEN%[SUCCESS] Built: %REGISTRY%/gbs-pos-api:latest%NC%
 docker push %REGISTRY%/gbs-pos-api:latest
+if errorlevel 1 (
+    echo %RED%[ERROR] Push POS failed!%NC%
+    pause
+    exit /b 1
+)
 echo %GREEN%[SUCCESS] Pushed: %REGISTRY%/gbs-pos-api:latest%NC%
 echo.
 
@@ -81,6 +89,11 @@ if errorlevel 1 (
 )
 echo %GREEN%[SUCCESS] Built: %REGISTRY%/gbs-cms-api:latest%NC%
 docker push %REGISTRY%/gbs-cms-api:latest
+if errorlevel 1 (
+    echo %RED%[ERROR] Push CMS failed!%NC%
+    pause
+    exit /b 1
+)
 echo %GREEN%[SUCCESS] Pushed: %REGISTRY%/gbs-cms-api:latest%NC%
 echo.
 
@@ -90,7 +103,7 @@ REM =============================================
 :deploy_vps
 echo %CYAN%[STEP] Deploying to VPS...%NC%
 
-ssh %VPS_USER%@%VPS_HOST% "sudo docker compose -f %VPS_PATH%/docker-compose.prod.yml --env-file %VPS_ENV_FILE% pull && sudo docker compose -f %VPS_PATH%/docker-compose.prod.yml --env-file %VPS_ENV_FILE% up -d --force-recreate && sudo docker image prune -f && sudo docker compose -f %VPS_PATH%/docker-compose.prod.yml --env-file %VPS_ENV_FILE% ps"
+ssh %VPS_USER%@%VPS_HOST% "cd %VPS_PATH% && docker compose --env-file %VPS_ENV_FILE% -f compose.yml pull %COMPOSE_SERVICES% && docker compose --env-file %VPS_ENV_FILE% -f compose.yml up -d --no-deps %COMPOSE_SERVICES% && docker compose --env-file %VPS_ENV_FILE% -f compose.yml ps"
 
 if errorlevel 1 (
     echo.
@@ -103,21 +116,30 @@ if errorlevel 1 (
 echo.
 echo %CYAN%[STEP] Health check (waiting 15s for containers to start)...%NC%
 timeout /t 15 /nobreak >nul
+set "HEALTH_FAILED=0"
 
 REM Check POS API
-curl -s --connect-timeout 5 http://%VPS_HOST%:8080/health >nul 2>&1
+curl -fsS --connect-timeout 10 https://pos-api.armmada.id/health >nul 2>&1
 if errorlevel 1 (
     echo %RED%[ERROR] gbs-pos-api health check FAILED%NC%
+    set "HEALTH_FAILED=1"
 ) else (
     echo %GREEN%[OK] gbs-pos-api is healthy%NC%
 )
 
 REM Check CMS API
-curl -s --connect-timeout 5 http://%VPS_HOST%:8081/health >nul 2>&1
+curl -fsS --connect-timeout 10 https://cms-api.armmada.id/health >nul 2>&1
 if errorlevel 1 (
     echo %RED%[ERROR] gbs-cms-api health check FAILED%NC%
+    set "HEALTH_FAILED=1"
 ) else (
     echo %GREEN%[OK] gbs-cms-api is healthy%NC%
+)
+
+if "%HEALTH_FAILED%"=="1" (
+    echo %RED%[ERROR] Deployment finished but at least one API is unhealthy.%NC%
+    pause
+    exit /b 1
 )
 
 echo.

@@ -202,7 +202,7 @@ const (
 // QrisTransaction represents a QRIS direct payment transaction (without gateway)
 type QrisTransaction struct {
 	ID                    string         `gorm:"primaryKey;size:64" json:"id"`
-	OrderID               string         `gorm:"size:32;index" json:"orderId"`
+	OrderID               string         `gorm:"size:32;index;uniqueIndex:idx_qris_active_btn_order,where:provider = 'BTN_SNAP' AND (status = 'PENDING' OR status = 'AWAITING_CONFIRMATION' OR status = 'UNKNOWN' OR status = 'PAID') AND order_id <> ''" json:"orderId"`
 	StaticQrisString      string         `gorm:"type:text" json:"staticQrisString,omitempty"`
 	DynamicQrisString     string         `gorm:"type:text" json:"dynamicQrisString"`
 	PartnerReferenceNo    string         `gorm:"size:64;uniqueIndex:idx_qris_partner_reference,where:partner_reference_no <> ''" json:"partnerReferenceNo,omitempty"`

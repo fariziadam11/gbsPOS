@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"errors"
 	"net/http"
 	"strings"
 
@@ -33,6 +34,7 @@ func NewQrisDirectHandler(qrisDirectService *service.QrisDirectService) *QrisDir
 // @Success 200 {object} response.Response{data=dto.ConvertQRISResponse}
 // @Failure 400 {object} response.Response
 // @Failure 500 {object} response.Response
+// @Failure 503 {object} response.Response
 // @Router /v1/qris-direct/convert [post]
 func (h *QrisDirectHandler) ConvertQRIS(c *gin.Context) {
 	var req dto.ConvertQRISRequest
@@ -57,6 +59,24 @@ func (h *QrisDirectHandler) ConvertQRIS(c *gin.Context) {
 
 	result, err := h.qrisDirectService.ConvertQRIS(c.Request.Context(), req)
 	if err != nil {
+		var outcomeUnknown *service.BtnSnapOutcomeUnknownError
+		if errors.As(err, &outcomeUnknown) {
+			c.JSON(http.StatusServiceUnavailable, gin.H{
+				"success": false,
+				"error":   "PAYMENT_OUTCOME_UNKNOWN",
+				"message": err.Error(),
+			})
+			return
+		}
+		var rejected *service.BtnSnapRejectedError
+		if errors.As(err, &rejected) {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"success": false,
+				"error":   "BTN_REJECTED",
+				"message": err.Error(),
+			})
+			return
+		}
 		if strings.Contains(err.Error(), "order not found") {
 			c.JSON(http.StatusNotFound, gin.H{
 				"success": false,

@@ -1,7 +1,9 @@
 package service
 
 import (
+	"strings"
 	"testing"
+	"time"
 
 	"gbs-pos-api/internal/config"
 	"gbs-pos-api/internal/dto"
@@ -134,5 +136,103 @@ func TestLegacyDynamicQrisSupportsCheckoutBeforeOrderIsSaved(t *testing.T) {
 	}
 	if status.ID != generated.ID || status.DynamicQris != generated.DynamicQris || status.CheckoutSnapshot == nil {
 		t.Fatalf("legacy QRIS recovery failed: %+v", status)
+	}
+}
+
+func TestConvertQRISUsesServerBTNConfiguration(t *testing.T) {
+	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := db.AutoMigrate(&model.QrisTransaction{}, &model.Order{}); err != nil {
+		t.Fatal(err)
+	}
+	cfg := &config.Config{
+		BtnSnapEnabled:            true,
+		QrisDirectStaticQRIS:      "00020101021126610014COM.GO-JEK.WWW01189360091434374848210210G4374848210303UMI51440014ID.CO.QRIS.WWW0215ID10265153412990303UMI5204581253033605802ID5925Snack Kering Mama Tari, K6013JAKARTA PUSAT61051064062140703A01110362163042807",
+		QrisDirectSkipCRCValidate: true,
+	}
+	service := NewQrisDirectService(cfg, repository.NewQrisTransactionRepository(db), repository.NewOrderRepository(db))
+
+	_, err = service.ConvertQRIS(t.Context(), dto.ConvertQRISRequest{Amount: 5000, Provider: "QRIS_DIRECT"})
+	if err == nil || !strings.Contains(err.Error(), "orderId and matching checkoutSnapshot are required for BTN QRIS") {
+		t.Fatalf("request provider must not bypass BTN configuration; got error %v", err)
+	}
+}
+
+func TestBTNCheckoutHasAtMostOneUnresolvedPaymentAttempt(t *testing.T) {
+	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := db.AutoMigrate(&model.QrisTransaction{}); err != nil {
+		t.Fatal(err)
+	}
+	repo := repository.NewQrisTransactionRepository(db)
+	ctx := t.Context()
+	first := &model.QrisTransaction{
+		ID: "BTN-FIRST", OrderID: "ORDER-1", Provider: model.QrisProviderBTNSnap,
+		Status: model.QrisTransactionStatusPending,
+	}
+	duplicate := &model.QrisTransaction{
+		ID: "BTN-DUPLICATE", OrderID: "ORDER-1", Provider: model.QrisProviderBTNSnap,
+		Status: model.QrisTransactionStatusUnknown,
+	}
+	if err := repo.Create(ctx, first); err != nil {
+		t.Fatal(err)
+	}
+	if err := repo.Create(ctx, duplicate); err == nil {
+		t.Fatal("second unresolved BTN attempt for the checkout was accepted")
+	}
+	if err := repo.UpdateStatus(ctx, first.ID, model.QrisTransactionStatusFailed); err != nil {
+		t.Fatal(err)
+	}
+	if err := repo.Create(ctx, duplicate); err != nil {
+		t.Fatalf("terminal failure should allow a new attempt: %v", err)
+	}
+}
+
+func TestCancelRejectsTransactionThatAlreadyChangedStatus(t *testing.T) {
+	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := db.AutoMigrate(&model.QrisTransaction{}); err != nil {
+		t.Fatal(err)
+	}
+	repo := repository.NewQrisTransactionRepository(db)
+	if err := repo.Create(t.Context(), &model.QrisTransaction{
+		ID: "QRIS-PAID", Provider: "GoPay", Status: model.QrisTransactionStatusPaid,
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if err := repo.Cancel(t.Context(), "QRIS-PAID", "cashier", "closed"); err == nil {
+		t.Fatal("cancel must report when the transaction is no longer pending")
+	}
+}
+
+func TestConfirmPendingIsIdempotent(t *testing.T) {
+	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := db.AutoMigrate(&model.QrisTransaction{}); err != nil {
+		t.Fatal(err)
+	}
+
+	repo := repository.NewQrisTransactionRepository(db)
+	if err := repo.Create(t.Context(), &model.QrisTransaction{
+		ID: "QRIS-TEST", Provider: "GoPay", Status: model.QrisTransactionStatusPending,
+		ExpiresAt: time.Now().Add(time.Minute),
+	}); err != nil {
+		t.Fatal(err)
+	}
+	service := NewQrisDirectService(&config.Config{QrisDirectAutoConfirmDelaySeconds: 30}, repo, nil)
+
+	if err := service.ConfirmPending(t.Context(), "QRIS-TEST"); err != nil {
+		t.Fatal(err)
+	}
+	if err := service.ConfirmPending(t.Context(), "QRIS-TEST"); err != nil {
+		t.Fatalf("duplicate confirm-pending should be accepted: %v", err)
 	}
 }
