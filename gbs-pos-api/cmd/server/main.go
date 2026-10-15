@@ -87,6 +87,7 @@ func main() {
 		&model.Nozzle{},
 		&model.FuelSale{},
 		&model.QrisTransaction{},
+		&model.QrisRefund{},
 		&model.CardPayment{},
 		&model.CompanionDevice{},
 	); err != nil {
@@ -139,6 +140,8 @@ func main() {
 	qrisService := service.NewQrisService(cfg, db, orderRepo)
 	qrisDirectService := service.NewQrisDirectService(cfg, qrisTransactionRepo, orderRepo)
 	qrisDirectService.SetOrderService(orderService)
+	qrisCPMService := service.NewQrisCPMService(cfg, qrisTransactionRepo, orderService)
+	qrisMPMService := service.NewQrisMPMService(cfg, qrisTransactionRepo, qrisDirectService)
 	cardPaymentService := service.NewCardPaymentService(cardPaymentRepo, orderService, companionDeviceRepo, websocketHub)
 	websocketHub.SetMessageHandler(cardPaymentService.HandleMessage)
 
@@ -155,6 +158,8 @@ func main() {
 	fuelHandler := handler.NewFuelHandler(fuelService)
 	qrisHandler := handler.NewQrisHandler(qrisService, cfg)
 	qrisDirectHandler := handler.NewQrisDirectHandler(qrisDirectService)
+	qrisCPMHandler := handler.NewQrisCPMHandler(qrisCPMService)
+	qrisMPMHandler := handler.NewQrisMPMHandler(qrisMPMService)
 	cardPaymentHandler := handler.NewCardPaymentHandler(cardPaymentService)
 	companionDeviceHandler := handler.NewCompanionDeviceHandler(companionDeviceRepo)
 
@@ -174,6 +179,8 @@ func main() {
 			CartDisplay:     cartDisplayHandler,
 			Qris:            qrisHandler,
 			QrisDirect:      qrisDirectHandler,
+			QrisCPM:         qrisCPMHandler,
+			QrisMPM:         qrisMPMHandler,
 			CardPayment:     cardPaymentHandler,
 			CompanionDevice: companionDeviceHandler,
 			WebSocket:       websocketHub,

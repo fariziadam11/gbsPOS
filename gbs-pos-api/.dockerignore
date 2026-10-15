@@ -1,6 +1,7 @@
 .git
 .env
 .env.example
+.secret/
 bin/
 dist/
 *.test

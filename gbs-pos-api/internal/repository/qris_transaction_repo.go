@@ -60,6 +60,79 @@ func (r *QrisTransactionRepository) FindLatestByOrderIDAndProvider(ctx context.C
 	return &tx, nil
 }
 
+func (r *QrisTransactionRepository) FindLatestByOrderIDAndFlowType(ctx context.Context, orderID, flowType string) (*model.QrisTransaction, error) {
+	var tx model.QrisTransaction
+	query := r.db.WithContext(ctx).Where("order_id = ? AND provider = ?", orderID, model.QrisProviderBTNSnap)
+	if flowType == model.QrisFlowMPM {
+		query = query.Where("flow_type = ? OR flow_type IS NULL OR flow_type = ''", flowType)
+	} else {
+		query = query.Where("flow_type = ?", flowType)
+	}
+	if err := query.Order("created_at DESC").First(&tx).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &tx, nil
+}
+
+func (r *QrisTransactionRepository) UpdateCPMExpiry(ctx context.Context, id string, expiry time.Time) error {
+	result := r.db.WithContext(ctx).Model(&model.QrisTransaction{}).
+		Where("id = ? AND provider = ? AND flow_type = ? AND status = ?", id, model.QrisProviderBTNSnap, model.QrisFlowCPM, model.QrisTransactionStatusPending).
+		Update("expires_at", expiry)
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return fmt.Errorf("BTN CPM transaction is no longer pending")
+	}
+	return nil
+}
+
+func (r *QrisTransactionRepository) UpdateCPMPaymentReference(ctx context.Context, id, reference string) error {
+	result := r.db.WithContext(ctx).Model(&model.QrisTransaction{}).
+		Where("id = ? AND provider = ? AND flow_type = ? AND status IN ?", id, model.QrisProviderBTNSnap, model.QrisFlowCPM, []string{model.QrisTransactionStatusPending, model.QrisTransactionStatusUnknown}).
+		Update("bank_reference_no", reference)
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return fmt.Errorf("BTN CPM transaction is no longer active")
+	}
+	return nil
+}
+
+func (r *QrisTransactionRepository) MarkCPMCancelRequested(ctx context.Context, id, reason string, at time.Time) (bool, error) {
+	result := r.db.WithContext(ctx).Model(&model.QrisTransaction{}).
+		Where("id = ? AND provider = ? AND flow_type = ? AND status IN ? AND cancel_requested_at IS NULL",
+			id, model.QrisProviderBTNSnap, model.QrisFlowCPM, []string{model.QrisTransactionStatusPending, model.QrisTransactionStatusUnknown}).
+		Updates(map[string]any{"cancel_requested_at": at, "cancel_reason": reason})
+	if result.Error != nil {
+		return false, result.Error
+	}
+	return result.RowsAffected > 0, nil
+}
+
+func (r *QrisTransactionRepository) CreateRefund(ctx context.Context, refund *model.QrisRefund) error {
+	return r.db.WithContext(ctx).Create(refund).Error
+}
+
+func (r *QrisTransactionRepository) FindRefundByTransactionID(ctx context.Context, transactionID string) (*model.QrisRefund, error) {
+	var refund model.QrisRefund
+	if err := r.db.WithContext(ctx).Where("transaction_id = ?", transactionID).First(&refund).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &refund, nil
+}
+
+func (r *QrisTransactionRepository) UpdateRefund(ctx context.Context, refund *model.QrisRefund) error {
+	return r.db.WithContext(ctx).Save(refund).Error
+}
+
 func (r *QrisTransactionRepository) FindByPartnerReferenceNo(ctx context.Context, reference string) (*model.QrisTransaction, error) {
 	var tx model.QrisTransaction
 	if err := r.db.WithContext(ctx).Where("partner_reference_no = ?", reference).First(&tx).Error; err != nil {

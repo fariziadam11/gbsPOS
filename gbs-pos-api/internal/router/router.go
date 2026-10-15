@@ -65,6 +65,8 @@ type Handlers struct {
 	CartDisplay     *handler.CartDisplayHandler
 	Qris            *handler.QrisHandler
 	QrisDirect      *handler.QrisDirectHandler
+	QrisCPM         *handler.QrisCPMHandler
+	QrisMPM         *handler.QrisMPMHandler
 	CardPayment     *handler.CardPaymentHandler
 	CompanionDevice *handler.CompanionDeviceHandler
 	WebSocket       *ws.Hub
@@ -124,8 +126,10 @@ func Setup(
 	setupHoldRoutes(auth, h.Hold)
 	setupFuelRoutes(v1, h.Fuel)
 	setupCartDisplayRoutes(v1, h.CartDisplay, authMiddleware)
-	setupQrisRoutes(r, h.Qris)
+	setupQrisRoutes(auth, r, h.Qris)
 	setupQrisDirectRoutes(auth, h.QrisDirect)
+	setupBTNCPMRoutes(auth, h.QrisCPM)
+	setupBTNMPMRoutes(auth, h.QrisMPM)
 	setupCardPaymentRoutes(auth, h.CardPayment)
 	setupCompanionDeviceRoutes(auth, h.CompanionDevice)
 	setupWebSocketRoute(r, h.WebSocket, authMiddleware)

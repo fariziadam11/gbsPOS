@@ -198,17 +198,17 @@ CPM v1.05 tidak memiliki Payment Notify; pemeriksaan lanjutan menggunakan Query.
 
 ### Pekerjaan
 
-- [ ] Tambahkan DTO CPM terpisah dari DTO MPM.
-- [ ] Tambahkan metode konkret Decode/Payment/Query/Cancel/Refund pada client BTN yang sudah ada; reuse token, signing, dan `net/http`.
-- [ ] Tambahkan service CPM dengan aturan status dan validasi per operasi.
-- [ ] Simpan `transactionDateTime` original, TID bank, merchant PAN, scanner/device ID, referensi, dan snapshot yang dibutuhkan Query/Cancel/Refund.
-- [ ] Kirim `merchantLocation` uppercase sesuai CPM v1.05.
-- [ ] Periksa panjang field, QR maksimum 512 sesuai kontrak, nominal, currency, timestamp, dan expiry sebelum request bank.
-- [ ] Gunakan data merchant server, bukan nama/lokasi/PAN yang bebas dikirim Android.
-- [ ] Perluas updater status berdasarkan jenis alur tanpa membuat updater CPM memanggil Query MPM.
-- [ ] Perluas guard `OrderService.Create()` agar `QRIS_SCAN` memerlukan transaksi CPM paid yang cocok, termasuk jalur bulk sync.
-- [ ] Tetapkan pengulangan finalisasi sebagai operasi idempotent dan cegah satu pembayaran digunakan untuk pesanan lain.
-- [ ] Tambahkan migrasi SQL berikutnya dan selaraskan model AutoMigrate. Tentukan nomor migrasi saat implementasi.
+- [x] Tambahkan DTO CPM terpisah dari DTO MPM.
+- [x] Tambahkan metode konkret Decode/Payment/Query/Cancel/Refund pada client BTN yang sudah ada; reuse token, signing, dan `net/http`.
+- [x] Tambahkan service CPM dengan aturan status dan validasi per operasi.
+- [x] Simpan `transactionDateTime` original, TID bank, merchant PAN, scanner/device ID, referensi, dan snapshot yang dibutuhkan Query/Cancel/Refund.
+- [x] Kirim `merchantLocation` uppercase sesuai CPM v1.05.
+- [x] Periksa panjang field, QR maksimum 512 sesuai kontrak, nominal, currency, timestamp, dan expiry sebelum request bank.
+- [x] Gunakan data merchant server, bukan nama/lokasi/PAN yang bebas dikirim Android.
+- [x] Perluas updater status berdasarkan jenis alur tanpa membuat updater CPM memanggil Query MPM.
+- [x] Perluas guard `OrderService.Create()` agar `QRIS_SCAN` memerlukan transaksi CPM paid yang cocok, termasuk jalur bulk sync.
+- [x] Tetapkan pengulangan finalisasi sebagai operasi idempotent dan cegah satu pembayaran digunakan untuk pesanan lain.
+- [x] Tambahkan migrasi SQL berikutnya dan selaraskan model AutoMigrate (`020_btn_snap_cpm.sql`).
 
 Kontrak internal usulan, belum merupakan endpoint yang tersedia:
 
@@ -222,7 +222,7 @@ Kontrak internal usulan, belum merupakan endpoint yang tersedia:
 
 Decode dapat diorkestrasi service dalam endpoint pembuatan pembayaran. Tidak perlu endpoint Android tersendiri jika UI tidak membutuhkan langkah decode terpisah.
 
-Kriteria selesai: setiap operasi mengikuti payload UAT, hasil unknown dapat direkonsiliasi, dan backend menolak finalisasi sebelum bukti pembayaran cocok.
+Kriteria implementasi lokal tercapai. Kriteria selesai end-to-end masih menunggu konfirmasi payload/status melalui UAT BTN dan uji PostgreSQL untuk constraint/konkurensi.
 
 ## 8. Tahap 3: Android CPM
 
@@ -253,6 +253,8 @@ Kriteria selesai: scan pelanggan memanggil BTN, semua state dapat ditangani, res
 - [ ] Jika data callback belum cukup untuk memverifikasi pembayaran, lakukan Query, bukan menetapkan paid dari data yang belum lengkap.
 - [ ] Kirim acknowledgment sesuai SNAP, termasuk `2005200` setelah pemrosesan yang diperlukan berhasil.
 
+Notify tetap tertunda: spesifikasi yang tersedia belum menetapkan autentikasi callback yang dapat diverifikasi. Jangan membuka endpoint callback sebelum BTN mengonfirmasi mekanisme signature/token, replay, dan retry.
+
 ### Refund MPM dan CPM
 
 | Alur | Path bank | Service code |
@@ -260,18 +262,18 @@ Kriteria selesai: scan pelanggan memanggil BTN, semua state dapat ditangani, res
 | MPM | `/snap/v1.0/qr/qr-mpm-refund` | `78` |
 | CPM | `/snap/v1.0/qr/qr-cpm-refund` | `80` |
 
-- [ ] Simpan operasi refund dan `partnerRefundNo` sebelum request bank.
-- [ ] Validasi otorisasi, transaksi asal, nominal, dan jumlah yang sudah direfund.
-- [ ] Untuk MPM, gunakan `generateTime`, waktu pembayaran, dan TID yang tersimpan; untuk CPM, kirim scanner/device ID dan `refundDate` sesuai kontrak.
-- [ ] Mulai dengan full refund yang disepakati; partial refund diaktifkan setelah aturan nominal dan status dikonfirmasi BTN.
-- [ ] Respons refund hilang tetap unknown; cegah refund baru sampai hasil operasi original dapat diperiksa melalui mekanisme BTN yang dikonfirmasi.
-- [ ] Pisahkan status pengembalian dana dari void/retur stok. Perubahan stok mengikuti tindakan pesanan yang disepakati dan dijalankan satu kali.
+- [x] Simpan operasi refund dan `partnerRefundNo` sebelum request bank.
+- [x] Validasi otorisasi, transaksi asal, nominal, dan jumlah yang sudah direfund.
+- [x] Untuk MPM, gunakan `generateTime`, waktu pembayaran, dan TID yang tersimpan; untuk CPM, kirim scanner/device ID dan `refundDate` sesuai kontrak.
+- [x] Mulai dengan full refund saja; partial refund belum diaktifkan.
+- [x] Respons refund hilang tetap unknown; cegah refund baru dan rekonsiliasi lewat Query transaksi.
+- [x] Pisahkan status refund di `pos_qris_refunds` dari void/retur stok.
 
 ### Report
 
-- [ ] Tambahkan `POST /snap/v1.0/qr/qr-mpm-report` dengan service code `99`.
-- [ ] Gunakan `additionalInfo.transactionType = QRMPM` atau `QRCPM` sesuai kontrak.
-- [ ] Terapkan validasi periode, pagination, serta filter merchant yang diotorisasi.
+- [x] Tambahkan client dan endpoint admin `POST /v1/btn-qris/reports` untuk `/snap/v1.0/qr/qr-mpm-report` dengan service code `99`.
+- [x] Gunakan `additionalInfo.transactionType = QRMPM` atau `QRCPM` sesuai kontrak.
+- [x] Terapkan validasi urutan periode, pagination, serta merchant dari konfigurasi server.
 - [ ] Cocokkan laporan dengan percobaan internal untuk investigasi transaksi unknown/selisih.
 - [ ] Sediakan akses laporan dan refund melalui histori/operasional `:app` yang sudah ada tanpa memperluas pekerjaan ke CMS baru.
 
@@ -297,6 +299,8 @@ Gunakan test Go yang sudah ada, termasuk `gbs-pos-api/internal/service/btn_snap_
 Saat implementasi, jalankan test paket backend yang terdampak serta build/test module `:app` dengan Gradle wrapper. Uji PostgreSQL untuk constraint/konkurensi yang tidak dapat dibuktikan oleh SQLite in-memory. Perubahan Room/Hilt/KSP mengikuti pemeriksaan build yang diwajibkan repository Android.
 
 Aktivasi production setelah bukti UAT tersedia, pemetaan merchant/terminal benar, callback terdaftar, dan prosedur recovery/refund sudah dapat digunakan.
+
+Untuk Compose production, `scripts/deploy-vps.bat` menyalin `.secret/btn-snap-private.pem` lewat SSH dan memasang overlay `docker-compose.btn-snap.yml` agar key di-mount read-only di container; build context dan Git mengecualikan direktori `.secret`. Jangan bake key ke image. Overlay hanya dipasang pada deploy POS jika key lokal tersedia.
 
 ## 11. Tahap Terakhir: EDC/ECR
 

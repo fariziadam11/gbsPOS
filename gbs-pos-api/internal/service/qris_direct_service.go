@@ -189,7 +189,7 @@ func (s *QrisDirectService) convertBTNSnap(ctx context.Context, req dto.ConvertQ
 		return nil, fmt.Errorf("QRIS amount does not match checkout total")
 	}
 
-	previous, err := s.qrisTxRepo.FindLatestByOrderIDAndProvider(ctx, req.OrderID, model.QrisProviderBTNSnap)
+	previous, err := s.qrisTxRepo.FindLatestByOrderIDAndFlowType(ctx, req.OrderID, model.QrisFlowMPM)
 	if err != nil {
 		return nil, fmt.Errorf("find previous BTN transaction: %w", err)
 	}
@@ -233,11 +233,12 @@ func (s *QrisDirectService) convertBTNSnap(ctx context.Context, req dto.ConvertQ
 		MerchantName:       s.cfg.BtnSnapMerchantID,
 		MerchantID:         s.cfg.BtnSnapMerchantID,
 		Currency:           "IDR",
-		Provider:           model.QrisProviderBTNSnap,
-		TerminalID:         s.cfg.BtnSnapTerminalID,
-		Status:             model.QrisTransactionStatusPending,
-		CheckoutSnapshot:   checkoutJSON,
-		ExpiresAt:          expiresAt,
+		Provider:           model.QrisProviderBTNSnap, FlowType: model.QrisFlowMPM,
+		GenerateTime:     now.Format(time.RFC3339),
+		TerminalID:       s.cfg.BtnSnapTerminalID,
+		Status:           model.QrisTransactionStatusPending,
+		CheckoutSnapshot: checkoutJSON,
+		ExpiresAt:        expiresAt,
 	}
 	if err := s.qrisTxRepo.Create(ctx, tx); err != nil {
 		return nil, fmt.Errorf("save BTN transaction before Generate: %w", err)
@@ -378,6 +379,9 @@ func (s *QrisDirectService) GetTransactionStatus(ctx context.Context, transactio
 		return s.btnStatusResponse(tx)
 	}
 	if tx.Provider == model.QrisProviderBTNSnap {
+		if tx.FlowType == model.QrisFlowCPM {
+			return nil, fmt.Errorf("use BTN CPM status endpoint for this transaction")
+		}
 		return s.getBTNStatus(ctx, tx)
 	}
 
@@ -420,10 +424,15 @@ func (s *QrisDirectService) GetLatestBTNStatusForOrder(ctx context.Context, orde
 	if err != nil {
 		return nil, err
 	}
+	for _, tx := range transactions {
+		if tx.FlowType != model.QrisFlowCPM {
+			return s.GetTransactionStatus(ctx, tx.ID)
+		}
+	}
 	if len(transactions) == 0 {
 		return nil, fmt.Errorf("QRIS transaction not found")
 	}
-	return s.GetTransactionStatus(ctx, transactions[0].ID)
+	return nil, fmt.Errorf("MPM QRIS transaction not found")
 }
 
 func (s *QrisDirectService) getBTNStatus(ctx context.Context, tx *model.QrisTransaction) (*dto.GetQRISStatusResponse, error) {
@@ -501,6 +510,12 @@ func (s *QrisDirectService) getBTNStatus(ctx context.Context, tx *model.QrisTran
 		if paidAt != nil {
 			tx.PaidAt = paidAt
 			tx.BankPaidAt = paidAt
+		}
+		if status == model.QrisTransactionStatusRefunded {
+			if refund, findErr := s.qrisTxRepo.FindRefundByTransactionID(ctx, tx.ID); findErr == nil && refund != nil && refund.Status != model.QrisRefunded {
+				refund.Status = model.QrisRefunded
+				_ = s.qrisTxRepo.UpdateRefund(ctx, refund)
+			}
 		}
 	}
 	return s.btnStatusResponse(tx)

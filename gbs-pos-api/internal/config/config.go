@@ -45,17 +45,21 @@ type Config struct {
 	QrisDirectSkipCRCValidate         bool   `env:"QRIS_DIRECT_SKIP_CRC_VALIDATE" envDefault:"true"`
 	QrisDirectAutoConfirmDelaySeconds int    `env:"QRIS_DIRECT_AUTO_CONFIRM_DELAY_SECONDS" envDefault:"3"`
 
-	BtnSnapEnabled        bool    `env:"BTN_SNAP_ENABLED" envDefault:"false"`
-	BtnSnapBaseURL        string  `env:"BTN_SNAP_BASE_URL" envDefault:"https://devapi.btn.co.id"`
-	BtnSnapClientKey      string  `env:"BTN_SNAP_CLIENT_KEY"`
-	BtnSnapPartnerID      string  `env:"BTN_SNAP_PARTNER_ID"`
-	BtnSnapClientSecret   string  `env:"BTN_SNAP_CLIENT_SECRET"`
-	BtnSnapPrivateKeyPath string  `env:"BTN_SNAP_PRIVATE_KEY_PATH"`
-	BtnSnapChannelID      string  `env:"BTN_SNAP_CHANNEL_ID"`
-	BtnSnapOrigin         string  `env:"BTN_SNAP_ORIGIN"`
-	BtnSnapMerchantID     string  `env:"BTN_SNAP_MERCHANT_ID"`
-	BtnSnapTerminalID     string  `env:"BTN_SNAP_TERMINAL_ID"`
-	PosTaxRate            float64 `env:"POS_TAX_RATE" envDefault:"0.10"`
+	BtnSnapEnabled          bool    `env:"BTN_SNAP_ENABLED" envDefault:"false"`
+	BtnSnapCPMEnabled       bool    `env:"BTN_SNAP_CPM_ENABLED" envDefault:"false"`
+	BtnSnapBaseURL          string  `env:"BTN_SNAP_BASE_URL" envDefault:"https://devapi.btn.co.id"`
+	BtnSnapClientKey        string  `env:"BTN_SNAP_CLIENT_KEY"`
+	BtnSnapPartnerID        string  `env:"BTN_SNAP_PARTNER_ID"`
+	BtnSnapClientSecret     string  `env:"BTN_SNAP_CLIENT_SECRET"`
+	BtnSnapPrivateKeyPath   string  `env:"BTN_SNAP_PRIVATE_KEY_PATH"`
+	BtnSnapChannelID        string  `env:"BTN_SNAP_CHANNEL_ID"`
+	BtnSnapOrigin           string  `env:"BTN_SNAP_ORIGIN" envDefault:"pos-api.armmada.id"`
+	BtnSnapMerchantID       string  `env:"BTN_SNAP_MERCHANT_ID"`
+	BtnSnapTerminalID       string  `env:"BTN_SNAP_TERMINAL_ID"`
+	BtnSnapMerchantName     string  `env:"BTN_SNAP_MERCHANT_NAME"`
+	BtnSnapMerchantLocation string  `env:"BTN_SNAP_MERCHANT_LOCATION"`
+	BtnSnapMerchantPAN      string  `env:"BTN_SNAP_MERCHANT_PAN"`
+	PosTaxRate              float64 `env:"POS_TAX_RATE" envDefault:"0.10"`
 }
 
 func (c *Config) UseKeycloak() bool {
@@ -87,6 +91,18 @@ func (c *Config) Validate() error {
 			if r < '0' || r > '9' {
 				return fmt.Errorf("BTN_SNAP_CHANNEL_ID must contain exactly 5 digits")
 			}
+		}
+	}
+	if c.BtnSnapCPMEnabled {
+		if !c.BtnSnapEnabled {
+			return fmt.Errorf("BTN_SNAP_ENABLED must be true when BTN_SNAP_CPM_ENABLED is true")
+		}
+		if c.BtnSnapMerchantID == "" || len(c.BtnSnapMerchantID) > 15 ||
+			c.BtnSnapTerminalID == "" || len(c.BtnSnapTerminalID) > 8 ||
+			c.BtnSnapMerchantName == "" || len(c.BtnSnapMerchantName) > 20 ||
+			c.BtnSnapMerchantLocation == "" || len(c.BtnSnapMerchantLocation) > 40 ||
+			c.BtnSnapMerchantPAN == "" || len(c.BtnSnapMerchantPAN) > 19 {
+			return fmt.Errorf("valid BTN merchant ID, terminal ID, name, location, and PAN are required when BTN_SNAP_CPM_ENABLED is true")
 		}
 	}
 

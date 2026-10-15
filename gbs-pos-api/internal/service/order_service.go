@@ -284,7 +284,13 @@ func (s *OrderService) Create(order *model.Order) (*model.Order, bool, error) {
 }
 
 func (s *OrderService) validateBTNQRISPayment(order *model.Order) error {
-	if !s.btnQrisEnabled || order.PaymentMethod != "QRIS" || order.QrisPaymentID != "" {
+	if order.PaymentMethod == "QRIS_SCAN" && (!s.btnQrisEnabled || s.qrisTxRepo == nil) {
+		return fmt.Errorf("%w: BTN CPM validation is not enabled", ErrBTNQRISPaymentNotVerified)
+	}
+	if order.PaymentMethod != "QRIS" && order.PaymentMethod != "QRIS_SCAN" {
+		return nil
+	}
+	if order.PaymentMethod == "QRIS" && (!s.btnQrisEnabled || order.QrisPaymentID != "") {
 		return nil
 	}
 	if s.qrisTxRepo == nil || order.TransactionID == "" {
@@ -294,7 +300,12 @@ func (s *OrderService) validateBTNQRISPayment(order *model.Order) error {
 	if err != nil || tx.Provider != model.QrisProviderBTNSnap {
 		return fmt.Errorf("%w: BTN transaction not found", ErrBTNQRISPaymentNotVerified)
 	}
-	if tx.Status != model.QrisTransactionStatusPaid || tx.OrderID != order.ID || tx.Currency != "IDR" {
+	wantFlow := model.QrisFlowMPM
+	if order.PaymentMethod == "QRIS_SCAN" {
+		wantFlow = model.QrisFlowCPM
+	}
+	if tx.Status != model.QrisTransactionStatusPaid || tx.OrderID != order.ID || tx.Currency != "IDR" ||
+		(tx.FlowType != "" && tx.FlowType != wantFlow) || (wantFlow == model.QrisFlowCPM && tx.FlowType != model.QrisFlowCPM) {
 		return fmt.Errorf("%w: transaction status or order does not match", ErrBTNQRISPaymentNotVerified)
 	}
 	if math.Round(tx.TotalAmount*100) != math.Round(order.Total*100) {

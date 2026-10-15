@@ -65,7 +65,7 @@ func (s *SettlementService) Settle(
 			switch o.PaymentMethod {
 			case "CARD":
 				cardTotal += o.Total
-			case "QRIS":
+			case "QRIS", "QRIS_SCAN":
 				qrisTotal += o.Total
 			case "CASH":
 				cashTotal += o.Total

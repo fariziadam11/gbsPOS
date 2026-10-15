@@ -153,6 +153,56 @@ type CancelQRISPaymentRequest struct {
 	Reason        string `json:"reason,omitempty"`
 }
 
+type StartBTNCPMPaymentRequest struct {
+	OrderID          string                      `json:"orderId" binding:"required"`
+	QRContent        string                      `json:"qrContent" binding:"required"`
+	ScannerDeviceID  string                      `json:"scannerDeviceId" binding:"required,max=20"`
+	CheckoutSnapshot QrisCheckoutSnapshotRequest `json:"checkoutSnapshot" binding:"required"`
+}
+
+type BTNCPMPaymentResponse struct {
+	TransactionID      string    `json:"transactionId"`
+	OrderID            string    `json:"orderId"`
+	PartnerReferenceNo string    `json:"partnerReferenceNo"`
+	BankReferenceNo    string    `json:"bankReferenceNo,omitempty"`
+	Status             string    `json:"status"`
+	BankStatus         string    `json:"bankStatus,omitempty"`
+	ExpiresAt          time.Time `json:"expiresAt"`
+}
+
+type BTNCPMCancelRequest struct {
+	Reason string `json:"reason,omitempty" binding:"max=20"`
+}
+
+type BTNCPMRefundResponse struct {
+	TransactionID   string  `json:"transactionId"`
+	PartnerRefundNo string  `json:"partnerRefundNo"`
+	RefundNo        string  `json:"refundNo,omitempty"`
+	Status          string  `json:"status"`
+	Amount          float64 `json:"amount"`
+}
+
+type BTNMPMRefundRequest struct {
+	Reason string `json:"reason" binding:"required,max=256"`
+}
+
+type BTNMPMRefundResponse struct {
+	TransactionID   string  `json:"transactionId"`
+	PartnerRefundNo string  `json:"partnerRefundNo"`
+	RefundNo        string  `json:"refundNo,omitempty"`
+	Status          string  `json:"status"`
+	Amount          float64 `json:"amount"`
+}
+
+type BTNMPMReportRequest struct {
+	PartnerReferenceNo string `json:"partnerReferenceNo,omitempty"`
+	TransactionType    string `json:"transactionType,omitempty"`
+	FromDateTime       string `json:"fromDateTime" binding:"required"`
+	ToDateTime         string `json:"toDateTime" binding:"required"`
+	PageSize           int    `json:"pageSize" binding:"required,min=1,max=99"`
+	PageNumber         int    `json:"pageNumber" binding:"required,min=1,max=99999"`
+}
+
 // GenerateQRCodeRequest represents a request to generate QR code image
 type GenerateQRCodeRequest struct {
 	QrisString string `json:"qrisString" binding:"required"`

@@ -25,6 +25,7 @@ Thumbs.db
 
 # Environment
 .env
+.secret/
 
 # Uploads
 uploads/

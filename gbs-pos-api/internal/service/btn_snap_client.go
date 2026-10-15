@@ -28,9 +28,16 @@ import (
 )
 
 const (
-	btnTokenPath    = "/snap/v1/access-token/b2b"
-	btnGeneratePath = "/snap/v1/qr/qr-mpm-generate"
-	btnQueryPath    = "/snap/v1/qr/qr-mpm-query"
+	btnTokenPath      = "/snap/v1/access-token/b2b"
+	btnGeneratePath   = "/snap/v1/qr/qr-mpm-generate"
+	btnQueryPath      = "/snap/v1/qr/qr-mpm-query"
+	btnCPMDecodePath  = "/snap/v1.0/qr/qr-cpm-decode"
+	btnCPMPaymentPath = "/snap/v1.0/qr/qr-cpm-payment"
+	btnCPMQueryPath   = "/snap/v1.0/qr/qr-cpm-query"
+	btnCPMCancelPath  = "/snap/v1.0/qr/qr-cpm-cancel"
+	btnCPMRefundPath  = "/snap/v1.0/qr/qr-cpm-refund"
+	btnMPMRefundPath  = "/snap/v1.0/qr/qr-mpm-refund"
+	btnMPMReportPath  = "/snap/v1.0/qr/qr-mpm-report"
 )
 
 type BtnSnapClient struct {
@@ -51,13 +58,23 @@ func (e *BtnSnapRejectedError) Error() string {
 	return fmt.Sprintf("BTN Generate QR rejected: %s %s", e.ResponseCode, e.ResponseMessage)
 }
 
-// BtnSnapOutcomeUnknownError means a Generate request may have reached BTN but its result could not be verified.
+// BtnSnapOutcomeUnknownError means a payment request may have reached BTN but its result could not be verified.
 type BtnSnapOutcomeUnknownError struct {
 	Cause error
 }
 
+type BtnSnapCPMRejectedError struct {
+	Operation       string
+	ResponseCode    string
+	ResponseMessage string
+}
+
+func (e *BtnSnapCPMRejectedError) Error() string {
+	return fmt.Sprintf("BTN CPM %s rejected: %s %s", e.Operation, e.ResponseCode, e.ResponseMessage)
+}
+
 func (e *BtnSnapOutcomeUnknownError) Error() string {
-	return fmt.Sprintf("BTN Generate outcome is unknown; reconcile using the same reference: %v", e.Cause)
+	return fmt.Sprintf("BTN payment outcome is unknown; reconcile using the same reference: %v", e.Cause)
 }
 
 func (e *BtnSnapOutcomeUnknownError) Unwrap() error { return e.Cause }
@@ -104,6 +121,93 @@ func (c *BtnSnapClient) QueryPayment(ctx context.Context, payload dto.BtnSnapQue
 	return &result, nil
 }
 
+func (c *BtnSnapClient) DecodeCPM(ctx context.Context, payload dto.BtnSnapCPMDecodeRequest) (*dto.BtnSnapCPMDecodeResponse, error) {
+	var result dto.BtnSnapCPMDecodeResponse
+	status, err := c.post(ctx, btnCPMDecodePath, payload, &result)
+	if err != nil {
+		return nil, err
+	}
+	if status != http.StatusOK || result.ResponseCode != "2000000" {
+		return nil, &BtnSnapCPMRejectedError{Operation: "Decode", ResponseCode: result.ResponseCode, ResponseMessage: result.ResponseMessage}
+	}
+	return &result, nil
+}
+
+func (c *BtnSnapClient) PayCPM(ctx context.Context, payload dto.BtnSnapCPMPaymentRequest) (*dto.BtnSnapCPMPaymentResponse, error) {
+	var result dto.BtnSnapCPMPaymentResponse
+	status, err := c.post(ctx, btnCPMPaymentPath, payload, &result)
+	if err != nil {
+		return nil, err
+	}
+	if status != http.StatusOK || result.ResponseCode != "2006000" {
+		if status >= 400 && status < 500 && status != http.StatusConflict && result.ResponseCode != "" {
+			return nil, &BtnSnapCPMRejectedError{Operation: "Payment", ResponseCode: result.ResponseCode, ResponseMessage: result.ResponseMessage}
+		}
+		return nil, fmt.Errorf("BTN CPM Payment result could not be verified (HTTP %d, responseCode %q)", status, result.ResponseCode)
+	}
+	return &result, nil
+}
+
+func (c *BtnSnapClient) QueryCPM(ctx context.Context, payload dto.BtnSnapCPMQueryRequest) (*dto.BtnSnapCPMQueryResponse, error) {
+	var result dto.BtnSnapCPMQueryResponse
+	status, err := c.post(ctx, btnCPMQueryPath, payload, &result)
+	if err != nil {
+		return nil, err
+	}
+	if status != http.StatusOK || result.ResponseCode != "2006100" {
+		return nil, fmt.Errorf("BTN CPM Query rejected: HTTP %d, %s %s", status, result.ResponseCode, result.ResponseMessage)
+	}
+	return &result, nil
+}
+
+func (c *BtnSnapClient) CancelCPM(ctx context.Context, payload dto.BtnSnapCPMCancelRequest) (*dto.BtnSnapCPMCancelResponse, error) {
+	var result dto.BtnSnapCPMCancelResponse
+	status, err := c.post(ctx, btnCPMCancelPath, payload, &result)
+	if err != nil {
+		return nil, err
+	}
+	if status != http.StatusOK || result.ResponseCode != "2006200" {
+		return nil, fmt.Errorf("BTN CPM Cancel result could not be verified (HTTP %d, responseCode %q)", status, result.ResponseCode)
+	}
+	return &result, nil
+}
+
+func (c *BtnSnapClient) RefundCPM(ctx context.Context, payload dto.BtnSnapCPMRefundRequest) (*dto.BtnSnapCPMRefundResponse, error) {
+	var result dto.BtnSnapCPMRefundResponse
+	status, err := c.post(ctx, btnCPMRefundPath, payload, &result)
+	if err != nil {
+		return nil, err
+	}
+	if status != http.StatusOK || result.ResponseCode != "2008000" {
+		return nil, fmt.Errorf("BTN CPM Refund result could not be verified (HTTP %d, responseCode %q)", status, result.ResponseCode)
+	}
+	return &result, nil
+}
+
+func (c *BtnSnapClient) RefundMPM(ctx context.Context, payload dto.BtnSnapMPMRefundRequest) (*dto.BtnSnapMPMRefundResponse, error) {
+	var result dto.BtnSnapMPMRefundResponse
+	status, err := c.post(ctx, btnMPMRefundPath, payload, &result)
+	if err != nil {
+		return nil, err
+	}
+	if status != http.StatusOK || result.ResponseCode != "2007800" {
+		return nil, fmt.Errorf("BTN MPM Refund result could not be verified (HTTP %d, responseCode %q)", status, result.ResponseCode)
+	}
+	return &result, nil
+}
+
+func (c *BtnSnapClient) ReportMPM(ctx context.Context, payload dto.BtnSnapMPMReportRequest) (*dto.BtnSnapMPMReportResponse, error) {
+	var result dto.BtnSnapMPMReportResponse
+	status, err := c.post(ctx, btnMPMReportPath, payload, &result)
+	if err != nil {
+		return nil, err
+	}
+	if status != http.StatusOK || result.ResponseCode != "2009900" {
+		return nil, fmt.Errorf("BTN MPM Report rejected: HTTP %d, %s %s", status, result.ResponseCode, result.ResponseMessage)
+	}
+	return &result, nil
+}
+
 func (c *BtnSnapClient) post(ctx context.Context, path string, payload any, result any) (int, error) {
 	token, err := c.accessToken(ctx)
 	if err != nil {
@@ -135,14 +239,14 @@ func (c *BtnSnapClient) postWithToken(ctx context.Context, path string, payload 
 	if err != nil {
 		return 0, fmt.Errorf("create BTN request: %w", err)
 	}
-	req.Header.Set("Authorization", "Bearer "+token)
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("X-TIMESTAMP", timestamp)
-	req.Header.Set("X-SIGNATURE", base64.StdEncoding.EncodeToString(signature.Sum(nil)))
-	req.Header.Set("X-PARTNER-ID", c.cfg.BtnSnapPartnerID)
-	req.Header.Set("X-EXTERNAL-ID", externalID)
-	req.Header.Set("CHANNEL-ID", c.cfg.BtnSnapChannelID)
-	req.Header.Set("Origin", c.cfg.BtnSnapOrigin)
+	req.Header["Authorization"] = []string{"Bearer " + token}
+	req.Header["Content-Type"] = []string{"application/json"}
+	req.Header["X-TIMESTAMP"] = []string{timestamp}
+	req.Header["X-SIGNATURE"] = []string{base64.StdEncoding.EncodeToString(signature.Sum(nil))}
+	req.Header["X-PARTNER-ID"] = []string{c.cfg.BtnSnapPartnerID}
+	req.Header["X-EXTERNAL-ID"] = []string{externalID}
+	req.Header["CHANNEL-ID"] = []string{c.cfg.BtnSnapChannelID}
+	req.Header["Origin"] = []string{c.cfg.BtnSnapOrigin}
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
@@ -212,11 +316,11 @@ func (c *BtnSnapClient) accessToken(ctx context.Context) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("create BTN token request: %w", err)
 	}
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("X-TIMESTAMP", timestamp)
-	req.Header.Set("X-CLIENT-KEY", c.cfg.BtnSnapClientKey)
-	req.Header.Set("X-SIGNATURE", base64.StdEncoding.EncodeToString(signed))
-	req.Header.Set("Origin", c.cfg.BtnSnapOrigin)
+	req.Header["Content-Type"] = []string{"application/json"}
+	req.Header["X-TIMESTAMP"] = []string{timestamp}
+	req.Header["X-CLIENT-KEY"] = []string{c.cfg.BtnSnapClientKey}
+	req.Header["X-SIGNATURE"] = []string{base64.StdEncoding.EncodeToString(signed)}
+	req.Header["Origin"] = []string{c.cfg.BtnSnapOrigin}
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
@@ -224,6 +328,11 @@ func (c *BtnSnapClient) accessToken(ctx context.Context) (string, error) {
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
+		var rejection dto.BtnSnapTokenResponse
+		_ = json.NewDecoder(io.LimitReader(resp.Body, 1<<20)).Decode(&rejection)
+		if rejection.ResponseCode != "" {
+			return "", fmt.Errorf("BTN token request rejected: HTTP %d, %s %s", resp.StatusCode, rejection.ResponseCode, rejection.ResponseMessage)
+		}
 		return "", fmt.Errorf("BTN token request returned HTTP %d", resp.StatusCode)
 	}
 

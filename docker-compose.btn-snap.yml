@@ -1,0 +1,22 @@
+services:
+  pos-api:
+    environment:
+      BTN_SNAP_ENABLED: ${BTN_SNAP_ENABLED:-false}
+      BTN_SNAP_CPM_ENABLED: ${BTN_SNAP_CPM_ENABLED:-false}
+      BTN_SNAP_BASE_URL: ${BTN_SNAP_BASE_URL:-https://devapi.btn.co.id}
+      BTN_SNAP_CLIENT_KEY: ${BTN_SNAP_CLIENT_KEY:-}
+      BTN_SNAP_PARTNER_ID: ${BTN_SNAP_PARTNER_ID:-}
+      BTN_SNAP_CLIENT_SECRET: ${BTN_SNAP_CLIENT_SECRET:-}
+      BTN_SNAP_CHANNEL_ID: ${BTN_SNAP_CHANNEL_ID:-}
+      BTN_SNAP_ORIGIN: ${BTN_SNAP_ORIGIN:-pos-api.armmada.id}
+      BTN_SNAP_MERCHANT_ID: ${BTN_SNAP_MERCHANT_ID:-}
+      BTN_SNAP_TERMINAL_ID: ${BTN_SNAP_TERMINAL_ID:-}
+      BTN_SNAP_MERCHANT_NAME: ${BTN_SNAP_MERCHANT_NAME:-}
+      BTN_SNAP_MERCHANT_LOCATION: ${BTN_SNAP_MERCHANT_LOCATION:-}
+      BTN_SNAP_MERCHANT_PAN: ${BTN_SNAP_MERCHANT_PAN:-}
+      BTN_SNAP_PRIVATE_KEY_PATH: /run/secrets/btn_snap_private_key.pem
+    volumes:
+      - type: bind
+        source: ./gbs-pos-api/.secret/btn-snap-private.pem
+        target: /run/secrets/btn_snap_private_key.pem
+        read_only: true

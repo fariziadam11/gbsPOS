@@ -37,6 +37,8 @@ REM === Parse Arguments ===
 set "SERVICE=%~1"
 if "%SERVICE%"=="" set "SERVICE=all"
 set "COMPOSE_SERVICES=pos-api cms-api"
+set "COMPOSE_FILES=-f compose.yml"
+set "BTN_SNAP_PRIVATE_KEY=gbs-pos-api\.secret\btn-snap-private.pem"
 if /i "%SERVICE%"=="pos" set "COMPOSE_SERVICES=pos-api"
 if /i "%SERVICE%"=="cms" set "COMPOSE_SERVICES=cms-api"
 
@@ -103,7 +105,39 @@ REM =============================================
 :deploy_vps
 echo %CYAN%[STEP] Deploying to VPS...%NC%
 
-ssh %VPS_USER%@%VPS_HOST% "cd %VPS_PATH% && docker compose --env-file %VPS_ENV_FILE% -f compose.yml pull %COMPOSE_SERVICES% && docker compose --env-file %VPS_ENV_FILE% -f compose.yml up -d --no-deps %COMPOSE_SERVICES% && docker compose --env-file %VPS_ENV_FILE% -f compose.yml ps"
+REM Copy the BTN key out-of-band from the image and mount it read-only.
+if /i not "%SERVICE%"=="cms" (
+    if exist "%BTN_SNAP_PRIVATE_KEY%" (
+        echo %CYAN%[STEP] Installing BTN SNAP secret on VPS...%NC%
+        ssh %VPS_USER%@%VPS_HOST% "mkdir -p %VPS_PATH%/gbs-pos-api/.secret && chmod 700 %VPS_PATH%/gbs-pos-api/.secret"
+        if errorlevel 1 (
+            echo %RED%[ERROR] Could not prepare BTN secret directory on VPS!%NC%
+            pause
+            exit /b 1
+        )
+        scp docker-compose.btn-snap.yml %VPS_USER%@%VPS_HOST%:%VPS_PATH%/compose.btn-snap.yml
+        if errorlevel 1 (
+            echo %RED%[ERROR] Could not upload BTN Compose overlay!%NC%
+            pause
+            exit /b 1
+        )
+        scp "%BTN_SNAP_PRIVATE_KEY%" %VPS_USER%@%VPS_HOST%:%VPS_PATH%/gbs-pos-api/.secret/btn-snap-private.pem
+        if errorlevel 1 (
+            echo %RED%[ERROR] Could not upload BTN private key!%NC%
+            pause
+            exit /b 1
+        )
+        ssh %VPS_USER%@%VPS_HOST% "chmod 600 %VPS_PATH%/gbs-pos-api/.secret/btn-snap-private.pem"
+        if errorlevel 1 (
+            echo %RED%[ERROR] Could not restrict BTN private key permissions on VPS!%NC%
+            pause
+            exit /b 1
+        )
+        set "COMPOSE_FILES=-f compose.yml -f compose.btn-snap.yml"
+    )
+)
+
+ssh %VPS_USER%@%VPS_HOST% "cd %VPS_PATH% && docker compose --env-file %VPS_ENV_FILE% %COMPOSE_FILES% pull %COMPOSE_SERVICES% && docker compose --env-file %VPS_ENV_FILE% %COMPOSE_FILES% up -d --no-deps %COMPOSE_SERVICES% && docker compose --env-file %VPS_ENV_FILE% %COMPOSE_FILES% ps"
 
 if errorlevel 1 (
     echo.

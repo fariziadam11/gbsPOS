@@ -20,7 +20,7 @@ func ValidateOrder(order *model.Order) error {
 	if order.Total < 0 {
 		return fmt.Errorf("VALIDATION_ERROR: total must be >= 0")
 	}
-	validPaymentMethods := map[string]bool{"CASH": true, "CARD": true, "QRIS": true}
+	validPaymentMethods := map[string]bool{"CASH": true, "CARD": true, "QRIS": true, "QRIS_SCAN": true}
 	if !validPaymentMethods[order.PaymentMethod] {
 		return fmt.Errorf("VALIDATION_ERROR: paymentMethod must be one of: CASH, CARD, QRIS")
 	}

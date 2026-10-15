@@ -197,6 +197,12 @@ const (
 	QrisTransactionStatusUnknown              = "UNKNOWN"
 	QrisTransactionStatusRefunded             = "REFUNDED"
 	QrisProviderBTNSnap                       = "BTN_SNAP"
+	QrisFlowMPM                               = "MPM"
+	QrisFlowCPM                               = "CPM"
+	QrisRefundPending                         = "PENDING"
+	QrisRefundUnknown                         = "UNKNOWN"
+	QrisRefunded                              = "REFUNDED"
+	QrisRefundFailed                          = "FAILED"
 )
 
 // QrisTransaction represents a QRIS direct payment transaction (without gateway)
@@ -210,6 +216,12 @@ type QrisTransaction struct {
 	BankPaymentReference  string         `gorm:"size:20" json:"bankPaymentReference,omitempty"`
 	BankStatus            string         `gorm:"size:2" json:"bankStatus,omitempty"`
 	BankStatusDescription string         `gorm:"size:50" json:"bankStatusDescription,omitempty"`
+	FlowType              string         `gorm:"size:8;index" json:"flowType,omitempty"`
+	GenerateTime          string         `gorm:"size:25" json:"-"`
+	TransactionDateTime   string         `gorm:"size:25" json:"-"`
+	ScannerDeviceID       string         `gorm:"size:20" json:"-"`
+	MerchantPAN           string         `gorm:"size:19" json:"-"`
+	CancelRequestedAt     *time.Time     `json:"-"`
 	Amount                float64        `gorm:"type:decimal(12,2);not null" json:"amount"`
 	FeeType               string         `gorm:"size:20" json:"feeType,omitempty"` // "fixed" or "percentage"
 	FeeValue              float64        `gorm:"type:decimal(12,2);default:0" json:"feeValue,omitempty"`
@@ -236,3 +248,18 @@ type QrisTransaction struct {
 func (QrisTransaction) TableName() string {
 	return "pos_qris_transactions"
 }
+
+type QrisRefund struct {
+	ID              string     `gorm:"primaryKey;size:64" json:"id"`
+	TransactionID   string     `gorm:"size:64;not null;uniqueIndex" json:"transactionId"`
+	PartnerRefundNo string     `gorm:"size:16;not null;uniqueIndex" json:"partnerRefundNo"`
+	RefundNo        string     `gorm:"size:16" json:"refundNo,omitempty"`
+	Amount          float64    `gorm:"type:decimal(12,2);not null" json:"amount"`
+	Status          string     `gorm:"size:20;not null;index" json:"status"`
+	Reason          string     `gorm:"size:256" json:"reason,omitempty"`
+	RefundedAt      *time.Time `json:"refundedAt,omitempty"`
+	CreatedAt       time.Time  `json:"createdAt"`
+	UpdatedAt       time.Time  `json:"updatedAt"`
+}
+
+func (QrisRefund) TableName() string { return "pos_qris_refunds" }

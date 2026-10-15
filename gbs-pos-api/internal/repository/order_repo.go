@@ -107,7 +107,7 @@ func (r *OrderRepository) FindUnsettledSummary(
 		total += res.Total
 		summary[res.PaymentMethod] = dto.PaymentSummary{Count: res.Count, Total: res.Total}
 	}
-	for _, pm := range []string{"CASH", "CARD", "QRIS"} {
+	for _, pm := range []string{"CASH", "CARD", "QRIS", "QRIS_SCAN"} {
 		if _, ok := summary[pm]; !ok {
 			summary[pm] = dto.PaymentSummary{Count: 0, Total: 0}
 		}
