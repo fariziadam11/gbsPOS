@@ -19,6 +19,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -95,7 +96,7 @@ func TestBtnSnapClientSignsAndSendsGenerateAndQuery(t *testing.T) {
 					http.Error(w, "bad body", http.StatusBadRequest)
 					return
 				}
-				if request.Amount.Value != "12500.00" || request.Amount.Currency != "IDR" || request.AdditionalInfo["type_qris"] != "D" {
+				if request.ValidityPeriod == "" || request.Amount.Value != "12500.00" || request.Amount.Currency != "IDR" || request.AdditionalInfo["type_qris"] != "D" {
 					t.Errorf("unexpected Generate payload: %+v", request)
 				}
 				_, _ = w.Write([]byte(`{"responseCode":"2004700","responseMessage":"Success","referenceNo":"bank-reference-1","partnerReferenceNo":"partner-reference-1","qrContent":"000201010212","merchantName":"Test Merchant","terminalId":"terminal-test-01"}`))
@@ -115,6 +116,7 @@ func TestBtnSnapClientSignsAndSendsGenerateAndQuery(t *testing.T) {
 		Amount:             dto.BtnSnapAmount{Value: "12500.00", Currency: "IDR"},
 		MerchantID:         btnTestMerchantID,
 		TerminalID:         btnTestTerminalID,
+		ValidityPeriod:     time.Now().Add(15 * time.Minute).Format(time.RFC3339),
 		AdditionalInfo:     map[string]any{"type_qris": "D"},
 	})
 	if err != nil {
@@ -140,6 +142,14 @@ func TestBtnSnapClientSignsAndSendsGenerateAndQuery(t *testing.T) {
 	}
 }
 
+func TestBTNGenerateRequiresValidityPeriod(t *testing.T) {
+	client := NewBtnSnapClient(&config.Config{})
+	_, err := client.generateQRWithToken(t.Context(), dto.BtnSnapGenerateRequest{}, "test-token")
+	if err == nil || !strings.Contains(err.Error(), "validityPeriod is required") {
+		t.Fatalf("Generate QR error = %v, want required validityPeriod error", err)
+	}
+}
+
 func TestQrisDirectServiceBTNGenerateQueryAndConfirmGuards(t *testing.T) {
 	_, keyPath := writeTestRSAPrivateKey(t)
 	var partnerReference string
@@ -153,6 +163,9 @@ func TestQrisDirectServiceBTNGenerateQueryAndConfirmGuards(t *testing.T) {
 				t.Errorf("decode Generate request: %v", err)
 				http.Error(w, "bad body", http.StatusBadRequest)
 				return
+			}
+			if _, err := time.Parse(time.RFC3339, request.ValidityPeriod); err != nil {
+				t.Errorf("Generate validityPeriod = %q, want RFC3339 timestamp: %v", request.ValidityPeriod, err)
 			}
 			partnerReference = request.PartnerReferenceNo
 			_, _ = fmt.Fprintf(w, `{"responseCode":"2004700","referenceNo":"bank-reference-2","partnerReferenceNo":%q,"qrContent":"btn-dynamic-qr","merchantName":"Test Merchant","terminalId":"%s"}`, partnerReference, btnTestTerminalID)

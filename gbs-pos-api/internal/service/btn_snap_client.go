@@ -95,6 +95,10 @@ func (c *BtnSnapClient) GenerateQR(ctx context.Context, payload dto.BtnSnapGener
 }
 
 func (c *BtnSnapClient) generateQRWithToken(ctx context.Context, payload dto.BtnSnapGenerateRequest, token string) (*dto.BtnSnapGenerateResponse, error) {
+	if strings.TrimSpace(payload.ValidityPeriod) == "" {
+		return nil, fmt.Errorf("BTN Generate QR validityPeriod is required")
+	}
+
 	var result dto.BtnSnapGenerateResponse
 	statusCode, err := c.postWithToken(ctx, btnGeneratePath, payload, &result, token)
 	if err != nil {

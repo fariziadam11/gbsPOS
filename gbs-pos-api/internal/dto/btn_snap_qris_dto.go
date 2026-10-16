@@ -23,7 +23,7 @@ type BtnSnapGenerateRequest struct {
 	Amount             BtnSnapAmount  `json:"amount"`
 	MerchantID         string         `json:"merchantId"`
 	TerminalID         string         `json:"terminalId"`
-	ValidityPeriod     string         `json:"validityPeriod,omitempty"`
+	ValidityPeriod     string         `json:"validityPeriod"`
 	AdditionalInfo     map[string]any `json:"additionalInfo"`
 }
 
