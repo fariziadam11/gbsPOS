@@ -367,11 +367,13 @@ func btnTestConfig(baseURL, privateKeyPath string) *config.Config {
 
 func TestBTNQueryDoesNotTreatNotFoundAsPaid(t *testing.T) {
 	_, keyPath := writeTestRSAPrivateKey(t)
+	queryHTTPStatus := http.StatusOK
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == btnTokenPath {
 			_, _ = w.Write([]byte(`{"responseCode":"2007300","accessToken":"test-token","expiresIn":"900"}`))
 			return
 		}
+		w.WriteHeader(queryHTTPStatus)
 		_, _ = w.Write([]byte(`{"responseCode":"4045101","responseMessage":"Transaction Not Found"}`))
 	}))
 	defer server.Close()
@@ -395,12 +397,44 @@ func TestBTNQueryDoesNotTreatNotFoundAsPaid(t *testing.T) {
 	cfg := btnTestConfig(server.URL, keyPath)
 	cfg.BtnSnapEnabled = true
 	service := NewQrisDirectService(cfg, repo, nil)
-	status, err := service.GetTransactionStatus(t.Context(), tx.ID)
-	if err != nil {
-		t.Fatal(err)
+	for _, httpStatus := range []int{http.StatusOK, http.StatusNotFound} {
+		t.Run(fmt.Sprint(httpStatus), func(t *testing.T) {
+			queryHTTPStatus = httpStatus
+			status, err := service.GetTransactionStatus(t.Context(), tx.ID)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if status.Status != model.QrisTransactionStatusPending {
+				t.Fatalf("4045101 mapped to %q, want PENDING", status.Status)
+			}
+		})
 	}
-	if status.Status != model.QrisTransactionStatusPending {
-		t.Fatalf("4045101 mapped to %q, want PENDING", status.Status)
+}
+
+func TestBTNQueryRejectsUnexpectedHTTPResponses(t *testing.T) {
+	for _, tt := range []struct {
+		name         string
+		httpStatus   int
+		responseCode string
+	}{
+		{name: "other not found", httpStatus: http.StatusNotFound, responseCode: "4045102"},
+		{name: "success body with HTTP error", httpStatus: http.StatusNotFound, responseCode: "2005100"},
+		{name: "not found body with server error", httpStatus: http.StatusInternalServerError, responseCode: "4045101"},
+		{name: "invalid token", httpStatus: http.StatusUnauthorized, responseCode: "4015101"},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(tt.httpStatus)
+				_, _ = fmt.Fprintf(w, `{"responseCode":%q}`, tt.responseCode)
+			}))
+			defer server.Close()
+			client := NewBtnSnapClient(&config.Config{BtnSnapBaseURL: server.URL})
+			client.token = "test-token"
+			client.tokenUntil = time.Now().Add(time.Hour)
+			if _, err := client.QueryPayment(t.Context(), dto.BtnSnapQueryRequest{}); err == nil {
+				t.Fatal("unexpected HTTP error was accepted as a valid query result")
+			}
+		})
 	}
 }
 

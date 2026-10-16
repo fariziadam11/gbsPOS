@@ -2,10 +2,12 @@ package service
 
 import (
 	"context"
+	crand "crypto/rand"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"math"
+	"math/big"
 	"strconv"
 	"strings"
 	"time"
@@ -210,14 +212,17 @@ func (s *QrisDirectService) convertBTNSnap(ctx context.Context, req dto.ConvertQ
 		return nil, fmt.Errorf("prepare BTN access token before Generate: %w", err)
 	}
 
-	partnerReferenceNo := uuid.NewString()
+	wib := time.FixedZone("WIB", 7*60*60)
+	now := time.Now().In(wib)
+	partnerReferenceNo, err := generatePartnerReferenceNo(now)
+	if err != nil {
+		return nil, fmt.Errorf("generate BTN partner reference: %w", err)
+	}
 	transactionID := "BTN-" + uuid.NewString()
 	expiresMinutes := s.cfg.QrisDirectExpiresMinutes
 	if expiresMinutes <= 0 {
 		expiresMinutes = 15
 	}
-	wib := time.FixedZone("WIB", 7*60*60)
-	now := time.Now().In(wib)
 	expiresAt := now.Add(time.Duration(expiresMinutes) * time.Minute)
 	checkoutJSON, err := json.Marshal(snapshot)
 	if err != nil {
@@ -289,6 +294,15 @@ func (s *QrisDirectService) convertBTNSnap(ctx context.Context, req dto.ConvertQ
 		tx.MerchantName = generated.MerchantName
 	}
 	return s.btnConvertResponse(tx)
+}
+
+func generatePartnerReferenceNo(now time.Time) (string, error) {
+	// shortcut: the random suffix can collide; use a shared DB sequence at high volume.
+	suffix, err := crand.Int(crand.Reader, big.NewInt(100_000_000))
+	if err != nil {
+		return "", err
+	}
+	return now.In(time.FixedZone("WIB", 7*60*60)).Format("20060102150405") + fmt.Sprintf("%08d", suffix.Int64()), nil
 }
 
 func validateQrisCheckoutSnapshot(snapshot dto.QrisCheckoutSnapshotRequest) error {

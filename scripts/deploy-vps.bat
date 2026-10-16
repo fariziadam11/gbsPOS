@@ -38,7 +38,7 @@ set "SERVICE=%~1"
 if "%SERVICE%"=="" set "SERVICE=all"
 set "COMPOSE_SERVICES=pos-api cms-api"
 set "COMPOSE_FILES=-f compose.yml"
-set "BTN_SNAP_PRIVATE_KEY=gbs-pos-api\.secret\btn-snap-private.pem"
+set "BTN_SNAP_PRIVATE_KEY=gbs-pos-api\.secrets\btn-snap-private.pem"
 if /i "%SERVICE%"=="pos" set "COMPOSE_SERVICES=pos-api"
 if /i "%SERVICE%"=="cms" set "COMPOSE_SERVICES=cms-api"
 

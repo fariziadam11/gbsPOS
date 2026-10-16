@@ -92,6 +92,22 @@ func TestQrisTransactionStatus(t *testing.T) {
 	}
 }
 
+func TestGeneratePartnerReferenceNoIsNumericWIBTimestamp(t *testing.T) {
+	now := time.Date(2026, time.October, 15, 1, 2, 3, 0, time.UTC)
+	reference, err := generatePartnerReferenceNo(now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(reference) != 22 || reference[:14] != "20261015080203" {
+		t.Fatalf("unexpected partner reference: %q", reference)
+	}
+	for _, r := range reference {
+		if r < '0' || r > '9' {
+			t.Fatalf("partner reference is not numeric: %q", reference)
+		}
+	}
+}
+
 func TestLegacyDynamicQrisSupportsCheckoutBeforeOrderIsSaved(t *testing.T) {
 	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
 	if err != nil {

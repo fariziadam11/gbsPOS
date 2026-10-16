@@ -115,8 +115,11 @@ func (c *BtnSnapClient) QueryPayment(ctx context.Context, payload dto.BtnSnapQue
 	if err != nil {
 		return nil, err
 	}
+	if statusCode == http.StatusNotFound && result.ResponseCode == "4045101" {
+		return &result, nil
+	}
 	if statusCode != http.StatusOK {
-		return nil, fmt.Errorf("BTN Query returned HTTP %d", statusCode)
+		return nil, fmt.Errorf("BTN Query returned HTTP %d (responseCode %q)", statusCode, result.ResponseCode)
 	}
 	return &result, nil
 }
